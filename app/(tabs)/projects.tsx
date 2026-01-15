@@ -1,11 +1,12 @@
-import { ScrollView, Text, View, TouchableOpacity, FlatList } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, FlatList, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
+import { useState } from "react";
 
-// Mock data for recent projects
-const RECENT_PROJECTS = [
+// Mock data for all projects
+const ALL_PROJECTS = [
   {
     id: "1",
     name: "Office Renovation",
@@ -33,21 +34,45 @@ const RECENT_PROJECTS = [
     date: "3 days ago",
     status: "Completed",
   },
+  {
+    id: "4",
+    name: "Foundation Repair",
+    location: "Bronx, NY",
+    progress: 25,
+    photos: 8,
+    date: "1 week ago",
+    status: "In Progress",
+  },
 ];
 
-export default function HomeScreen() {
+export default function ProjectsScreen() {
   const router = useRouter();
   const colors = useColors();
+  const [searchText, setSearchText] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState("all");
 
-  const handleCreateProject = () => {
-    // TODO: Navigate to create project screen
-  };
+  const filteredProjects = ALL_PROJECTS.filter((project) => {
+    const matchesSearch =
+      project.name.toLowerCase().includes(searchText.toLowerCase()) ||
+      project.location.toLowerCase().includes(searchText.toLowerCase());
+
+    const matchesFilter =
+      selectedFilter === "all" ||
+      (selectedFilter === "active" && project.status === "In Progress") ||
+      (selectedFilter === "completed" && project.status === "Completed");
+
+    return matchesSearch && matchesFilter;
+  });
 
   const handleProjectTap = (projectId: string) => {
     // TODO: Navigate to project detail screen
   };
 
-  const renderProjectCard = ({ item }: { item: typeof RECENT_PROJECTS[0] }) => (
+  const handleCreateProject = () => {
+    // TODO: Navigate to create project screen
+  };
+
+  const renderProjectCard = ({ item }: { item: typeof ALL_PROJECTS[0] }) => (
     <TouchableOpacity
       onPress={() => handleProjectTap(item.id)}
       style={{ marginBottom: 12 }}
@@ -56,7 +81,6 @@ export default function HomeScreen() {
         className="bg-surface rounded-2xl p-4 border border-border"
         style={{ borderColor: colors.border }}
       >
-        {/* Project Header */}
         <View className="flex-row justify-between items-start mb-3">
           <View className="flex-1">
             <Text className="text-lg font-semibold text-foreground" numberOfLines={1}>
@@ -87,7 +111,6 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Progress Bar */}
         <View className="mb-3">
           <View className="flex-row justify-between mb-2">
             <Text className="text-xs text-muted">Progress</Text>
@@ -109,7 +132,6 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Footer Info */}
         <View className="flex-row justify-between items-center">
           <View className="flex-row items-center gap-1">
             <IconSymbol name="photo.stack.fill" size={14} color={colors.muted} />
@@ -126,54 +148,67 @@ export default function HomeScreen() {
       <View className="flex-1 bg-background">
         {/* Header */}
         <View className="px-6 pt-6 pb-4 border-b border-border">
-          <View className="flex-row justify-between items-center mb-6">
-            <View>
-              <Text className="text-3xl font-bold text-foreground">FieldCam</Text>
-              <Text className="text-sm text-muted mt-1">
-                Document your projects
-              </Text>
-            </View>
-            <TouchableOpacity
-              className="w-10 h-10 rounded-full items-center justify-center"
-              style={{ backgroundColor: colors.surface }}
-            >
-              <IconSymbol name="person.fill" size={20} color={colors.primary} />
-            </TouchableOpacity>
-          </View>
+          <Text className="text-3xl font-bold text-foreground mb-6">
+            Projects
+          </Text>
 
           {/* Search Bar */}
           <View
-            className="flex-row items-center px-4 py-2 rounded-xl border border-border"
+            className="flex-row items-center px-4 py-3 rounded-xl border border-border mb-4"
             style={{ backgroundColor: colors.surface }}
           >
             <IconSymbol name="chevron.right" size={16} color={colors.muted} />
-            <Text className="flex-1 ml-2 text-muted">Search projects...</Text>
+            <TextInput
+              className="flex-1 ml-2 text-foreground"
+              placeholder="Search projects..."
+              placeholderTextColor={colors.muted}
+              value={searchText}
+              onChangeText={setSearchText}
+            />
+          </View>
+
+          {/* Filter Buttons */}
+          <View className="flex-row gap-2">
+            {["all", "active", "completed"].map((filter) => (
+              <TouchableOpacity
+                key={filter}
+                onPress={() => setSelectedFilter(filter)}
+                className="px-4 py-2 rounded-full border border-border"
+                style={{
+                  backgroundColor:
+                    selectedFilter === filter
+                      ? colors.primary
+                      : colors.surface,
+                  borderColor:
+                    selectedFilter === filter
+                      ? colors.primary
+                      : colors.border,
+                }}
+              >
+                <Text
+                  className="text-xs font-semibold capitalize"
+                  style={{
+                    color:
+                      selectedFilter === filter
+                        ? "#FFFFFF"
+                        : colors.foreground,
+                  }}
+                >
+                  {filter === "all" ? "All" : filter === "active" ? "Active" : "Completed"}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
-        {/* Content */}
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24 }}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Section Title */}
-          <View className="mt-6 mb-4">
-            <Text className="text-lg font-semibold text-foreground">
-              Recent Projects
-            </Text>
-          </View>
-
-          {/* Projects List */}
-          <FlatList
-            data={RECENT_PROJECTS}
-            renderItem={renderProjectCard}
-            keyExtractor={(item) => item.id}
-            scrollEnabled={false}
-            contentContainerStyle={{ paddingBottom: 20 }}
-          />
-
-          {/* Empty State Hint */}
-          {RECENT_PROJECTS.length === 0 && (
+        {/* Projects List */}
+        <FlatList
+          data={filteredProjects}
+          renderItem={renderProjectCard}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 20 }}
+          scrollEnabled={true}
+          ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-12">
               <IconSymbol
                 name="photo.stack.fill"
@@ -181,25 +216,14 @@ export default function HomeScreen() {
                 color={colors.border}
               />
               <Text className="text-lg font-semibold text-foreground mt-4">
-                No projects yet
+                No projects found
               </Text>
               <Text className="text-sm text-muted text-center mt-2">
-                Create your first project to get started
+                Try adjusting your search or filters
               </Text>
             </View>
-          )}
-        </ScrollView>
-
-        {/* Floating Action Button */}
-        <View className="absolute bottom-24 right-6">
-          <TouchableOpacity
-            onPress={handleCreateProject}
-            className="w-14 h-14 rounded-full items-center justify-center shadow-lg"
-            style={{ backgroundColor: colors.primary }}
-          >
-            <IconSymbol name="plus.circle.fill" size={28} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
+          }
+        />
       </View>
     </ScreenContainer>
   );
