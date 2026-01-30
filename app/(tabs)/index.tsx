@@ -128,7 +128,7 @@ export default function HomeScreen() {
         <View className="px-6 pt-6 pb-4 border-b border-border">
           <View className="flex-row justify-between items-center mb-6">
             <View>
-              <Text className="text-3xl font-bold text-foreground">FieldCam</Text>
+              <Text className="text-3xl font-bold text-foreground">SnapSite</Text>
               <Text className="text-sm text-muted mt-1">
                 Document your projects
               </Text>

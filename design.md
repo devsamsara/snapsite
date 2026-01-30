@@ -1,8 +1,8 @@
-# FieldCam - Diseño de Interfaz Móvil
+# SnapSite - Diseño de Interfaz Móvil
 
 ## Visión General
 
-FieldCam es una aplicación de documentación de proyectos para contratistas y equipos de campo. Permite capturar, organizar y compartir fotos y videos de sitios de trabajo con anotaciones, líneas de tiempo y comunicación integrada. El diseño sigue estándares modernos de iOS con colores agradables y una experiencia intuitiva.
+SnapSite es una aplicación de documentación de proyectos para contratistas y equipos de campo. Permite capturar, organizar y compartir fotos y videos de sitios de trabajo con anotaciones, líneas de tiempo y comunicación integrada. El diseño sigue estándares modernos de iOS con colores agradables y una experiencia intuitiva.
 
 ---
 

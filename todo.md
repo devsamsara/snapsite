@@ -1,4 +1,4 @@
-# FieldCam - Project TODO
+# SnapSite - Project TODO
 
 ## Core Features
 

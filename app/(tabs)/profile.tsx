@@ -100,7 +100,7 @@ export default function ProfileScreen() {
 
         {/* Version Info */}
         <View className="px-6 py-6 items-center">
-          <Text className="text-xs text-muted">FieldCam v1.0.0</Text>
+          <Text className="text-xs text-muted">SnapSite v1.0.0</Text>
         </View>
       </ScrollView>
     </ScreenContainer>
