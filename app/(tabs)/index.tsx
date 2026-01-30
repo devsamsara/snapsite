@@ -43,6 +43,10 @@ export default function HomeScreen() {
     // TODO: Navigate to create project screen
   };
 
+  const handleSettingsTap = () => {
+    router.push("/settings");
+  };
+
   const handleProjectTap = (projectId: string) => {
     // TODO: Navigate to project detail screen
   };
@@ -134,6 +138,7 @@ export default function HomeScreen() {
               </Text>
             </View>
             <TouchableOpacity
+              onPress={handleSettingsTap}
               className="w-10 h-10 rounded-full items-center justify-center"
               style={{ backgroundColor: colors.surface }}
             >
