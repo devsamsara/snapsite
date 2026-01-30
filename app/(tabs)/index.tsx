@@ -158,7 +158,7 @@ export default function HomeScreen() {
 
         {/* Content */}
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24 }}
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
         >
           {/* Section Title */}
@@ -196,7 +196,7 @@ export default function HomeScreen() {
         </ScrollView>
 
         {/* Floating Action Button */}
-        <View className="absolute bottom-24 right-6">
+        <View style={{ position: 'absolute', bottom: 120, right: 24 }}>
           <TouchableOpacity
             onPress={handleCreateProject}
             className="w-14 h-14 rounded-full items-center justify-center shadow-lg"

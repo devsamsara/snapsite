@@ -207,7 +207,7 @@ export default function ProjectsScreen() {
           data={filteredProjects}
           renderItem={renderProjectCard}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 20 }}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 120 }}
           scrollEnabled={true}
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-12">

@@ -8,7 +8,7 @@ export default function CameraScreen() {
 
   return (
     <ScreenContainer className="p-6">
-      <View className="flex-1 items-center justify-center gap-6">
+      <View className="flex-1 items-center justify-center gap-6" style={{ paddingBottom: 100 }}>
         {/* Camera Icon */}
         <IconSymbol name="camera.fill" size={64} color={colors.primary} />
 

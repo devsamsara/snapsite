@@ -15,7 +15,7 @@ export default function ProfileScreen() {
 
   return (
     <ScreenContainer className="p-0">
-      <ScrollView className="flex-1 bg-background">
+      <ScrollView className="flex-1 bg-background" contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Header */}
         <View className="px-6 pt-6 pb-6 border-b border-border">
           <Text className="text-3xl font-bold text-foreground mb-6">Profile</Text>
