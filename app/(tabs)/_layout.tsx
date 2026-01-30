@@ -38,6 +38,8 @@ export default function TabLayout() {
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const [pressedTab, setPressedTab] = useState<TabName | null>(null);
+  const selectorAnim = useRef(new Animated.Value(0)).current;
+  const [tabWidth, setTabWidth] = useState(0);
 
   const activeIndex = tabs.findIndex(tab => tab.name === activeTab);
   const ActiveComponent = tabs[activeIndex].component;
@@ -63,6 +65,14 @@ export default function TabLayout() {
         }),
       ]),
     ]).start();
+
+    // Animate selector position
+    Animated.spring(selectorAnim, {
+      toValue: activeIndex,
+      useNativeDriver: true,
+      damping: 20,
+      stiffness: 300,
+    }).start();
   }, [activeTab, activeIndex]);
 
   const handleTabPress = (tabName: TabName) => {
@@ -89,16 +99,17 @@ export default function TabLayout() {
         tint={colorScheme === 'dark' ? 'dark' : 'light'}
         style={{
           position: 'absolute',
-          bottom: insets.bottom + 16,
-          left: 16,
-          right: 16,
-          borderRadius: 24,
+          bottom: insets.bottom + 12,
+          left: '50%',
+          transform: [{ translateX: -((SCREEN_WIDTH * 0.7) / 2) }],
+          width: SCREEN_WIDTH * 0.7,
+          borderRadius: 20,
           overflow: 'hidden',
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 8 },
+          shadowOffset: { width: 0, height: 6 },
           shadowOpacity: colorScheme === 'dark' ? 0.4 : 0.2,
-          shadowRadius: 16,
-          elevation: 12,
+          shadowRadius: 12,
+          elevation: 10,
         }}
       >
         <View
@@ -110,14 +121,43 @@ export default function TabLayout() {
             borderColor: colorScheme === 'dark'
               ? 'rgba(255, 255, 255, 0.1)'
               : 'rgba(0, 0, 0, 0.05)',
-            paddingVertical: 12,
-            paddingHorizontal: 8,
+            paddingVertical: 6,
+            paddingHorizontal: 6,
             flexDirection: 'row',
-            justifyContent: 'space-around',
-            alignItems: 'center',
+            position: 'relative',
+          }}
+          onLayout={(e) => {
+            const width = e.nativeEvent.layout.width;
+            setTabWidth((width - 12) / tabs.length);
           }}
         >
-          {tabs.map((tab) => {
+          {/* Animated Selector Background */}
+          {tabWidth > 0 && (
+            <Animated.View
+              style={{
+                position: 'absolute',
+                left: 6,
+                top: 6,
+                bottom: 6,
+                width: tabWidth,
+                backgroundColor: colorScheme === 'dark'
+                  ? 'rgba(59, 130, 246, 0.3)'
+                  : 'rgba(37, 99, 235, 0.2)',
+                borderRadius: 14,
+                transform: [
+                  {
+                    translateX: selectorAnim.interpolate({
+                      inputRange: [0, 1, 2],
+                      outputRange: [0, tabWidth, tabWidth * 2],
+                    }),
+                  },
+                ],
+              }}
+            />
+          )}
+
+          {/* Tab Buttons */}
+          {tabs.map((tab, index) => {
             const isActive = activeTab === tab.name;
             const isPressed = pressedTab === tab.name;
             return (
@@ -130,33 +170,23 @@ export default function TabLayout() {
                   flex: 1,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  paddingVertical: 10,
-                  paddingHorizontal: 6,
-                  borderRadius: 18,
-                  backgroundColor: isActive 
-                    ? colorScheme === 'dark'
-                      ? 'rgba(59, 130, 246, 0.25)'
-                      : 'rgba(37, 99, 235, 0.15)'
-                    : isPressed
-                    ? colorScheme === 'dark'
-                      ? 'rgba(255, 255, 255, 0.08)'
-                      : 'rgba(0, 0, 0, 0.04)'
-                    : 'transparent',
+                  paddingVertical: 6,
+                  paddingHorizontal: 4,
                   transform: [{ scale: isPressed ? 0.95 : 1 }],
                 }}
                 activeOpacity={1}
               >
                 <IconSymbol
-                  size={26}
+                  size={22}
                   name={tab.icon as any}
                   color={isActive ? colors.primary : colors.muted}
                 />
                 <Text
                   style={{
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: isActive ? '600' : '500',
                     color: isActive ? colors.primary : colors.muted,
-                    marginTop: 4,
+                    marginTop: 2,
                   }}
                 >
                   {tab.title}
