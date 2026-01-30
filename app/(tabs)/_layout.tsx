@@ -45,28 +45,7 @@ export default function TabLayout() {
   const ActiveComponent = tabs[activeIndex].component;
 
   useEffect(() => {
-    // Fade out, then slide and fade in
-    Animated.sequence([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: activeIndex * SCREEN_WIDTH,
-          duration: 0,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-
-    // Animate selector position
+    // Animate selector position only
     Animated.spring(selectorAnim, {
       toValue: activeIndex,
       useNativeDriver: true,
@@ -83,15 +62,10 @@ export default function TabLayout() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Content Area with Fade Animation */}
-      <Animated.View
-        style={{
-          flex: 1,
-          opacity: fadeAnim,
-        }}
-      >
+      {/* Content Area */}
+      <View style={{ flex: 1 }}>
         <ActiveComponent />
-      </Animated.View>
+      </View>
 
       {/* Floating Bottom Menu with Glassmorphism */}
       <BlurView
@@ -142,6 +116,11 @@ export default function TabLayout() {
                 width: tabWidth,
                 borderRadius: 14,
                 overflow: 'hidden',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 3,
+                elevation: 3,
                 transform: [
                   {
                     translateX: selectorAnim.interpolate({
@@ -153,21 +132,13 @@ export default function TabLayout() {
               }}
             >
               <BlurView
-                intensity={100}
-                tint={colorScheme === 'dark' ? 'dark' : 'light'}
+                intensity={80}
+                tint={colorScheme === 'dark' ? 'prominent' : 'prominent'}
                 style={{
                   flex: 1,
                   backgroundColor: colorScheme === 'dark'
-                    ? 'rgba(59, 130, 246, 0.35)'
-                    : 'rgba(255, 255, 255, 0.7)',
-                  borderWidth: 1,
-                  borderColor: colorScheme === 'dark'
-                    ? 'rgba(59, 130, 246, 0.4)'
-                    : 'rgba(37, 99, 235, 0.3)',
-                  shadowColor: colors.primary,
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 4,
+                    ? 'rgba(255, 255, 255, 0.15)'
+                    : 'rgba(255, 255, 255, 0.9)',
                 }}
               />
             </Animated.View>

@@ -2,6 +2,7 @@ import { Text, View, TouchableOpacity, ScrollView, FlatList, Image } from "react
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { SearchBar } from "@/components/search-bar";
 import { useColors } from "@/hooks/use-colors";
 
 // Mock data for recent projects
@@ -14,7 +15,6 @@ const RECENT_PROJECTS = [
     photos: 24,
     date: "Today",
     status: "In Progress",
-    thumbnail: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop",
   },
   {
     id: "2",
@@ -24,7 +24,6 @@ const RECENT_PROJECTS = [
     photos: 12,
     date: "Yesterday",
     status: "In Progress",
-    thumbnail: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop",
   },
   {
     id: "3",
@@ -34,7 +33,6 @@ const RECENT_PROJECTS = [
     photos: 45,
     date: "3 days ago",
     status: "Completed",
-    thumbnail: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=400&h=300&fit=crop",
   },
   {
     id: "4",
@@ -44,7 +42,6 @@ const RECENT_PROJECTS = [
     photos: 38,
     date: "1 week ago",
     status: "In Progress",
-    thumbnail: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=400&h=300&fit=crop",
   },
 ];
 
@@ -88,6 +85,34 @@ const RECENT_IMAGES = [
   },
 ];
 
+// Mock data for recent locations
+const RECENT_LOCATIONS = [
+  {
+    id: "1",
+    name: "Downtown, NYC",
+    projects: 5,
+    lastVisit: "Today",
+  },
+  {
+    id: "2",
+    name: "Brooklyn, NY",
+    projects: 3,
+    lastVisit: "Yesterday",
+  },
+  {
+    id: "3",
+    name: "Queens, NY",
+    projects: 2,
+    lastVisit: "3 days ago",
+  },
+  {
+    id: "4",
+    name: "Manhattan, NY",
+    projects: 4,
+    lastVisit: "1 week ago",
+  },
+];
+
 export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
@@ -106,6 +131,10 @@ export default function HomeScreen() {
 
   const handleImageTap = (imageId: string) => {
     // TODO: Navigate to image detail screen
+  };
+
+  const handleLocationTap = (locationId: string) => {
+    // TODO: Navigate to location detail screen
   };
 
   const renderProjectCard = ({ item }: { item: typeof RECENT_PROJECTS[0] }) => (
@@ -216,35 +245,70 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
+  const renderLocationCard = ({ item }: { item: typeof RECENT_LOCATIONS[0] }) => (
+    <TouchableOpacity
+      onPress={() => handleLocationTap(item.id)}
+      style={{ marginRight: 16, width: 200 }}
+    >
+      <View
+        className="bg-surface rounded-2xl p-4 border border-border"
+        style={{ borderColor: colors.border }}
+      >
+        <View className="flex-row items-center mb-2">
+          <View
+            className="w-10 h-10 rounded-full items-center justify-center"
+            style={{ backgroundColor: colors.primary + "20" }}
+          >
+            <IconSymbol name="location.fill" size={20} color={colors.primary} />
+          </View>
+          <View className="flex-1 ml-3">
+            <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text className="text-xs text-muted mt-1">{item.lastVisit}</Text>
+          </View>
+        </View>
+        <View className="flex-row items-center mt-2">
+          <IconSymbol name="folder.fill" size={12} color={colors.muted} />
+          <Text className="text-xs text-muted" style={{ marginLeft: 4 }}>
+            {item.projects} projects
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
     <ScreenContainer className="p-0">
       <View className="flex-1 bg-background">
-        {/* Header */}
-        <View className="px-6 pt-6 pb-4 border-b border-border">
-          <View className="flex-row justify-between items-center mb-6">
+        {/* Modern Header */}
+        <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 16 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <View>
-              <Text className="text-3xl font-bold text-foreground">FieldCam</Text>
-              <Text className="text-sm text-muted mt-1">
-                Document your projects
+              <Text style={{ fontSize: 11, color: colors.muted, marginBottom: 4 }}>
+                Keep Moving Today!
+              </Text>
+              <Text style={{ fontSize: 28, fontWeight: '700', color: colors.foreground }}>
+                Hi, John Doe
               </Text>
             </View>
             <TouchableOpacity
               onPress={handleSettingsTap}
-              className="w-10 h-10 rounded-full items-center justify-center"
-              style={{ backgroundColor: colors.surface }}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: colors.surface,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              <IconSymbol name="person.fill" size={20} color={colors.primary} />
+              <IconSymbol name="person.fill" size={22} color={colors.primary} />
             </TouchableOpacity>
           </View>
 
           {/* Search Bar */}
-          <View
-            className="flex-row items-center px-4 py-2 rounded-xl border border-border"
-            style={{ backgroundColor: colors.surface }}
-          >
-            <IconSymbol name="magnifyingglass" size={16} color={colors.muted} />
-            <Text className="flex-1 text-muted" style={{ marginLeft: 12 }}>Search projects...</Text>
-          </View>
+          <SearchBar placeholder="Search projects, images..." />
         </View>
 
         {/* Content */}
@@ -253,8 +317,8 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Recent Projects Section */}
-          <View className="mt-6">
-            <View className="px-6 mb-4 flex-row justify-between items-center">
+          <View style={{ marginTop: 24 }}>
+            <View style={{ paddingHorizontal: 24, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text className="text-lg font-semibold text-foreground">
                 Recent Projects
               </Text>
@@ -272,13 +336,37 @@ export default function HomeScreen() {
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 24 }}
+              contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 4 }}
+            />
+          </View>
+
+          {/* Recent Locations Section */}
+          <View style={{ marginTop: 32 }}>
+            <View style={{ paddingHorizontal: 24, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text className="text-lg font-semibold text-foreground">
+                Recent Locations
+              </Text>
+              <TouchableOpacity>
+                <Text className="text-sm font-semibold" style={{ color: colors.primary }}>
+                  See All
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Horizontal Locations List */}
+            <FlatList
+              data={RECENT_LOCATIONS}
+              renderItem={renderLocationCard}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 4 }}
             />
           </View>
 
           {/* Recent Images Section */}
-          <View className="mt-8">
-            <View className="px-6 mb-4 flex-row justify-between items-center">
+          <View style={{ marginTop: 32 }}>
+            <View style={{ paddingHorizontal: 24, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text className="text-lg font-semibold text-foreground">
                 Recent Images
               </Text>
@@ -296,7 +384,7 @@ export default function HomeScreen() {
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 24 }}
+              contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 4 }}
             />
           </View>
 
