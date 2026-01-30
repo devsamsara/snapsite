@@ -26,9 +26,9 @@ export default function CameraScreen() {
             className="w-full py-4 rounded-xl items-center justify-center"
             style={{ backgroundColor: colors.primary }}
           >
-            <View className="flex-row items-center gap-2">
+            <View className="flex-row items-center">
               <IconSymbol name="camera.fill" size={20} color="#FFFFFF" />
-              <Text className="text-white font-semibold">Take Photo</Text>
+              <Text className="text-white font-semibold" style={{ marginLeft: 8 }}>Take Photo</Text>
             </View>
           </TouchableOpacity>
 
@@ -36,9 +36,9 @@ export default function CameraScreen() {
             className="w-full py-4 rounded-xl items-center justify-center border border-border"
             style={{ backgroundColor: colors.surface }}
           >
-            <View className="flex-row items-center gap-2">
+            <View className="flex-row items-center">
               <IconSymbol name="photo.stack.fill" size={20} color={colors.primary} />
-              <Text className="text-primary font-semibold">From Gallery</Text>
+              <Text className="text-primary font-semibold" style={{ marginLeft: 8 }}>From Gallery</Text>
             </View>
           </TouchableOpacity>
         </View>

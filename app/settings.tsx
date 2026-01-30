@@ -1,21 +1,39 @@
 import { ScrollView, Text, View, TouchableOpacity, Switch } from "react-native";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useThemeContext } from "@/lib/theme-provider";
 
 export default function SettingsScreen() {
   const router = useRouter();
   const colors = useColors();
+  const colorScheme = useColorScheme();
+  const { setColorScheme } = useThemeContext();
   
   // State for toggles
   const [pushNotifications, setPushNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(colorScheme === "dark");
+
+  // Update dark mode state when color scheme changes
+  useEffect(() => {
+    setDarkMode(colorScheme === "dark");
+  }, [colorScheme]);
+
+  const handleDarkModeToggle = (value: boolean) => {
+    setDarkMode(value);
+    setColorScheme(value ? "dark" : "light");
+  };
 
   const handleGoBack = () => {
     router.back();
+  };
+
+  const handleEditProfile = () => {
+    router.push("/edit-profile");
   };
 
   const handleLogout = () => {
@@ -31,8 +49,8 @@ export default function SettingsScreen() {
           <View className="flex-row items-center mb-6">
             <TouchableOpacity
               onPress={handleGoBack}
-              className="w-10 h-10 rounded-full items-center justify-center mr-3"
-              style={{ backgroundColor: colors.surface }}
+              className="w-10 h-10 rounded-full items-center justify-center"
+              style={{ backgroundColor: colors.surface, marginRight: 16 }}
             >
               <IconSymbol name="chevron.left" size={20} color={colors.foreground} />
             </TouchableOpacity>
@@ -54,14 +72,14 @@ export default function SettingsScreen() {
               className="bg-surface rounded-2xl p-4 border border-border mb-3"
               style={{ borderColor: colors.border }}
             >
-              <View className="flex-row items-center">
+              <TouchableOpacity onPress={handleEditProfile} className="flex-row items-center">
                 <View
                   className="w-16 h-16 rounded-full items-center justify-center"
                   style={{ backgroundColor: colors.primary }}
                 >
                   <IconSymbol name="person.fill" size={32} color="#FFFFFF" />
                 </View>
-                <View className="flex-1 ml-4">
+                <View className="flex-1" style={{ marginLeft: 16 }}>
                   <Text className="text-lg font-semibold text-foreground">
                     John Doe
                   </Text>
@@ -69,10 +87,8 @@ export default function SettingsScreen() {
                     john@example.com
                   </Text>
                 </View>
-                <TouchableOpacity>
-                  <IconSymbol name="chevron.right" size={20} color={colors.muted} />
-                </TouchableOpacity>
-              </View>
+                <IconSymbol name="chevron.right" size={20} color={colors.muted} />
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -90,7 +106,7 @@ export default function SettingsScreen() {
               <View className="flex-row items-center justify-between px-4 py-4 border-b border-border">
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="bell.fill" size={20} color={colors.primary} />
-                  <View className="ml-3 flex-1">
+                  <View className="flex-1" style={{ marginLeft: 16 }}>
                     <Text className="font-semibold text-foreground">
                       Push Notifications
                     </Text>
@@ -111,7 +127,7 @@ export default function SettingsScreen() {
               <View className="flex-row items-center justify-between px-4 py-4">
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="envelope.fill" size={20} color={colors.primary} />
-                  <View className="ml-3 flex-1">
+                  <View className="flex-1" style={{ marginLeft: 16 }}>
                     <Text className="font-semibold text-foreground">
                       Email Notifications
                     </Text>
@@ -143,7 +159,7 @@ export default function SettingsScreen() {
               <View className="flex-row items-center justify-between px-4 py-4">
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="moon.fill" size={20} color={colors.primary} />
-                  <View className="ml-3 flex-1">
+                  <View className="flex-1" style={{ marginLeft: 16 }}>
                     <Text className="font-semibold text-foreground">
                       Dark Mode
                     </Text>
@@ -154,7 +170,7 @@ export default function SettingsScreen() {
                 </View>
                 <Switch
                   value={darkMode}
-                  onValueChange={setDarkMode}
+                  onValueChange={handleDarkModeToggle}
                   trackColor={{ false: colors.border, true: colors.primary }}
                   thumbColor="#FFFFFF"
                 />
@@ -176,7 +192,7 @@ export default function SettingsScreen() {
               <TouchableOpacity className="flex-row items-center justify-between px-4 py-4 border-b border-border">
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="lock.fill" size={20} color={colors.primary} />
-                  <Text className="ml-3 font-semibold text-foreground">
+                  <Text className="font-semibold text-foreground" style={{ marginLeft: 16 }}>
                     Privacy
                   </Text>
                 </View>
@@ -187,7 +203,7 @@ export default function SettingsScreen() {
               <TouchableOpacity className="flex-row items-center justify-between px-4 py-4 border-b border-border">
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="internaldrive.fill" size={20} color={colors.primary} />
-                  <Text className="ml-3 font-semibold text-foreground">
+                  <Text className="font-semibold text-foreground" style={{ marginLeft: 16 }}>
                     Storage
                   </Text>
                 </View>
@@ -201,7 +217,7 @@ export default function SettingsScreen() {
               <TouchableOpacity className="flex-row items-center justify-between px-4 py-4 border-b border-border">
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="questionmark.circle.fill" size={20} color={colors.primary} />
-                  <Text className="ml-3 font-semibold text-foreground">
+                  <Text className="font-semibold text-foreground" style={{ marginLeft: 16 }}>
                     Help & Support
                   </Text>
                 </View>
@@ -212,7 +228,7 @@ export default function SettingsScreen() {
               <TouchableOpacity className="flex-row items-center justify-between px-4 py-4">
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
-                  <Text className="ml-3 font-semibold text-foreground">
+                  <Text className="font-semibold text-foreground" style={{ marginLeft: 16 }}>
                     About
                   </Text>
                 </View>
