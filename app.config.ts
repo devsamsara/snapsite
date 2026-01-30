@@ -34,9 +34,11 @@ const config: ExpoConfig = {
     ios: {
         supportsTablet: true,
         bundleIdentifier: env.iosBundleId,
-    infoPlist: {
-      UIBackgroundModes: ["remote-notification"],
-    },},
+        infoPlist: {
+            UIBackgroundModes: ["remote-notification"],
+            NSPhotoLibraryUsageDescription: "Necesitamos acceso a tu galería para seleccionar fotos"
+        },
+    },
     android: {
         adaptiveIcon: {
             backgroundColor: "#E6F4FE",
@@ -47,7 +49,11 @@ const config: ExpoConfig = {
         edgeToEdgeEnabled: true,
         predictiveBackGestureEnabled: false,
         package: env.androidPackage,
-        permissions: ["POST_NOTIFICATIONS"],
+        "permissions": [
+            "CAMERA",
+            "READ_EXTERNAL_STORAGE",
+            "WRITE_EXTERNAL_STORAGE"
+        ],
         intentFilters: [
             {
                 action: "VIEW",
@@ -68,14 +74,22 @@ const config: ExpoConfig = {
         favicon: "./assets/images/favicon.png",
     },
     plugins: [
-        "expo-router",[
-      "expo-notifications",
-      {
-        icon: "./assets/images/icon.png",
-        color: "#2563EB",
-        sounds: ["./assets/notification.wav"],
-      },
-    ],
+        [
+            "react-native-vision-camera",
+            {
+                "cameraPermissionText": "$(PRODUCT_NAME) necesita acceso a tu cámara",
+                "enableMicrophonePermission": true,
+                "microphonePermissionText": "$(PRODUCT_NAME) necesita acceso a tu micrófono"
+            }
+        ],
+        "expo-router", [
+            "expo-notifications",
+            {
+                icon: "./assets/images/icon.png",
+                color: "#2563EB",
+                sounds: ["./assets/notification.wav"],
+            },
+        ],
         [
             "expo-audio",
             {
