@@ -67,7 +67,7 @@ export default function ProfileScreen() {
                 borderColor: colors.border,
               }}
             >
-              <View className="flex-row items-center gap-3">
+              <View className="flex-row items-center flex-1">
                 <IconSymbol
                   name={item.icon as any}
                   size={20}
@@ -84,6 +84,7 @@ export default function ProfileScreen() {
                       item.color === "error"
                         ? colors.error
                         : colors.foreground,
+                    marginLeft: 16
                   }}
                 >
                   {item.label}

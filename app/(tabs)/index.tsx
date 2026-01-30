@@ -115,9 +115,9 @@ export default function HomeScreen() {
 
         {/* Footer Info */}
         <View className="flex-row justify-between items-center">
-          <View className="flex-row items-center gap-1">
+          <View className="flex-row items-center">
             <IconSymbol name="photo.stack.fill" size={14} color={colors.muted} />
-            <Text className="text-xs text-muted">{item.photos} photos</Text>
+            <Text className="text-xs text-muted" style={{ marginLeft: 6 }}>{item.photos} photos</Text>
           </View>
           <Text className="text-xs text-muted">{item.date}</Text>
         </View>

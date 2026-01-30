@@ -133,9 +133,9 @@ export default function ProjectsScreen() {
         </View>
 
         <View className="flex-row justify-between items-center">
-          <View className="flex-row items-center gap-1">
+          <View className="flex-row items-center">
             <IconSymbol name="photo.stack.fill" size={14} color={colors.muted} />
-            <Text className="text-xs text-muted">{item.photos} photos</Text>
+            <Text className="text-xs text-muted" style={{ marginLeft: 6 }}>{item.photos} photos</Text>
           </View>
           <Text className="text-xs text-muted">{item.date}</Text>
         </View>
@@ -159,7 +159,8 @@ export default function ProjectsScreen() {
           >
             <IconSymbol name="chevron.right" size={16} color={colors.muted} />
             <TextInput
-              className="flex-1 ml-2 text-foreground"
+              className="flex-1 text-foreground"
+              style={{ marginLeft: 12 }}
               placeholder="Search projects..."
               placeholderTextColor={colors.muted}
               value={searchText}
