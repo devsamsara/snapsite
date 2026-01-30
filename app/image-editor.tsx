@@ -22,7 +22,12 @@ interface DrawPath {
 export default function ImageEditorScreen() {
   const router = useRouter();
   const colors = useColors();
-  const { imageUri } = useLocalSearchParams<{ imageUri: string }>();
+  const { imageUri, latitude, longitude, address } = useLocalSearchParams<{ 
+    imageUri: string;
+    latitude?: string;
+    longitude?: string;
+    address?: string;
+  }>();
   const [currentImageUri, setCurrentImageUri] = useState(imageUri);
   const [editMode, setEditMode] = useState<EditMode>('none');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -166,14 +171,18 @@ export default function ImageEditorScreen() {
   };
 
   const handleSave = () => {
+    // Show location info if available
+    const locationInfo = address ? `\n\nUbicación: ${address}` : "";
+    
     Alert.alert(
       "Foto Guardada",
-      "La foto ha sido agregada al proyecto exitosamente.",
+      `La foto ha sido editada y está lista para guardar.${locationInfo}`,
       [
         {
           text: "OK",
           onPress: () => {
-            // Navigate back to project detail
+            // TODO: Save photo to project with location data
+            // For now, just go back
             router.dismissAll();
             router.back();
           },
