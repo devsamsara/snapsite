@@ -34,7 +34,9 @@ const config: ExpoConfig = {
     ios: {
         supportsTablet: true,
         bundleIdentifier: env.iosBundleId,
-    },
+    infoPlist: {
+      UIBackgroundModes: ["remote-notification"],
+    },},
     android: {
         adaptiveIcon: {
             backgroundColor: "#E6F4FE",
@@ -66,7 +68,14 @@ const config: ExpoConfig = {
         favicon: "./assets/images/favicon.png",
     },
     plugins: [
-        "expo-router",
+        "expo-router",[
+      "expo-notifications",
+      {
+        icon: "./assets/images/icon.png",
+        color: "#2563EB",
+        sounds: ["./assets/notification.wav"],
+      },
+    ],
         [
             "expo-audio",
             {
