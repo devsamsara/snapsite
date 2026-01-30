@@ -3,18 +3,22 @@ import { useRouter } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import * as ImagePicker from 'expo-image-picker';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function GalleryPickerScreen() {
   const router = useRouter();
   const colors = useColors();
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   useEffect(() => {
-    // Automatically open the image picker when the screen loads
-    pickImage();
+    if (!isPickerOpen) {
+      pickImage();
+    }
   }, []);
 
   const pickImage = async () => {
+    setIsPickerOpen(true);
+    
     // Request permission
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
@@ -23,31 +27,42 @@ export default function GalleryPickerScreen() {
         'Permiso Requerido',
         'Necesitamos acceso a tu galería para seleccionar fotos.',
         [
-          { text: 'Cancelar', onPress: () => router.back(), style: 'cancel' },
-          { text: 'Configuración', onPress: () => {
-            // TODO: Open app settings
-            router.back();
-          }},
+          { 
+            text: 'Cancelar', 
+            onPress: () => {
+              setIsPickerOpen(false);
+              router.back();
+            }, 
+            style: 'cancel' 
+          },
         ]
       );
       return;
     }
 
     // Launch image picker
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      // Navigate to image editor with the selected photo
-      router.push({
-        pathname: "/image-editor",
-        params: { imageUri: result.assets[0].uri }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 1,
       });
-    } else {
-      // User cancelled, go back
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        // Navigate to image editor with the selected photo
+        router.replace({
+          pathname: "/image-editor",
+          params: { imageUri: result.assets[0].uri }
+        });
+      } else {
+        // User cancelled, go back
+        setIsPickerOpen(false);
+        router.back();
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "No se pudo seleccionar la imagen");
+      setIsPickerOpen(false);
       router.back();
     }
   };
