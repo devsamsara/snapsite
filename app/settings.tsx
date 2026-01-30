@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, TouchableOpacity, Switch } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, Switch, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { ScreenContainer } from "@/components/screen-container";
@@ -6,12 +6,15 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useThemeContext } from "@/lib/theme-provider";
+import { useNotifications, scheduleTestNotification } from "@/hooks/use-notifications";
+import * as Notifications from 'expo-notifications';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const colors = useColors();
   const colorScheme = useColorScheme();
   const { setColorScheme } = useThemeContext();
+  const { expoPushToken } = useNotifications();
   
   // State for toggles
   const [pushNotifications, setPushNotifications] = useState(true);
@@ -26,6 +29,61 @@ export default function SettingsScreen() {
   const handleDarkModeToggle = (value: boolean) => {
     setDarkMode(value);
     setColorScheme(value ? "dark" : "light");
+  };
+
+  const handlePushNotificationsToggle = async (value: boolean) => {
+    if (value) {
+      // Request permissions
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Please enable notifications in your device settings to receive push notifications.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      
+      setPushNotifications(true);
+      
+      // Send a test notification
+      Alert.alert(
+        'Notifications Enabled',
+        'You will now receive push notifications. A test notification will be sent in 2 seconds.',
+        [
+          {
+            text: 'OK',
+            onPress: () => scheduleTestNotification(),
+          },
+        ]
+      );
+    } else {
+      setPushNotifications(false);
+      Alert.alert(
+        'Notifications Disabled',
+        'You will no longer receive push notifications.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleEmailNotificationsToggle = (value: boolean) => {
+    setEmailNotifications(value);
+    // TODO: Save to backend/preferences
+    Alert.alert(
+      value ? 'Email Notifications Enabled' : 'Email Notifications Disabled',
+      value
+        ? 'You will receive email updates about your projects.'
+        : 'You will no longer receive email notifications.',
+      [{ text: 'OK' }]
+    );
   };
 
   const handleGoBack = () => {
@@ -69,25 +127,56 @@ export default function SettingsScreen() {
               Profile
             </Text>
             <View
-              className="bg-surface rounded-2xl p-4 border border-border mb-3"
+              className="bg-surface rounded-2xl p-6 items-center border border-border mb-3"
               style={{ borderColor: colors.border }}
             >
-              <TouchableOpacity onPress={handleEditProfile} className="flex-row items-center">
-                <View
-                  className="w-16 h-16 rounded-full items-center justify-center"
-                  style={{ backgroundColor: colors.primary }}
-                >
-                  <IconSymbol name="person.fill" size={32} color="#FFFFFF" />
+              {/* Avatar */}
+              <View
+                className="w-20 h-20 rounded-full items-center justify-center mb-4"
+                style={{ backgroundColor: colors.primary }}
+              >
+                <IconSymbol name="person.fill" size={40} color="#FFFFFF" />
+              </View>
+
+              {/* User Info */}
+              <Text className="text-2xl font-bold text-foreground">John Doe</Text>
+              <Text className="text-sm text-muted mt-1">john@example.com</Text>
+              <Text className="text-sm text-muted mt-1">Project Manager</Text>
+
+              {/* Stats */}
+              <View className="flex-row gap-6 mt-6 pt-6 border-t border-border w-full">
+                <View className="flex-1 items-center">
+                  <Text className="text-2xl font-bold text-primary">12</Text>
+                  <Text className="text-xs text-muted mt-1">Projects</Text>
                 </View>
-                <View className="flex-1" style={{ marginLeft: 16 }}>
-                  <Text className="text-lg font-semibold text-foreground">
-                    John Doe
-                  </Text>
-                  <Text className="text-sm text-muted mt-1">
-                    john@example.com
+                <View className="flex-1 items-center">
+                  <Text className="text-2xl font-bold text-primary">245</Text>
+                  <Text className="text-xs text-muted mt-1">Photos</Text>
+                </View>
+                <View className="flex-1 items-center">
+                  <Text className="text-2xl font-bold text-primary">8</Text>
+                  <Text className="text-xs text-muted mt-1">Team Members</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Profile Menu Items */}
+            <View className="gap-3">
+              <TouchableOpacity
+                onPress={handleEditProfile}
+                className="flex-row items-center justify-between px-4 py-4 rounded-xl border border-border"
+                style={{
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                }}
+              >
+                <View className="flex-row items-center flex-1">
+                  <IconSymbol name="person.fill" size={20} color={colors.primary} />
+                  <Text className="font-semibold text-foreground" style={{ marginLeft: 16 }}>
+                    Edit Profile
                   </Text>
                 </View>
-                <IconSymbol name="chevron.right" size={20} color={colors.muted} />
+                <IconSymbol name="chevron.right" size={16} color={colors.muted} />
               </TouchableOpacity>
             </View>
           </View>
@@ -117,7 +206,7 @@ export default function SettingsScreen() {
                 </View>
                 <Switch
                   value={pushNotifications}
-                  onValueChange={setPushNotifications}
+                  onValueChange={handlePushNotificationsToggle}
                   trackColor={{ false: colors.border, true: colors.primary }}
                   thumbColor="#FFFFFF"
                 />
@@ -138,7 +227,7 @@ export default function SettingsScreen() {
                 </View>
                 <Switch
                   value={emailNotifications}
-                  onValueChange={setEmailNotifications}
+                  onValueChange={handleEmailNotificationsToggle}
                   trackColor={{ false: colors.border, true: colors.primary }}
                   thumbColor="#FFFFFF"
                 />
