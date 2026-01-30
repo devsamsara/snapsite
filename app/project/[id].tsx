@@ -86,34 +86,6 @@ export default function ProjectDetailScreen() {
     </TouchableOpacity>
   );
 
-  const renderActionButton = (icon: string, title: string, onPress?: () => void) => (
-    <TouchableOpacity
-      onPress={onPress}
-      style={{
-        alignItems: 'center',
-        gap: 8,
-      }}
-    >
-      <View
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: 28,
-          backgroundColor: colors.surface,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: colors.border,
-        }}
-      >
-        <IconSymbol name={icon as any} size={24} color={colors.foreground} />
-      </View>
-      <Text style={{ fontSize: 12, color: colors.foreground }}>
-        {title}
-      </Text>
-    </TouchableOpacity>
-  );
-
   const renderMenuItem = (icon: string, title: string, onPress?: () => void) => (
     <TouchableOpacity
       onPress={onPress}
@@ -149,6 +121,7 @@ export default function ProjectDetailScreen() {
   );
 
   if (showSettings) {
+    // Settings/Menu View
     return (
       <ScreenContainer className="p-0">
         <View className="flex-1 bg-background">
@@ -163,13 +136,6 @@ export default function ProjectDetailScreen() {
           </View>
 
           <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-            {/* Action Buttons Row */}
-            <View style={{ paddingHorizontal: 24, marginBottom: 24, flexDirection: 'row', justifyContent: 'space-around' }}>
-              {renderActionButton("square.and.arrow.up", "Compartir")}
-              {renderActionButton("bubble.left", "Comentar")}
-              {renderActionButton("ellipsis", "Menú")}
-            </View>
-
             {/* Project Info Card */}
             <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
               <View style={{ backgroundColor: colors.surface, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
@@ -193,7 +159,7 @@ export default function ProjectDetailScreen() {
                   {project.location}
                 </Text>
 
-                {/* Quick Action Buttons */}
+                {/* Action Buttons: Editar, Favorito, Compartir */}
                 <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
                   <TouchableOpacity
                     style={{
@@ -201,15 +167,15 @@ export default function ProjectDetailScreen() {
                       flexDirection: 'row',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      paddingVertical: 10,
-                      borderRadius: 12,
+                      paddingVertical: 12,
+                      borderRadius: 16,
                       backgroundColor: colors.background,
                       gap: 6,
                     }}
                   >
-                    <IconSymbol name="plus" size={16} color={colors.foreground} />
+                    <IconSymbol name="pencil" size={16} color={colors.foreground} />
                     <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
-                      Etiqueta
+                      Editar
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -218,15 +184,15 @@ export default function ProjectDetailScreen() {
                       flexDirection: 'row',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      paddingVertical: 10,
-                      borderRadius: 12,
+                      paddingVertical: 12,
+                      borderRadius: 16,
                       backgroundColor: colors.background,
                       gap: 6,
                     }}
                   >
-                    <IconSymbol name="plus" size={16} color={colors.foreground} />
+                    <IconSymbol name="star" size={16} color={colors.foreground} />
                     <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
-                      Descripción
+                      Favorito
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -235,240 +201,19 @@ export default function ProjectDetailScreen() {
                       flexDirection: 'row',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      paddingVertical: 10,
-                      borderRadius: 12,
+                      paddingVertical: 12,
+                      borderRadius: 16,
                       backgroundColor: colors.background,
                       gap: 6,
                     }}
                   >
-                    <IconSymbol name="plus" size={16} color={colors.foreground} />
+                    <IconSymbol name="square.and.arrow.up" size={16} color={colors.foreground} />
                     <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
-                      Contacto
+                      Compartir
                     </Text>
                   </TouchableOpacity>
                 </View>
               </View>
-            </View>
-
-            {/* Stats Cards */}
-            <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                {/* Tasks Card */}
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    backgroundColor: colors.surface,
-                    borderRadius: 20,
-                    padding: 16,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    alignItems: 'center',
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 24,
-                      backgroundColor: '#3B82F620',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: 12,
-                    }}
-                  >
-                    <IconSymbol name="checkmark.circle.fill" size={28} color="#3B82F6" />
-                  </View>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: 4 }}>
-                    Tareas
-                  </Text>
-                  <Text style={{ fontSize: 12, color: colors.muted }}>
-                    {project.tasks.remaining} Restante
-                  </Text>
-                  <TouchableOpacity
-                    style={{
-                      marginTop: 8,
-                      width: 28,
-                      height: 28,
-                      borderRadius: 14,
-                      backgroundColor: colors.background,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <IconSymbol name="plus" size={16} color={colors.foreground} />
-                  </TouchableOpacity>
-                </TouchableOpacity>
-
-                {/* Documents Card */}
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    backgroundColor: colors.surface,
-                    borderRadius: 20,
-                    padding: 16,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    alignItems: 'center',
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 24,
-                      backgroundColor: '#EC489820',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: 12,
-                    }}
-                  >
-                    <IconSymbol name="doc.fill" size={28} color="#EC4898" />
-                  </View>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: 4 }}>
-                    Documen...
-                  </Text>
-                  <Text style={{ fontSize: 12, color: colors.muted }}>
-                    {project.documents.total} Total
-                  </Text>
-                  <TouchableOpacity
-                    style={{
-                      marginTop: 8,
-                      width: 28,
-                      height: 28,
-                      borderRadius: 14,
-                      backgroundColor: colors.background,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <IconSymbol name="plus" size={16} color={colors.foreground} />
-                  </TouchableOpacity>
-                </TouchableOpacity>
-
-                {/* Payments Card */}
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    backgroundColor: colors.surface,
-                    borderRadius: 20,
-                    padding: 16,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    alignItems: 'center',
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 24,
-                      backgroundColor: '#84CC1620',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: 12,
-                    }}
-                  >
-                    <IconSymbol name="dollarsign.circle.fill" size={28} color="#84CC16" />
-                  </View>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground, marginBottom: 4 }}>
-                    Pagos
-                  </Text>
-                  <Text style={{ fontSize: 12, color: colors.muted }}>
-                    {project.payments.amount}
-                  </Text>
-                  <TouchableOpacity
-                    style={{
-                      marginTop: 8,
-                      width: 28,
-                      height: 28,
-                      borderRadius: 14,
-                      backgroundColor: colors.background,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <IconSymbol name="plus" size={16} color={colors.foreground} />
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Photos Section */}
-            <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground }}>
-                    Fotos
-                  </Text>
-                  <View
-                    style={{
-                      marginLeft: 8,
-                      paddingHorizontal: 8,
-                      paddingVertical: 2,
-                      borderRadius: 8,
-                      backgroundColor: colors.success + "20",
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <IconSymbol name="checkmark" size={12} color={colors.success} />
-                      <Text style={{ marginLeft: 4, fontSize: 12, fontWeight: '600', color: colors.success }}>
-                        Proyecto creado
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-                <TouchableOpacity>
-                  <IconSymbol name="plus" size={20} color={colors.foreground} />
-                </TouchableOpacity>
-              </View>
-
-              {/* Progress Bar */}
-              <View
-                style={{
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: colors.border,
-                  marginBottom: 16,
-                  overflow: 'hidden',
-                }}
-              >
-                <View
-                  style={{
-                    height: '100%',
-                    width: '100%',
-                    backgroundColor: colors.success,
-                    borderRadius: 4,
-                  }}
-                />
-              </View>
-
-              {/* Add Photos Button */}
-              <TouchableOpacity
-                style={{
-                  backgroundColor: colors.success + "20",
-                  borderRadius: 16,
-                  padding: 16,
-                  borderWidth: 2,
-                  borderColor: colors.success,
-                  marginBottom: 16,
-                }}
-              >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground, marginBottom: 4 }}>
-                      Agregar fotos
-                    </Text>
-                    <Text style={{ fontSize: 13, color: colors.muted }}>
-                      Monitorea el progreso y mantén a todos informados.
-                    </Text>
-                  </View>
-                  <IconSymbol name="chevron.right" size={20} color={colors.foreground} />
-                </View>
-              </TouchableOpacity>
-
-              <Text style={{ fontSize: 13, color: colors.muted, textAlign: 'center' }}>
-                Captura, sube y comparte fotos de tus proyectos.
-              </Text>
             </View>
 
             {/* Menu Items */}
@@ -647,220 +392,148 @@ export default function ProjectDetailScreen() {
     );
   }
 
+  // Main Detail View
   return (
     <ScreenContainer className="p-0">
       <View className="flex-1 bg-background">
-        {/* Header with Image */}
-        <View style={{ position: 'relative' }}>
-          <Image
-            source={{ uri: project.thumbnail }}
-            style={{ width: '100%', height: 200 }}
-            resizeMode="cover"
-          />
-          {/* Header Overlay */}
-          <View
+        {/* Header with Back Button and Menu */}
+        <View
+          style={{
+            paddingHorizontal: 24,
+            paddingTop: 16,
+            paddingBottom: 16,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <TouchableOpacity
+            onPress={handleGoBack}
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              paddingHorizontal: 24,
-              paddingTop: 16,
-              paddingBottom: 16,
-              flexDirection: 'row',
-              justifyContent: 'space-between',
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: colors.surface,
               alignItems: 'center',
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
+              justifyContent: 'center',
+              borderWidth: 1,
+              borderColor: colors.border,
             }}
           >
-            <TouchableOpacity
-              onPress={handleGoBack}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <IconSymbol name="chevron.left" size={20} color="#000" />
-            </TouchableOpacity>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <TouchableOpacity
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <IconSymbol name="square.and.arrow.up" size={20} color="#000" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <IconSymbol name="bubble.left" size={20} color="#000" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleMenuPress}
-                style={{
-                  paddingHorizontal: 16,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ fontSize: 15, fontWeight: '600', color: '#000' }}>
-                  Menú
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+            <IconSymbol name="chevron.left" size={20} color={colors.foreground} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleMenuPress}
+            style={{
+              paddingHorizontal: 16,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: colors.surface,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>
+              Menú
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Content */}
         <ScrollView
           contentContainerStyle={{ paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Project Info */}
-          <View style={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16 }}>
-            <Text style={{ fontSize: 24, fontWeight: '700', color: colors.foreground, marginBottom: 8 }}>
-              {project.name}
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <IconSymbol name="location.fill" size={16} color={colors.muted} />
-              <Text style={{ marginLeft: 6, fontSize: 15, color: colors.muted }}>
+          {/* Project Info Card */}
+          <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
+            <View style={{ backgroundColor: colors.surface, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
+              <View
+                style={{
+                  width: 100,
+                  height: 100,
+                  borderRadius: 24,
+                  backgroundColor: colors.border,
+                  marginBottom: 16,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <IconSymbol name="photo" size={40} color={colors.muted} />
+              </View>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: colors.foreground, marginBottom: 8, textAlign: 'center' }}>
+                {project.name}
+              </Text>
+              <Text style={{ fontSize: 14, color: colors.muted, textAlign: 'center', marginBottom: 20 }}>
                 {project.location}
               </Text>
-            </View>
-          </View>
 
-          {/* Stats Cards */}
-          <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              {/* Tasks Card */}
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: colors.surface,
-                  borderRadius: 16,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                  <View
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 18,
-                      backgroundColor: colors.primary + "20",
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <IconSymbol name="checkmark.circle.fill" size={20} color={colors.primary} />
-                  </View>
-                </View>
-                <Text style={{ fontSize: 24, fontWeight: '700', color: colors.foreground, marginBottom: 4 }}>
-                  {project.tasks.completed}/{project.tasks.total}
-                </Text>
-                <Text style={{ fontSize: 13, color: colors.muted }}>
-                  Tasks
-                </Text>
-              </View>
-
-              {/* Documents Card */}
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: colors.surface,
-                  borderRadius: 16,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                  <View
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 18,
-                      backgroundColor: colors.success + "20",
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <IconSymbol name="doc.fill" size={20} color={colors.success} />
-                  </View>
-                </View>
-                <Text style={{ fontSize: 24, fontWeight: '700', color: colors.foreground, marginBottom: 4 }}>
-                  {project.documents.total}
-                </Text>
-                <Text style={{ fontSize: 13, color: colors.muted }}>
-                  Documents
-                </Text>
-              </View>
-
-              {/* Team Card */}
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: colors.surface,
-                  borderRadius: 16,
-                  padding: 16,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                  <View
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 18,
-                      backgroundColor: '#F59E0B20',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <IconSymbol name="person.2.fill" size={20} color="#F59E0B" />
-                  </View>
-                </View>
-                <Text style={{ fontSize: 24, fontWeight: '700', color: colors.foreground, marginBottom: 4 }}>
-                  {project.users.length}
-                </Text>
-                <Text style={{ fontSize: 13, color: colors.muted }}>
-                  Team
-                </Text>
+              {/* Action Buttons: Editar, Favorito, Compartir */}
+              <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingVertical: 12,
+                    borderRadius: 16,
+                    backgroundColor: colors.background,
+                    gap: 6,
+                  }}
+                >
+                  <IconSymbol name="pencil" size={16} color={colors.foreground} />
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+                    Editar
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingVertical: 12,
+                    borderRadius: 16,
+                    backgroundColor: colors.background,
+                    gap: 6,
+                  }}
+                >
+                  <IconSymbol name="star" size={16} color={colors.foreground} />
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+                    Favorito
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingVertical: 12,
+                    borderRadius: 16,
+                    backgroundColor: colors.background,
+                    gap: 6,
+                  }}
+                >
+                  <IconSymbol name="square.and.arrow.up" size={16} color={colors.foreground} />
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+                    Compartir
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
 
           {/* Photos Section */}
-          <View>
+          <View style={{ marginBottom: 24 }}>
             <View style={{ paddingHorizontal: 24, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text style={{ fontSize: 18, fontWeight: '600', color: colors.foreground }}>
-                Photos ({project.photos.length})
+                Fotos ({project.photos.length})
               </Text>
               <TouchableOpacity>
                 <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>
-                  View All
+                  Ver Todas
                 </Text>
               </TouchableOpacity>
             </View>
@@ -873,6 +546,177 @@ export default function ProjectDetailScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 24 }}
             />
+          </View>
+
+          {/* Menu Items */}
+          <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
+            {renderMenuItem("photo.on.rectangle", "Crear Nueva Exhibición")}
+            {renderMenuItem("star", "Solicitar Reseñas")}
+            {renderMenuItem("map", "Obtener Direcciones")}
+            {renderMenuItem("rectangle.on.rectangle", "Administrar Grupos de Proyectos")}
+          </View>
+
+          {/* Configuration Section */}
+          <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground, marginBottom: 16 }}>
+              Configuración del Proyecto
+            </Text>
+
+            {/* Users Section */}
+            <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground, marginBottom: 12 }}>
+                Usuarios
+              </Text>
+              {project.users.map((user: any) => (
+                <View key={user.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                  <View
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 24,
+                      backgroundColor: colors.primary + "20",
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: 12,
+                    }}
+                  >
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary }}>
+                      {user.initials}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>
+                      {user.name}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: colors.muted }}>
+                      Última actividad: {user.lastActivity}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 12,
+                }}
+              >
+                <IconSymbol name="plus.circle" size={20} color={colors.foreground} />
+                <Text style={{ marginLeft: 8, fontSize: 15, fontWeight: '500', color: colors.foreground }}>
+                  Asignar
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Quick Actions */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  gap: 6,
+                }}
+              >
+                <IconSymbol name="plus" size={16} color={colors.foreground} />
+                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>
+                  Contacto
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  gap: 6,
+                }}
+              >
+                <IconSymbol name="plus" size={16} color={colors.foreground} />
+                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>
+                  Etiquetas
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  gap: 6,
+                }}
+              >
+                <IconSymbol name="plus" size={16} color={colors.foreground} />
+                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>
+                  Descripción
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  gap: 6,
+                }}
+              >
+                <IconSymbol name="plus" size={16} color={colors.foreground} />
+                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>
+                  Colaboradores
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Danger Zone */}
+          <View style={{ paddingHorizontal: 24 }}>
+            <TouchableOpacity
+              style={{
+                paddingVertical: 16,
+                borderRadius: 16,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+                alignItems: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>
+                Archivar proyecto
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{
+                paddingVertical: 16,
+                borderRadius: 16,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>
+                Borrar Proyecto
+              </Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </View>
