@@ -160,102 +160,85 @@ export default function HomeScreen() {
   const renderProjectCard = ({ item }: { item: typeof RECENT_PROJECTS[0] }) => (
     <TouchableOpacity
       onPress={() => handleProjectTap(item.id)}
-      style={{ marginRight: 16, width: 280 }}
+      style={{ marginRight: 16, width: 300 }}
     >
       <View
-        style={{
-          backgroundColor: item.color,
-          borderRadius: 20,
-          padding: 16,
-        }}
+        className="bg-surface rounded-2xl p-4 border border-border"
+        style={{ borderColor: colors.border }}
       >
         {/* Project Header */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 17, fontWeight: '600', color: '#FFFFFF' }} numberOfLines={1}>
+        <View className="flex-row justify-between items-start mb-3">
+          <View className="flex-1">
+            <Text className="text-lg font-semibold text-foreground" numberOfLines={1}>
               {item.name}
             </Text>
+            <Text className="text-sm text-muted mt-1">{item.location}</Text>
           </View>
-          <TouchableOpacity
+          <View
+            className="px-3 py-1 rounded-full"
             style={{
-              width: 28,
-              height: 28,
-              borderRadius: 14,
-              backgroundColor: 'rgba(255, 255, 255, 0.3)',
-              alignItems: 'center',
-              justifyContent: 'center',
+              backgroundColor:
+                item.status === "Completed"
+                  ? colors.success + "20"
+                  : colors.primary + "20",
             }}
           >
-            <IconSymbol name="ellipsis" size={16} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Status Badge */}
-        <View
-          style={{
-            alignSelf: 'flex-start',
-            paddingHorizontal: 10,
-            paddingVertical: 4,
-            borderRadius: 8,
-            backgroundColor: 'rgba(255, 255, 255, 0.25)',
-            marginBottom: 16,
-          }}
-        >
-          <Text style={{ fontSize: 12, fontWeight: '600', color: '#FFFFFF' }}>
-            {item.status}
-          </Text>
+            <Text
+              className="text-xs font-semibold"
+              style={{
+                color:
+                  item.status === "Completed"
+                    ? colors.success
+                    : colors.primary,
+              }}
+            >
+              {item.status}
+            </Text>
+          </View>
         </View>
 
         {/* Progress Bar */}
-        <View style={{ marginBottom: 16 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-            <Text style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.8)' }}>Progress</Text>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: '#FFFFFF' }}>
+        <View className="mb-3">
+          <View className="flex-row justify-between mb-2">
+            <Text className="text-xs text-muted">Progress</Text>
+            <Text className="text-xs font-semibold text-foreground">
               {item.progress}%
             </Text>
           </View>
           <View
-            style={{
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: 'rgba(255, 255, 255, 0.3)',
-              overflow: 'hidden',
-            }}
+            className="h-2 rounded-full overflow-hidden"
+            style={{ backgroundColor: colors.border }}
           >
             <View
+              className="h-full rounded-full"
               style={{
-                height: '100%',
                 width: `${item.progress}%`,
-                backgroundColor: '#FFFFFF',
-                borderRadius: 3,
+                backgroundColor: colors.primary,
               }}
             />
           </View>
         </View>
 
-        {/* Footer Info */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          {/* Documents and Comments */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <IconSymbol name="doc.fill" size={14} color="#FFFFFF" />
-              <Text style={{ marginLeft: 4, fontSize: 12, fontWeight: '500', color: '#FFFFFF' }}>
-                {item.documents} Documents
-              </Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <IconSymbol name="bubble.left.fill" size={14} color="#FFFFFF" />
-              <Text style={{ marginLeft: 4, fontSize: 12, fontWeight: '500', color: '#FFFFFF' }}>
-                {item.comments} Comments
-              </Text>
-            </View>
+        {/* Documents and Comments */}
+        <View className="flex-row items-center mb-3" style={{ gap: 12 }}>
+          <View className="flex-row items-center">
+            <IconSymbol name="doc.fill" size={14} color={colors.muted} />
+            <Text className="text-xs text-muted" style={{ marginLeft: 6 }}>
+              {item.documents} Documents
+            </Text>
+          </View>
+          <View className="flex-row items-center">
+            <IconSymbol name="bubble.left.fill" size={14} color={colors.muted} />
+            <Text className="text-xs text-muted" style={{ marginLeft: 6 }}>
+              {item.comments} Comments
+            </Text>
           </View>
         </View>
 
-        {/* Team Members and Date */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+        {/* Footer: Team Members and Date */}
+        <View className="flex-row justify-between items-center">
           {/* Team Avatars */}
-          <View style={{ flexDirection: 'row' }}>
+          <View className="flex-row">
             {item.teamMembers.slice(0, 3).map((member, index) => (
               <View
                 key={index}
@@ -263,27 +246,22 @@ export default function HomeScreen() {
                   width: 24,
                   height: 24,
                   borderRadius: 12,
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: colors.primary,
                   marginLeft: index > 0 ? -6 : 0,
                   borderWidth: 2,
-                  borderColor: item.color,
+                  borderColor: colors.surface,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <Text style={{ fontSize: 10, fontWeight: '600', color: item.color }}>
+                <Text style={{ fontSize: 10, fontWeight: '600', color: '#FFFFFF' }}>
                   {member}
                 </Text>
               </View>
             ))}
           </View>
           {/* Date */}
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <IconSymbol name="calendar" size={12} color="#FFFFFF" />
-            <Text style={{ marginLeft: 4, fontSize: 11, color: 'rgba(255, 255, 255, 0.9)' }}>
-              {item.date}
-            </Text>
-          </View>
+          <Text className="text-xs text-muted">{item.date}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -466,13 +444,15 @@ export default function HomeScreen() {
                     width: '48%',
                     aspectRatio: 1.5,
                     borderRadius: 16,
-                    backgroundColor: status.color,
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.border,
                     padding: 16,
                     justifyContent: 'space-between',
                   }}
                 >
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#FFFFFF' }}>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground }}>
                       {status.name}
                     </Text>
                     <View
@@ -480,15 +460,15 @@ export default function HomeScreen() {
                         width: 24,
                         height: 24,
                         borderRadius: 12,
-                        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                        backgroundColor: colors.primary + '20',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
-                      <IconSymbol name="plus" size={14} color="#FFFFFF" />
+                      <IconSymbol name="plus" size={14} color={colors.primary} />
                     </View>
                   </View>
-                  <Text style={{ fontSize: 24, fontWeight: '700', color: '#FFFFFF' }}>
+                  <Text style={{ fontSize: 24, fontWeight: '700', color: colors.foreground }}>
                     {status.count}
                   </Text>
                 </TouchableOpacity>
