@@ -111,82 +111,72 @@ export default function HomeScreen() {
   const renderProjectCard = ({ item }: { item: typeof RECENT_PROJECTS[0] }) => (
     <TouchableOpacity
       onPress={() => handleProjectTap(item.id)}
-      style={{ marginRight: 16, width: 280 }}
+      style={{ marginRight: 16, width: 300 }}
     >
       <View
-        className="bg-surface rounded-2xl overflow-hidden border border-border"
+        className="bg-surface rounded-2xl p-4 border border-border"
         style={{ borderColor: colors.border }}
       >
-        {/* Project Thumbnail */}
-        <Image
-          source={{ uri: item.thumbnail }}
-          style={{ width: '100%', height: 160 }}
-          resizeMode="cover"
-        />
-        
-        {/* Project Info */}
-        <View className="p-4">
-          {/* Header */}
-          <View className="flex-row justify-between items-start mb-2">
-            <View className="flex-1">
-              <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
-                {item.name}
-              </Text>
-              <Text className="text-xs text-muted mt-1">{item.location}</Text>
-            </View>
-            <View
-              className="px-2 py-1 rounded-full ml-2"
+        {/* Project Header */}
+        <View className="flex-row justify-between items-start mb-3">
+          <View className="flex-1">
+            <Text className="text-lg font-semibold text-foreground" numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text className="text-sm text-muted mt-1">{item.location}</Text>
+          </View>
+          <View
+            className="px-3 py-1 rounded-full"
+            style={{
+              backgroundColor:
+                item.status === "Completed"
+                  ? colors.success + "20"
+                  : colors.primary + "20",
+            }}
+          >
+            <Text
+              className="text-xs font-semibold"
               style={{
-                backgroundColor:
+                color:
                   item.status === "Completed"
-                    ? colors.success + "20"
-                    : colors.primary + "20",
+                    ? colors.success
+                    : colors.primary,
               }}
             >
-              <Text
-                className="text-xs font-semibold"
-                style={{
-                  color:
-                    item.status === "Completed"
-                      ? colors.success
-                      : colors.primary,
-                }}
-              >
-                {item.status}
-              </Text>
-            </View>
+              {item.status}
+            </Text>
           </View>
+        </View>
 
-          {/* Progress Bar */}
-          <View className="mb-3">
-            <View className="flex-row justify-between mb-1">
-              <Text className="text-xs text-muted">Progress</Text>
-              <Text className="text-xs font-semibold text-foreground">
-                {item.progress}%
-              </Text>
-            </View>
+        {/* Progress Bar */}
+        <View className="mb-3">
+          <View className="flex-row justify-between mb-2">
+            <Text className="text-xs text-muted">Progress</Text>
+            <Text className="text-xs font-semibold text-foreground">
+              {item.progress}%
+            </Text>
+          </View>
+          <View
+            className="h-2 rounded-full overflow-hidden"
+            style={{ backgroundColor: colors.border }}
+          >
             <View
-              className="h-1.5 rounded-full overflow-hidden"
-              style={{ backgroundColor: colors.border }}
-            >
-              <View
-                className="h-full rounded-full"
-                style={{
-                  width: `${item.progress}%`,
-                  backgroundColor: colors.primary,
-                }}
-              />
-            </View>
+              className="h-full rounded-full"
+              style={{
+                width: `${item.progress}%`,
+                backgroundColor: colors.primary,
+              }}
+            />
           </View>
+        </View>
 
-          {/* Footer Info */}
-          <View className="flex-row justify-between items-center">
-            <View className="flex-row items-center">
-              <IconSymbol name="photo.stack.fill" size={12} color={colors.muted} />
-              <Text className="text-xs text-muted" style={{ marginLeft: 4 }}>{item.photos} photos</Text>
-            </View>
-            <Text className="text-xs text-muted">{item.date}</Text>
+        {/* Footer Info */}
+        <View className="flex-row justify-between items-center">
+          <View className="flex-row items-center">
+            <IconSymbol name="photo.stack.fill" size={14} color={colors.muted} />
+            <Text className="text-xs text-muted" style={{ marginLeft: 6 }}>{item.photos} photos</Text>
           </View>
+          <Text className="text-xs text-muted">{item.date}</Text>
         </View>
       </View>
     </TouchableOpacity>

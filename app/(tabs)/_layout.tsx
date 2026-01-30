@@ -131,7 +131,7 @@ export default function TabLayout() {
             setTabWidth((width - 12) / tabs.length);
           }}
         >
-          {/* Animated Selector Background */}
+          {/* Animated Selector Background with Glassmorphism */}
           {tabWidth > 0 && (
             <Animated.View
               style={{
@@ -140,10 +140,8 @@ export default function TabLayout() {
                 top: 6,
                 bottom: 6,
                 width: tabWidth,
-                backgroundColor: colorScheme === 'dark'
-                  ? 'rgba(59, 130, 246, 0.3)'
-                  : 'rgba(37, 99, 235, 0.2)',
                 borderRadius: 14,
+                overflow: 'hidden',
                 transform: [
                   {
                     translateX: selectorAnim.interpolate({
@@ -153,7 +151,26 @@ export default function TabLayout() {
                   },
                 ],
               }}
-            />
+            >
+              <BlurView
+                intensity={100}
+                tint={colorScheme === 'dark' ? 'dark' : 'light'}
+                style={{
+                  flex: 1,
+                  backgroundColor: colorScheme === 'dark'
+                    ? 'rgba(59, 130, 246, 0.35)'
+                    : 'rgba(255, 255, 255, 0.7)',
+                  borderWidth: 1,
+                  borderColor: colorScheme === 'dark'
+                    ? 'rgba(59, 130, 246, 0.4)'
+                    : 'rgba(37, 99, 235, 0.3)',
+                  shadowColor: colors.primary,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 4,
+                }}
+              />
+            </Animated.View>
           )}
 
           {/* Tab Buttons */}
