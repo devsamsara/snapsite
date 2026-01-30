@@ -133,12 +133,12 @@ export default function TabLayout() {
             >
               <BlurView
                 intensity={80}
-                tint={colorScheme === 'dark' ? 'prominent' : 'prominent'}
+                tint={colorScheme === 'dark' ? 'prominent' : 'light'}
                 style={{
                   flex: 1,
                   backgroundColor: colorScheme === 'dark'
                     ? 'rgba(255, 255, 255, 0.15)'
-                    : 'rgba(255, 255, 255, 0.9)',
+                    : 'rgba(37, 99, 235, 0.25)',
                 }}
               />
             </Animated.View>
