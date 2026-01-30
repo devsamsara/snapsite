@@ -54,6 +54,10 @@ export default function ProjectDetailScreen() {
     setShowSettings(!showSettings);
   };
 
+  const handleAddPhoto = () => {
+    router.push("/add-photo-modal");
+  };
+
   const handleImageTap = (imageId: string) => {
     // TODO: Navigate to image detail/fullscreen view
   };
@@ -526,197 +530,82 @@ export default function ProjectDetailScreen() {
           </View>
 
           {/* Photos Section */}
-          <View style={{ marginBottom: 24 }}>
-            <View style={{ paddingHorizontal: 24, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 18, fontWeight: '600', color: colors.foreground }}>
-                Fotos ({project.photos.length})
-              </Text>
-              <TouchableOpacity>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.primary }}>
-                  Ver Todas
+          <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground }}>
+                  Fotos
                 </Text>
-              </TouchableOpacity>
-            </View>
-
-            <FlatList
-              data={project.photos}
-              renderItem={renderPhotoItem}
-              keyExtractor={(item) => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 24 }}
-            />
-          </View>
-
-          {/* Menu Items */}
-          <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
-            {renderMenuItem("photo.on.rectangle", "Crear Nueva Exhibición")}
-            {renderMenuItem("star", "Solicitar Reseñas")}
-            {renderMenuItem("map", "Obtener Direcciones")}
-            {renderMenuItem("rectangle.on.rectangle", "Administrar Grupos de Proyectos")}
-          </View>
-
-          {/* Configuration Section */}
-          <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
-            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground, marginBottom: 16 }}>
-              Configuración del Proyecto
-            </Text>
-
-            {/* Users Section */}
-            <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground, marginBottom: 12 }}>
-                Usuarios
-              </Text>
-              {project.users.map((user: any) => (
-                <View key={user.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                  <View
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 24,
-                      backgroundColor: colors.primary + "20",
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: 12,
-                    }}
-                  >
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary }}>
-                      {user.initials}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>
-                      {user.name}
-                    </Text>
-                    <Text style={{ fontSize: 13, color: colors.muted }}>
-                      Última actividad: {user.lastActivity}
+                <View
+                  style={{
+                    marginLeft: 8,
+                    paddingHorizontal: 8,
+                    paddingVertical: 2,
+                    borderRadius: 8,
+                    backgroundColor: colors.success + "20",
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <IconSymbol name="checkmark" size={12} color={colors.success} />
+                    <Text style={{ marginLeft: 4, fontSize: 12, fontWeight: '600', color: colors.success }}>
+                      Proyecto creado
                     </Text>
                   </View>
                 </View>
-              ))}
-              <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingVertical: 12,
-                }}
-              >
-                <IconSymbol name="plus.circle" size={20} color={colors.foreground} />
-                <Text style={{ marginLeft: 8, fontSize: 15, fontWeight: '500', color: colors.foreground }}>
-                  Asignar
-                </Text>
+              </View>
+              <TouchableOpacity onPress={handleAddPhoto}>
+                <IconSymbol name="plus" size={20} color={colors.foreground} />
               </TouchableOpacity>
             </View>
 
-            {/* Quick Actions */}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
-              <TouchableOpacity
+            {/* Progress Bar */}
+            <View
+              style={{
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: colors.border,
+                marginBottom: 16,
+                overflow: 'hidden',
+              }}
+            >
+              <View
                 style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 12,
-                  backgroundColor: colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  gap: 6,
+                  height: '100%',
+                  width: '100%',
+                  backgroundColor: colors.success,
+                  borderRadius: 4,
                 }}
-              >
-                <IconSymbol name="plus" size={16} color={colors.foreground} />
-                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>
-                  Contacto
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 12,
-                  backgroundColor: colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  gap: 6,
-                }}
-              >
-                <IconSymbol name="plus" size={16} color={colors.foreground} />
-                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>
-                  Etiquetas
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 12,
-                  backgroundColor: colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  gap: 6,
-                }}
-              >
-                <IconSymbol name="plus" size={16} color={colors.foreground} />
-                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>
-                  Descripción
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 12,
-                  backgroundColor: colors.surface,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  gap: 6,
-                }}
-              >
-                <IconSymbol name="plus" size={16} color={colors.foreground} />
-                <Text style={{ fontSize: 14, fontWeight: '500', color: colors.foreground }}>
-                  Colaboradores
-                </Text>
-              </TouchableOpacity>
+              />
             </View>
-          </View>
 
-          {/* Danger Zone */}
-          <View style={{ paddingHorizontal: 24 }}>
+            {/* Add Photos Button */}
             <TouchableOpacity
+              onPress={handleAddPhoto}
               style={{
-                paddingVertical: 16,
+                backgroundColor: colors.success + "20",
                 borderRadius: 16,
-                backgroundColor: colors.surface,
-                borderWidth: 1,
-                borderColor: colors.border,
-                alignItems: 'center',
-                marginBottom: 12,
+                padding: 16,
+                borderWidth: 2,
+                borderColor: colors.success,
+                marginBottom: 16,
               }}
             >
-              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>
-                Archivar proyecto
-              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground, marginBottom: 4 }}>
+                    Agregar fotos
+                  </Text>
+                  <Text style={{ fontSize: 13, color: colors.muted }}>
+                    Monitorea el progreso y mantén a todos informados.
+                  </Text>
+                </View>
+                <IconSymbol name="chevron.right" size={20} color={colors.foreground} />
+              </View>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={{
-                paddingVertical: 16,
-                borderRadius: 16,
-                backgroundColor: colors.surface,
-                borderWidth: 1,
-                borderColor: colors.border,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.foreground }}>
-                Borrar Proyecto
-              </Text>
-            </TouchableOpacity>
+            <Text style={{ fontSize: 13, color: colors.muted, textAlign: 'center' }}>
+              Captura, sube y comparte fotos de tus proyectos.
+            </Text>
           </View>
         </ScrollView>
       </View>
