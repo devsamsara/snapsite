@@ -4,7 +4,8 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { useState, useRef } from 'react';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { Canvas, Path, Skia, useCanvasRef, useTouchHandler } from '@shopify/react-native-skia';
+import { Canvas, Path, Skia } from '@shopify/react-native-skia';
+import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { captureRef } from 'react-native-view-shot';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -31,7 +32,6 @@ export default function ImageEditorScreen() {
   const [currentPath, setCurrentPath] = useState<any>(null);
   const [drawColor, setDrawColor] = useState('#FF0000');
   const [strokeWidth, setStrokeWidth] = useState(5);
-  const canvasRef = useRef<View>(null);
   const imageViewRef = useRef<View>(null);
 
   if (!imageUri) {
@@ -42,19 +42,21 @@ export default function ImageEditorScreen() {
     );
   }
 
-  const onDrawingStart = useTouchHandler({
-    onStart: ({ x, y }) => {
+  // Pan gesture for drawing
+  const panGesture = Gesture.Pan()
+    .onStart((event) => {
       const newPath = Skia.Path.Make();
-      newPath.moveTo(x, y);
+      newPath.moveTo(event.x, event.y);
       setCurrentPath(newPath);
-    },
-    onActive: ({ x, y }) => {
+    })
+    .onUpdate((event) => {
       if (currentPath) {
-        currentPath.lineTo(x, y);
-        setCurrentPath(currentPath.copy());
+        const updatedPath = currentPath.copy();
+        updatedPath.lineTo(event.x, event.y);
+        setCurrentPath(updatedPath);
       }
-    },
-    onEnd: () => {
+    })
+    .onEnd(() => {
       if (currentPath) {
         setPaths([...paths, {
           path: currentPath.toSVGString(),
@@ -63,8 +65,7 @@ export default function ImageEditorScreen() {
         }]);
         setCurrentPath(null);
       }
-    },
-  });
+    });
 
   const handleClearDrawing = () => {
     setPaths([]);
@@ -200,222 +201,223 @@ export default function ImageEditorScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={handleCancel}
-          style={styles.headerButton}
-        >
-          <Text style={styles.cancelText}>Cancelar</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Editar Foto</Text>
-        <TouchableOpacity
-          onPress={handleSave}
-          disabled={isProcessing}
-          style={[styles.headerButton, isProcessing && styles.disabledButton]}
-        >
-          <Text style={[styles.saveText, { color: colors.primary }]}>Guardar</Text>
-        </TouchableOpacity>
-      </View>
+    <GestureHandlerRootView style={styles.container}>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={handleCancel}
+            style={styles.headerButton}
+          >
+            <Text style={styles.cancelText}>Cancelar</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Editar Foto</Text>
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={isProcessing}
+            style={[styles.headerButton, isProcessing && styles.disabledButton]}
+          >
+            <Text style={[styles.saveText, { color: colors.primary }]}>Guardar</Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Image Preview with Drawing Canvas */}
-      <View style={styles.imageContainer}>
-        <View ref={imageViewRef} collapsable={false}>
-          <Image
-            source={{ uri: currentImageUri }}
-            style={styles.image}
-            resizeMode="contain"
-          />
-          {editMode === 'draw' && (
-            <Canvas
-              style={styles.canvas}
-              onTouch={onDrawingStart}
-            >
-              {paths.map((p, index) => {
-                const path = Skia.Path.MakeFromSVGString(p.path);
-                return path ? (
-                  <Path
-                    key={index}
-                    path={path}
-                    color={p.color}
-                    style="stroke"
-                    strokeWidth={p.strokeWidth}
-                    strokeCap="round"
-                    strokeJoin="round"
-                  />
-                ) : null;
-              })}
-              {currentPath && (
-                <Path
-                  path={currentPath}
-                  color={drawColor}
-                  style="stroke"
-                  strokeWidth={strokeWidth}
-                  strokeCap="round"
-                  strokeJoin="round"
-                />
-              )}
-            </Canvas>
+        {/* Image Preview with Drawing Canvas */}
+        <View style={styles.imageContainer}>
+          <View ref={imageViewRef} collapsable={false}>
+            <Image
+              source={{ uri: currentImageUri }}
+              style={styles.image}
+              resizeMode="contain"
+            />
+            {editMode === 'draw' && (
+              <GestureDetector gesture={panGesture}>
+                <Canvas style={styles.canvas}>
+                  {paths.map((p, index) => {
+                    const path = Skia.Path.MakeFromSVGString(p.path);
+                    return path ? (
+                      <Path
+                        key={index}
+                        path={path}
+                        color={p.color}
+                        style="stroke"
+                        strokeWidth={p.strokeWidth}
+                        strokeCap="round"
+                        strokeJoin="round"
+                      />
+                    ) : null;
+                  })}
+                  {currentPath && (
+                    <Path
+                      path={currentPath}
+                      color={drawColor}
+                      style="stroke"
+                      strokeWidth={strokeWidth}
+                      strokeCap="round"
+                      strokeJoin="round"
+                    />
+                  )}
+                </Canvas>
+              </GestureDetector>
+            )}
+          </View>
+          
+          {isProcessing && (
+            <View style={styles.processingOverlay}>
+              <Text style={styles.processingText}>Procesando...</Text>
+            </View>
           )}
         </View>
-        
-        {isProcessing && (
-          <View style={styles.processingOverlay}>
-            <Text style={styles.processingText}>Procesando...</Text>
+
+        {/* Edit Mode Panels */}
+        {editMode === 'crop' && (
+          <View style={styles.panel}>
+            <Text style={styles.panelTitle}>Recortar Imagen</Text>
+            <Text style={styles.panelDescription}>Se recortará al centro en formato cuadrado</Text>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                onPress={handleCrop}
+                style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+              >
+                <Text style={styles.primaryButtonText}>Aplicar Recorte</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setEditMode('none')}
+                style={styles.secondaryButton}
+              >
+                <Text style={styles.secondaryButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
-      </View>
 
-      {/* Edit Mode Panels */}
-      {editMode === 'crop' && (
-        <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Recortar Imagen</Text>
-          <Text style={styles.panelDescription}>Se recortará al centro en formato cuadrado</Text>
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              onPress={handleCrop}
-              style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-            >
-              <Text style={styles.primaryButtonText}>Aplicar Recorte</Text>
-            </TouchableOpacity>
+        {editMode === 'draw' && (
+          <View style={styles.panel}>
+            <Text style={styles.panelTitle}>Dibujar</Text>
+            
+            {/* Color Picker */}
+            <View style={styles.colorPicker}>
+              {['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFFFFF', '#000000'].map((color) => (
+                <TouchableOpacity
+                  key={color}
+                  onPress={() => setDrawColor(color)}
+                  style={[
+                    styles.colorButton,
+                    { backgroundColor: color },
+                    drawColor === color && styles.selectedColor,
+                  ]}
+                />
+              ))}
+            </View>
+
+            {/* Stroke Width Selector */}
+            <View style={styles.strokeWidthContainer}>
+              <Text style={styles.strokeWidthLabel}>Grosor:</Text>
+              {[3, 5, 8, 12].map((width) => (
+                <TouchableOpacity
+                  key={width}
+                  onPress={() => setStrokeWidth(width)}
+                  style={[
+                    styles.strokeWidthButton,
+                    strokeWidth === width && styles.selectedStrokeWidth,
+                  ]}
+                >
+                  <Text style={styles.strokeWidthText}>{width}px</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                onPress={handleSaveDrawing}
+                style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+                disabled={paths.length === 0}
+              >
+                <Text style={styles.primaryButtonText}>Aplicar Dibujo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleClearDrawing}
+                style={styles.secondaryButton}
+              >
+                <Text style={styles.secondaryButtonText}>Limpiar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setPaths([]);
+                  setCurrentPath(null);
+                  setEditMode('none');
+                }}
+                style={styles.secondaryButton}
+              >
+                <Text style={styles.secondaryButtonText}>Cerrar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {editMode === 'adjust' && (
+          <View style={styles.panel}>
+            <Text style={styles.panelTitle}>Ajustes</Text>
+            <View style={styles.adjustButtons}>
+              <TouchableOpacity
+                onPress={handleRotate}
+                style={styles.adjustButton}
+              >
+                <IconSymbol name="rotate.right" size={24} color="#FFFFFF" />
+                <Text style={styles.adjustButtonText}>Rotar 90°</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleFlip}
+                style={styles.adjustButton}
+              >
+                <IconSymbol name="arrow.left.and.right.righttriangle.left.righttriangle.right" size={24} color="#FFFFFF" />
+                <Text style={styles.adjustButtonText}>Voltear</Text>
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity
               onPress={() => setEditMode('none')}
-              style={styles.secondaryButton}
-            >
-              <Text style={styles.secondaryButtonText}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      {editMode === 'draw' && (
-        <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Dibujar</Text>
-          
-          {/* Color Picker */}
-          <View style={styles.colorPicker}>
-            {['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFFFFF', '#000000'].map((color) => (
-              <TouchableOpacity
-                key={color}
-                onPress={() => setDrawColor(color)}
-                style={[
-                  styles.colorButton,
-                  { backgroundColor: color },
-                  drawColor === color && styles.selectedColor,
-                ]}
-              />
-            ))}
-          </View>
-
-          {/* Stroke Width Selector */}
-          <View style={styles.strokeWidthContainer}>
-            <Text style={styles.strokeWidthLabel}>Grosor:</Text>
-            {[3, 5, 8, 12].map((width) => (
-              <TouchableOpacity
-                key={width}
-                onPress={() => setStrokeWidth(width)}
-                style={[
-                  styles.strokeWidthButton,
-                  strokeWidth === width && styles.selectedStrokeWidth,
-                ]}
-              >
-                <Text style={styles.strokeWidthText}>{width}px</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              onPress={handleSaveDrawing}
-              style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-              disabled={paths.length === 0}
-            >
-              <Text style={styles.primaryButtonText}>Aplicar Dibujo</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleClearDrawing}
-              style={styles.secondaryButton}
-            >
-              <Text style={styles.secondaryButtonText}>Limpiar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                setPaths([]);
-                setCurrentPath(null);
-                setEditMode('none');
-              }}
               style={styles.secondaryButton}
             >
               <Text style={styles.secondaryButtonText}>Cerrar</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      )}
+        )}
 
-      {editMode === 'adjust' && (
-        <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Ajustes</Text>
-          <View style={styles.adjustButtons}>
+        {/* Bottom Toolbar */}
+        {editMode === 'none' && (
+          <View style={styles.toolbar}>
             <TouchableOpacity
-              onPress={handleRotate}
-              style={styles.adjustButton}
+              onPress={() => setEditMode('crop')}
+              style={styles.toolButton}
             >
-              <IconSymbol name="rotate.right" size={24} color="#FFFFFF" />
-              <Text style={styles.adjustButtonText}>Rotar 90°</Text>
+              <View style={styles.toolIcon}>
+                <IconSymbol name="crop" size={24} color="#FFFFFF" />
+              </View>
+              <Text style={styles.toolLabel}>Recortar</Text>
             </TouchableOpacity>
+
             <TouchableOpacity
-              onPress={handleFlip}
-              style={styles.adjustButton}
+              onPress={() => setEditMode('draw')}
+              style={styles.toolButton}
             >
-              <IconSymbol name="arrow.left.and.right.righttriangle.left.righttriangle.right" size={24} color="#FFFFFF" />
-              <Text style={styles.adjustButtonText}>Voltear</Text>
+              <View style={styles.toolIcon}>
+                <IconSymbol name="pencil.tip.crop.circle" size={24} color="#FFFFFF" />
+              </View>
+              <Text style={styles.toolLabel}>Dibujar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setEditMode('adjust')}
+              style={styles.toolButton}
+            >
+              <View style={styles.toolIcon}>
+                <IconSymbol name="slider.horizontal.3" size={24} color="#FFFFFF" />
+              </View>
+              <Text style={styles.toolLabel}>Ajustes</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            onPress={() => setEditMode('none')}
-            style={styles.secondaryButton}
-          >
-            <Text style={styles.secondaryButtonText}>Cerrar</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Bottom Toolbar */}
-      {editMode === 'none' && (
-        <View style={styles.toolbar}>
-          <TouchableOpacity
-            onPress={() => setEditMode('crop')}
-            style={styles.toolButton}
-          >
-            <View style={styles.toolIcon}>
-              <IconSymbol name="crop" size={24} color="#FFFFFF" />
-            </View>
-            <Text style={styles.toolLabel}>Recortar</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setEditMode('draw')}
-            style={styles.toolButton}
-          >
-            <View style={styles.toolIcon}>
-              <IconSymbol name="pencil.tip.crop.circle" size={24} color="#FFFFFF" />
-            </View>
-            <Text style={styles.toolLabel}>Dibujar</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setEditMode('adjust')}
-            style={styles.toolButton}
-          >
-            <View style={styles.toolIcon}>
-              <IconSymbol name="slider.horizontal.3" size={24} color="#FFFFFF" />
-            </View>
-            <Text style={styles.toolLabel}>Ajustes</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
+        )}
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
