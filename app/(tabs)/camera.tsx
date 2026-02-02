@@ -1,7 +1,7 @@
 // components/AdvancedCameraUI.tsx
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
-import { Camera, useCameraDevice } from 'react-native-vision-camera';
+// import { Camera, useCameraDevice } from 'react-native-vision-camera';
 
 export const CameraScreen: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
@@ -12,17 +12,17 @@ export const CameraScreen: React.FC = () => {
   const [stampDateTime, setStampDateTime] = useState(false);
   const [mode, setMode] = useState<'photo' | 'video' | 'scan'>('photo');
 
-  const device = useCameraDevice('back');
+  // const device = useCameraDevice('back');
 
   return (
       <View style={styles.container}>
-        <Camera
-            device={device!}
-            isActive={true}
-            style={StyleSheet.absoluteFill}
-            photo={mode === 'photo'}
-            video={mode === 'video'}
-        />
+        {/*<Camera*/}
+        {/*    device={device!}*/}
+        {/*    isActive={true}*/}
+        {/*    style={StyleSheet.absoluteFill}*/}
+        {/*    photo={mode === 'photo'}*/}
+        {/*    video={mode === 'video'}*/}
+        {/*/>*/}
 
         {/* Settings Overlay */}
         {showSettings && (
