@@ -1,320 +1,305 @@
-import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
-import * as ImagePicker from "expo-image-picker";
-import * as Location from "expo-location";
-import { useRouter } from "expo-router";
-import { FlipHorizontal, Image as ImageIcon, Camera } from "lucide-react-native";
-import React, { useState, useRef } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  Platform,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useColors } from "@/hooks/use-colors";
+// components/AdvancedCameraUI.tsx
+import React, { useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { Camera, useCameraDevice } from 'react-native-vision-camera';
 
-export default function CameraScreen() {
-  const router = useRouter();
-  const colors = useColors();
-  const cameraRef = useRef<CameraView>(null);
-  const [facing, setFacing] = useState<CameraType>("back");
-  const [permission, requestPermission] = useCameraPermissions();
-  const [isCapturing, setIsCapturing] = useState(false);
+export const CameraScreen: React.FC = () => {
+  const [showSettings, setShowSettings] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState<'4:3' | '16:9'>('4:3');
+  const [showGrid, setShowGrid] = useState(false);
+  const [showLevel, setShowLevel] = useState(false);
+  const [stampGPS, setStampGPS] = useState(false);
+  const [stampDateTime, setStampDateTime] = useState(false);
+  const [mode, setMode] = useState<'photo' | 'video' | 'scan'>('photo');
 
-  const getLocation = async () => {
-    if (Platform.OS === "web") {
-      return null;
-    }
-
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        return null;
-      }
-
-      const loc = await Location.getCurrentPositionAsync({});
-      const addresses = await Location.reverseGeocodeAsync({
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-      });
-
-      const address = addresses[0];
-      const addressString = address
-        ? `${address.street || ""} ${address.city || ""}, ${address.region || ""}`
-        : "Unknown location";
-
-      return {
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-        address: addressString.trim(),
-      };
-    } catch (error) {
-      console.log("Error getting location:", error);
-      return null;
-    }
-  };
-
-  const takePicture = async () => {
-    if (!cameraRef.current || isCapturing) return;
-
-    setIsCapturing(true);
-    try {
-      const photo = await cameraRef.current.takePictureAsync();
-      if (photo?.uri) {
-        // Get location
-        const loc = await getLocation();
-        
-        // Navigate to image editor with the photo and location
-        router.push({
-          pathname: "/image-editor",
-          params: { 
-            imageUri: photo.uri,
-            latitude: loc?.latitude?.toString() || "",
-            longitude: loc?.longitude?.toString() || "",
-            address: loc?.address || "",
-          },
-        });
-      }
-    } catch (error) {
-      console.log("Error taking picture:", error);
-      Alert.alert("Error", "Failed to take picture");
-    } finally {
-      setIsCapturing(false);
-    }
-  };
-
-  const pickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: false,
-        quality: 1,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        // Get location
-        const loc = await getLocation();
-        
-        // Navigate to image editor
-        router.push({
-          pathname: "/image-editor",
-          params: { 
-            imageUri: result.assets[0].uri,
-            latitude: loc?.latitude?.toString() || "",
-            longitude: loc?.longitude?.toString() || "",
-            address: loc?.address || "",
-          },
-        });
-      }
-    } catch (error) {
-      console.log("Error picking image:", error);
-      Alert.alert("Error", "Failed to pick image");
-    }
-  };
-
-  const toggleCameraFacing = () => {
-    setFacing((current) => (current === "back" ? "front" : "back"));
-  };
-
-  if (!permission) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
-        <View style={styles.permissionContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!permission.granted) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
-        <View style={styles.permissionContainer}>
-          <Camera size={64} color={colors.primary} />
-          <Text style={[styles.permissionText, { color: colors.foreground }]}>
-            Necesitamos tu permiso para usar la cámara
-          </Text>
-          <TouchableOpacity 
-            style={[styles.permissionButton, { backgroundColor: colors.primary }]} 
-            onPress={requestPermission}
-          >
-            <Text style={styles.permissionButtonText}>Permitir Acceso</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const device = useCameraDevice('back');
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      {Platform.OS !== "web" ? (
-        <CameraView ref={cameraRef} style={styles.camera} facing={facing}>
-          <View style={styles.cameraOverlay}>
-            <View style={styles.cameraHeader}>
-              <View style={styles.cameraHeaderLeft}>
-                <Camera size={24} color="#FFFFFF" />
-                <Text style={styles.cameraHeaderText}>Camera</Text>
+      <View style={styles.container}>
+        <Camera
+            device={device!}
+            isActive={true}
+            style={StyleSheet.absoluteFill}
+            photo={mode === 'photo'}
+            video={mode === 'video'}
+        />
+
+        {/* Settings Overlay */}
+        {showSettings && (
+            <View style={styles.settingsPanel}>
+              <View style={styles.settingsGrid}>
+                <SettingButton
+                    icon="4:3"
+                    label="Relación de aspecto"
+                    active={aspectRatio === '4:3'}
+                    onPress={() => setAspectRatio('4:3')}
+                />
+                <SettingButton
+                    icon="⊞"
+                    label="Mostrar Cuadrícula"
+                    active={showGrid}
+                    onPress={() => setShowGrid(!showGrid)}
+                />
+                <SettingButton
+                    icon="⚖"
+                    label="Mostrar Level"
+                    active={showLevel}
+                    onPress={() => setShowLevel(!showLevel)}
+                />
+                <SettingButton
+                    icon="✎"
+                    label="Modo de Edición"
+                    onPress={() => {}}
+                />
+                <SettingButton
+                    icon="📍"
+                    label="Sellar Lat/Long"
+                    active={stampGPS}
+                    onPress={() => setStampGPS(!stampGPS)}
+                />
+                <SettingButton
+                    icon="📅"
+                    label="Sellar Date/Time"
+                    active={stampDateTime}
+                    onPress={() => setStampDateTime(!stampDateTime)}
+                />
               </View>
-              <TouchableOpacity style={styles.iconButton} onPress={toggleCameraFacing}>
-                <FlipHorizontal size={24} color="#FFFFFF" />
+
+              <TouchableOpacity style={styles.allSettings}>
+                <Text style={styles.allSettingsText}>
+                  Todos los ajustes de cámara ›
+                </Text>
               </TouchableOpacity>
             </View>
+        )}
 
-            <View style={styles.cameraFooter}>
-              <TouchableOpacity style={styles.galleryButton} onPress={pickImage}>
-                <ImageIcon size={28} color="#FFFFFF" />
-              </TouchableOpacity>
+        {/* Grid Overlay */}
+        {showGrid && <GridOverlay />}
 
-              <TouchableOpacity 
-                style={styles.captureButton} 
-                onPress={takePicture}
-                disabled={isCapturing}
-              >
-                {isCapturing ? (
-                  <ActivityIndicator size="large" color="#FFFFFF" />
-                ) : (
-                  <View style={styles.captureButtonInner} />
-                )}
-              </TouchableOpacity>
-
-              <View style={styles.galleryButton} />
-            </View>
-          </View>
-        </CameraView>
-      ) : (
-        <View style={[styles.webCameraPlaceholder, { backgroundColor: colors.background }]}>
-          <Camera size={64} color={colors.muted} />
-          <Text style={[styles.webCameraText, { color: colors.muted }]}>
-            La cámara no está disponible en web
-          </Text>
-          <TouchableOpacity 
-            style={[styles.webPickButton, { backgroundColor: colors.primary }]} 
-            onPress={pickImage}
+        {/* Top Controls */}
+        <View style={styles.topControls}>
+          <TouchableOpacity style={styles.topButton}>
+            <Text style={styles.topButtonIcon}>⚡</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.topButton}>
+            <Text style={styles.topButtonIcon}>🔄</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+              style={styles.topButton}
+              onPress={() => setShowSettings(!showSettings)}
           >
-            <ImageIcon size={28} color="#FFFFFF" />
-            <Text style={styles.webPickButtonText}>Seleccionar de Galería</Text>
+            <Text style={styles.topButtonIcon}>⚙</Text>
           </TouchableOpacity>
         </View>
-      )}
-    </SafeAreaView>
+
+        {/* Bottom Controls */}
+        <View style={styles.bottomControls}>
+          {/* Mode Selector */}
+          <View style={styles.modeSelector}>
+            {['ESCANEAR', 'NOTA DE AI', 'FOTO', 'VIDEO', 'VIDEO DUAL'].map((m) => (
+                <TouchableOpacity key={m} style={styles.modeButton}>
+                  <Text
+                      style={[
+                        styles.modeText,
+                        m === 'FOTO' && styles.modeTextActive
+                      ]}
+                  >
+                    {m}
+                  </Text>
+                </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Capture Controls */}
+          <View style={styles.captureRow}>
+            <TouchableOpacity style={styles.galleryButton}>
+              <Text style={styles.buttonIcon}>🖼️</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.captureButton}>
+              <View style={styles.captureButtonInner} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.doneButton}>
+              <Text style={styles.doneButtonText}>Listo</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
   );
-}
+};
+
+const SettingButton: React.FC<{
+  icon: string;
+  label: string;
+  active?: boolean;
+  onPress: () => void;
+}> = ({ icon, label, active, onPress }) => (
+    <TouchableOpacity
+        style={[styles.settingButton, active && styles.settingButtonActive]}
+        onPress={onPress}
+    >
+      <Text style={styles.settingIcon}>{icon}</Text>
+      <Text style={styles.settingLabel}>{label}</Text>
+    </TouchableOpacity>
+);
+
+const GridOverlay: React.FC = () => (
+    <View style={styles.gridOverlay} pointerEvents="none">
+      <View style={styles.gridLine} />
+      <View style={styles.gridLine} />
+      <View style={[styles.gridLine, styles.gridLineVertical]} />
+      <View style={[styles.gridLine, styles.gridLineVertical]} />
+    </View>
+);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: 'black',
   },
-  permissionContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-    gap: 24,
+  topControls: {
+    position: 'absolute',
+    top: 50,
+    right: 16,
+    gap: 12,
   },
-  permissionText: {
-    fontSize: 16,
-    textAlign: "center",
-    maxWidth: 280,
+  topButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  permissionButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+  topButtonIcon: {
+    fontSize: 20,
+  },
+  settingsPanel: {
+    position: 'absolute',
+    top: 100,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(28, 39, 60, 0.95)',
+    borderRadius: 16,
+    padding: 16,
+  },
+  settingsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+  },
+  settingButton: {
+    width: '30%',
+    aspectRatio: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
   },
-  permissionButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+  settingButtonActive: {
+    backgroundColor: 'rgba(59, 130, 246, 0.3)',
   },
-  camera: {
-    flex: 1,
+  settingIcon: {
+    fontSize: 24,
+    marginBottom: 4,
   },
-  cameraOverlay: {
-    flex: 1,
-    justifyContent: "space-between",
+  settingLabel: {
+    color: 'white',
+    fontSize: 10,
+    textAlign: 'center',
   },
-  cameraHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
+  allSettings: {
+    padding: 12,
+    alignItems: 'center',
   },
-  cameraHeaderLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+  allSettingsText: {
+    color: 'white',
+    fontSize: 14,
   },
-  cameraHeaderText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+  gridOverlay: {
+    ...StyleSheet.absoluteFillObject,
   },
-  iconButton: {
-    width: 50,
-    height: 50,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    borderRadius: 25,
+  gridLine: {
+    position: 'absolute',
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    height: 1,
+    width: '100%',
   },
-  cameraFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 40,
+  gridLineVertical: {
+    width: 1,
+    height: '100%',
+  },
+  bottomControls: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingBottom: 40,
+  },
+  modeSelector: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 24,
+    gap: 16,
+  },
+  modeButton: {
+    paddingVertical: 8,
+  },
+  modeText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  modeTextActive: {
+    color: 'white',
+  },
+  captureRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
   galleryButton: {
     width: 50,
     height: 50,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    borderRadius: 25,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonIcon: {
+    fontSize: 24,
   },
   captureButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
-    justifyContent: "center",
-    alignItems: "center",
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 4,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   captureButtonInner: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: "#FFFFFF",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'white',
   },
-  webCameraPlaceholder: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-    gap: 24,
+  doneButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  webCameraText: {
-    fontSize: 16,
-  },
-  webPickButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
-  },
-  webPickButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+  doneButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
