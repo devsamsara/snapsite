@@ -7,8 +7,8 @@ import { useColors } from "@/hooks/use-colors";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import HomeScreen from "./index";
 import ProjectsScreen from "./projects";
-import CameraScreen from "./camera";
 import ProfileScreen from "./profile";
+import CameraScreen from "@/app/(tabs)/camera";
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 

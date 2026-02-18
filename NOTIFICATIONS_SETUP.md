@@ -65,7 +65,6 @@ ios: {
   {
     icon: "./assets/images/icon.png",
     color: "#2563EB",
-    sounds: ["./assets/notification.wav"],
   },
 ]
 ```
