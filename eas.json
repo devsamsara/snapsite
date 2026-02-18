@@ -1,23 +1,25 @@
 {
   "cli": {
     "version": ">= 16.13.1",
-    "appVersionSource": "remote"
+    "appVersionSource": "remote",
+    "packageManager": "pnpm"
   },
   "build": {
     "production": {
       "autoIncrement": true,
       "ios": {
-        "image": "macos-sonoma-14.4-xcode-15.3"
+        "image": "macos-sonoma-14.6-xcode-16.1"
       }
     },
     "development": {
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "NPM_CONFIG_FROZEN_LOCKFILE": "false"
+        "NPM_CONFIG_FROZEN_LOCKFILE": "false",
+        "COREPACK_ENABLE_STRICT": "0"
       },
       "ios": {
-        "image": "macos-sonoma-14.4-xcode-15.3"
+        "image": "macos-sonoma-14.6-xcode-16.1"
       }
     }
   },
