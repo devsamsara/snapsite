@@ -1,17 +1,14 @@
-// Load environment variables with proper priority (system > .env)
+// app.config.ts
 import "dotenv/config";
 import type { ExpoConfig } from "expo/config";
 
-// Bundle ID format: space.manus.<project_name_dots>.<timestamp>
 const bundleId = "space.manus.field.cam.app.t20260114190645";
 const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
 const schemeFromBundleId = `manus${timestamp}`;
 
 const env = {
-    // App branding
     appName: "SnapSite",
     appSlug: "snapsite-app",
-    // S3 URL of the app logo (empty = use default icon from assets)
     logoUrl: "",
     scheme: schemeFromBundleId,
     iosBundleId: bundleId,
@@ -26,13 +23,14 @@ const config: ExpoConfig = {
     icon: "./assets/images/icon.png",
     scheme: env.scheme,
     userInterfaceStyle: "automatic",
-    newArchEnabled: true,
+    newArchEnabled: false, // ← Desactivar temporalmente para evitar problemas
     ios: {
         supportsTablet: true,
         bundleIdentifier: env.iosBundleId,
         infoPlist: {
             UIBackgroundModes: ["remote-notification"],
-            NSPhotoLibraryUsageDescription: "Necesitamos acceso a tu galería para seleccionar fotos",
+            NSPhotoLibraryUsageDescription:
+                "Necesitamos acceso a tu galería para seleccionar fotos",
             NSCameraUsageDescription: "Necesitamos acceso a tu cámara para tomar fotos",
         },
     },
@@ -43,10 +41,9 @@ const config: ExpoConfig = {
             backgroundImage: "./assets/images/android-icon-background.png",
             monochromeImage: "./assets/images/android-icon-monochrome.png",
         },
-        edgeToEdgeEnabled: true,
         predictiveBackGestureEnabled: false,
         package: env.androidPackage,
-        "permissions": [
+        permissions: [
             "CAMERA",
             "READ_EXTERNAL_STORAGE",
             "WRITE_EXTERNAL_STORAGE",
@@ -57,12 +54,7 @@ const config: ExpoConfig = {
             {
                 action: "VIEW",
                 autoVerify: true,
-                data: [
-                    {
-                        scheme: env.scheme,
-                        host: "*",
-                    },
-                ],
+                data: [{ scheme: env.scheme, host: "*" }],
                 category: ["BROWSABLE", "DEFAULT"],
             },
         ],
@@ -76,12 +68,13 @@ const config: ExpoConfig = {
         [
             "react-native-vision-camera",
             {
-                "cameraPermissionText": "$(PRODUCT_NAME) necesita acceso a tu cámara",
-                "enableMicrophonePermission": true,
-                "microphonePermissionText": "$(PRODUCT_NAME) necesita acceso a tu micrófono"
-            }
+                cameraPermissionText: "$(PRODUCT_NAME) necesita acceso a tu cámara",
+                enableMicrophonePermission: true,
+                microphonePermissionText: "$(PRODUCT_NAME) necesita acceso a tu micrófono",
+            },
         ],
-        "expo-router", [
+        "expo-router",
+        [
             "expo-notifications",
             {
                 icon: "./assets/images/icon.png",
@@ -112,37 +105,23 @@ const config: ExpoConfig = {
                     backgroundColor: "#000000",
                 },
             },
-        ],
-        [
-            "expo-build-properties",
-            {
-                android: {
-                    buildArchs: ["armeabi-v7a", "arm64-v8a"],
-                },
-            },
-        ],
+        ]
     ],
     extra: {
         eas: {
-            projectId: "c8815663-68f6-4a93-8efb-9f6d40e70767"
+            projectId: "c8815663-68f6-4a93-8efb-9f6d40e70767",
         },
-        bundleId: env.iosBundleId,
-        scheme: env.scheme,
-        logoUrl: env.logoUrl,
-        // Variables de entorno (si las tienes en .env)
-        apiUrl: process.env.EXPO_PUBLIC_API_URL,
-        apiKey: process.env.EXPO_PUBLIC_API_KEY,
     },
     updates: {
-        url: "https://u.expo.dev/c8815663-68f6-4a93-8efb-9f6d40e70767"
+        url: "https://u.expo.dev/c8815663-68f6-4a93-8efb-9f6d40e70767",
     },
     runtimeVersion: {
-        policy: "appVersion"
+        policy: "appVersion",
     },
     owner: "devsamsara",
     experiments: {
         typedRoutes: true,
-        reactCompiler: true,
+        reactCompiler: false, // ← Desactivar temporalmente
     },
 };
 
