@@ -1,21 +1,17 @@
 // Load environment variables with proper priority (system > .env)
-import "./scripts/load-env.js";
-import type {ExpoConfig} from "expo/config";
+import "dotenv/config";
+import type { ExpoConfig } from "expo/config";
 
 // Bundle ID format: space.manus.<project_name_dots>.<timestamp>
-// e.g., "my-app" created at 2024-01-15 10:30:45 -> "space.manus.my.app.t20240115103045"
 const bundleId = "space.manus.field.cam.app.t20260114190645";
-// Extract timestamp from bundle ID and prefix with "manus" for deep link scheme
-// e.g., "space.manus.my.app.t20240115103045" -> "manus20240115103045"
 const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
 const schemeFromBundleId = `manus${timestamp}`;
 
 const env = {
-    // App branding - update these values directly (do not use env vars)
+    // App branding
     appName: "SnapSite",
     appSlug: "snapsite-app",
-    // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
-    // Leave empty to use the default icon from assets/images/icon.png
+    // S3 URL of the app logo (empty = use default icon from assets)
     logoUrl: "",
     scheme: schemeFromBundleId,
     iosBundleId: bundleId,
@@ -36,7 +32,8 @@ const config: ExpoConfig = {
         bundleIdentifier: env.iosBundleId,
         infoPlist: {
             UIBackgroundModes: ["remote-notification"],
-            NSPhotoLibraryUsageDescription: "Necesitamos acceso a tu galería para seleccionar fotos"
+            NSPhotoLibraryUsageDescription: "Necesitamos acceso a tu galería para seleccionar fotos",
+            NSCameraUsageDescription: "Necesitamos acceso a tu cámara para tomar fotos",
         },
     },
     android: {
@@ -52,7 +49,9 @@ const config: ExpoConfig = {
         "permissions": [
             "CAMERA",
             "READ_EXTERNAL_STORAGE",
-            "WRITE_EXTERNAL_STORAGE"
+            "WRITE_EXTERNAL_STORAGE",
+            "READ_MEDIA_IMAGES",
+            "READ_MEDIA_VIDEO",
         ],
         intentFilters: [
             {
@@ -126,7 +125,13 @@ const config: ExpoConfig = {
     extra: {
         eas: {
             projectId: "c8815663-68f6-4a93-8efb-9f6d40e70767"
-        }
+        },
+        bundleId: env.iosBundleId,
+        scheme: env.scheme,
+        logoUrl: env.logoUrl,
+        // Variables de entorno (si las tienes en .env)
+        apiUrl: process.env.EXPO_PUBLIC_API_URL,
+        apiKey: process.env.EXPO_PUBLIC_API_KEY,
     },
     updates: {
         url: "https://u.expo.dev/c8815663-68f6-4a93-8efb-9f6d40e70767"
