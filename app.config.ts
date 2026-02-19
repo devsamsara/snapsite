@@ -23,10 +23,11 @@ const config: ExpoConfig = {
     icon: "./assets/images/icon.png",
     scheme: env.scheme,
     userInterfaceStyle: "automatic",
-    newArchEnabled: false, // ← Desactivar temporalmente para evitar problemas
+    newArchEnabled: true, // Reanimated 4 requiere Nueva Arquitectura
     ios: {
         supportsTablet: true,
         bundleIdentifier: env.iosBundleId,
+        deploymentTarget: "15.1", // RN 0.81 requiere mínimo 15.1
         infoPlist: {
             UIBackgroundModes: ["remote-notification"],
             NSPhotoLibraryUsageDescription:
@@ -41,6 +42,7 @@ const config: ExpoConfig = {
             backgroundImage: "./assets/images/android-icon-background.png",
             monochromeImage: "./assets/images/android-icon-monochrome.png",
         },
+        edgeToEdgeEnabled: true,
         predictiveBackGestureEnabled: false,
         package: env.androidPackage,
         permissions: [
@@ -105,7 +107,22 @@ const config: ExpoConfig = {
                     backgroundColor: "#000000",
                 },
             },
-        ]
+        ],
+        [
+            "expo-build-properties",
+            {
+                ios: {
+                    useFrameworks: "static", // CRÍTICO para cassert
+                    deploymentTarget: "15.1",
+                    newArchEnabled: true,
+                },
+                android: {
+                    buildArchs: ["armeabi-v7a", "arm64-v8a"],
+                    newArchEnabled: true,
+                    minSdkVersion: 24,
+                },
+            },
+        ],
     ],
     extra: {
         eas: {
@@ -121,7 +138,7 @@ const config: ExpoConfig = {
     owner: "devsamsara",
     experiments: {
         typedRoutes: true,
-        reactCompiler: false, // ← Desactivar temporalmente
+        reactCompiler: true, // React 19 soporta el compilador
     },
 };
 
