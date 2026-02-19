@@ -1,69 +1,93 @@
-// components/AdvancedCameraUI.tsx
-import React, { useState, useRef } from 'react';
+// components/InstagramCamera.tsx
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
   Text,
   Dimensions,
-  FlatList,
   Alert,
+  Image,
+  Modal,
+  Platform,
 } from 'react-native';
-import { Camera, useCameraDevice, PhotoFile, VideoFile } from 'react-native-vision-camera';
-import Animated, {
-  useAnimatedStyle,
-  interpolate,
-  Extrapolate,
-} from 'react-native-reanimated';
+import {
+  Camera,
+  useCameraDevice,
+  PhotoFile,
+  useCameraPermission,
+  useCodeScanner,
+} from 'react-native-vision-camera';
+import * as ImagePicker from 'expo-image-picker';
+import * as MediaLibrary from 'expo-media-library';
+import { Ionicons } from '@expo/vector-icons';
+import PhotoEditorModal from './PhotoEditorModal';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const MODE_WIDTH = 100;
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-type CameraMode = {
-  id: string;
-  label: string;
-  type: 'scan' | 'ai-note' | 'photo' | 'video' | 'dual-video';
-};
-
-const CAMERA_MODES: CameraMode[] = [
-  { id: 'scan', label: 'ESCANEAR', type: 'scan' },
-  { id: 'ai-note', label: 'NOTA DE AI', type: 'ai-note' },
-  { id: 'photo', label: 'FOTO', type: 'photo' },
-  { id: 'video', label: 'VIDEO', type: 'video' },
-  { id: 'dual-video', label: 'VIDEO DUAL', type: 'dual-video' },
-];
+type CameraMode = 'photo' | 'scan';
 
 const CameraScreen: React.FC = () => {
   const camera = useRef<Camera>(null);
-  const modeListRef = useRef<FlatList>(null);
 
-  const [showSettings, setShowSettings] = useState(false);
-  const [aspectRatio, setAspectRatio] = useState<'4:3' | '16:9'>('4:3');
-  const [showGrid, setShowGrid] = useState(false);
-  const [showLevel, setShowLevel] = useState(false);
-  const [stampGPS, setStampGPS] = useState(false);
-  const [stampDateTime, setStampDateTime] = useState(false);
-  const [activeMode, setActiveMode] = useState(2); // FOTO por defecto
-  const [flash, setFlash] = useState<'off' | 'on' | 'auto'>('off');
-  const [isRecording, setIsRecording] = useState(false);
+  const [mode, setMode] = useState<CameraMode>('photo');
+  const [flash, setFlash] = useState<'off' | 'on'>('off');
   const [cameraPosition, setCameraPosition] = useState<'back' | 'front'>('back');
+  const [capturedPhoto, setCapturedPhoto] = useState<PhotoFile | null>(null);
+  const [showEditor, setShowEditor] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
+  const [detectedQR, setDetectedQR] = useState<string | null>(null);
 
   const device = useCameraDevice(cameraPosition);
+  const { hasPermission, requestPermission } = useCameraPermission();
+
+  // Scanner de QR y documentos
+  const codeScanner = useCodeScanner({
+    codeTypes: ['qr', 'ean-13'],
+    onCodeScanned: (codes) => {
+      if (mode === 'scan' && codes.length > 0) {
+        const qrValue = codes[0].value;
+        setDetectedQR(qrValue);
+
+        // Si es URL, mostrar opción de abrir
+        if (qrValue?.startsWith('http')) {
+          Alert.alert(
+              'QR Detectado',
+              qrValue,
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Abrir', onPress: () => console.log('Abrir:', qrValue) },
+              ]
+          );
+        }
+      }
+    },
+  });
+
+  // Solicitar permisos
+  React.useEffect(() => {
+    if (!hasPermission) {
+      requestPermission();
+    }
+
+    (async () => {
+      await MediaLibrary.requestPermissionsAsync();
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    })();
+  }, [hasPermission]);
 
   // Tomar foto
   const takePhoto = async () => {
     if (!camera.current) return;
 
     try {
-      const photo: PhotoFile = await camera.current.takePhoto({
+      const photo = await camera.current.takePhoto({
         flash: flash,
         enableShutterSound: true,
       });
 
-      console.log('Photo taken:', photo.path);
-      Alert.alert('Foto capturada', `Guardada en: ${photo.path}`);
-
-      // Aquí puedes procesar la foto (agregar GPS, fecha/hora, etc.)
+      setCapturedPhoto(photo);
+      setShowEditor(true);
 
     } catch (error) {
       console.error('Error taking photo:', error);
@@ -71,72 +95,75 @@ const CameraScreen: React.FC = () => {
     }
   };
 
-  // Grabar video
-  const toggleRecording = async () => {
-    if (!camera.current) return;
-
+  // Abrir galería
+  const openGallery = async () => {
     try {
-      if (isRecording) {
-        await camera.current.stopRecording();
-        setIsRecording(false);
-      } else {
-        setIsRecording(true);
-        const video: VideoFile = await camera.current.startRecording({
-          flash: flash,
-          onRecordingFinished: (video) => {
-            console.log('Video recorded:', video.path);
-            Alert.alert('Video grabado', `Guardado en: ${video.path}`);
-            setIsRecording(false);
-          },
-          onRecordingError: (error) => {
-            console.error('Recording error:', error);
-            setIsRecording(false);
-          },
-        });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        // Convertir a formato PhotoFile para el editor
+        const photo: PhotoFile = {
+          path: result.assets[0].uri,
+          width: result.assets[0].width || 0,
+          height: result.assets[0].height || 0,
+        };
+
+        setCapturedPhoto(photo);
+        setShowEditor(true);
       }
     } catch (error) {
-      console.error('Error recording:', error);
-      setIsRecording(false);
+      console.error('Error opening gallery:', error);
     }
   };
 
-  // Cambiar modo
-  const handleModeChange = (index: number) => {
-    setActiveMode(index);
-    modeListRef.current?.scrollToIndex({
-      index,
-      animated: true,
-      viewPosition: 0.5,
-    });
+  // Guardar foto editada
+  const handleSavePhoto = async (editedUri: string) => {
+    try {
+      const asset = await MediaLibrary.createAssetAsync(editedUri);
+      await MediaLibrary.createAlbumAsync('SnapSite', asset, false);
+
+      Alert.alert('Guardado', 'Foto guardada en la galería');
+      setShowEditor(false);
+      setCapturedPhoto(null);
+    } catch (error) {
+      console.error('Error saving photo:', error);
+      Alert.alert('Error', 'No se pudo guardar la foto');
+    }
   };
 
-  // Cambiar flash
+  // Descartar foto
+  const handleDiscardPhoto = () => {
+    setShowEditor(false);
+    setCapturedPhoto(null);
+  };
+
+  // Toggle flash
   const toggleFlash = () => {
-    setFlash((prev) => {
-      if (prev === 'off') return 'on';
-      if (prev === 'on') return 'auto';
-      return 'off';
-    });
+    setFlash((prev) => (prev === 'off' ? 'on' : 'off'));
   };
 
-  // Cambiar cámara
+  // Toggle cámara
   const toggleCamera = () => {
     setCameraPosition((prev) => (prev === 'back' ? 'front' : 'back'));
   };
 
-  // Handler para captura según modo
-  const handleCapture = () => {
-    const mode = CAMERA_MODES[activeMode].type;
-
-    if (mode === 'photo' || mode === 'scan') {
-      takePhoto();
-    } else if (mode === 'video' || mode === 'dual-video') {
-      toggleRecording();
-    } else if (mode === 'ai-note') {
-      // Implementar lógica de nota AI
-      Alert.alert('Nota AI', 'Función en desarrollo');
-    }
+  // Cerrar (volver atrás)
+  const handleClose = () => {
+    // Navegar hacia atrás
+    console.log('Close camera');
   };
+
+  if (!hasPermission) {
+    return (
+        <View style={styles.container}>
+          <Text style={{ color: 'white' }}>Solicitando permisos...</Text>
+        </View>
+    );
+  }
 
   if (!device) {
     return (
@@ -146,199 +173,118 @@ const CameraScreen: React.FC = () => {
     );
   }
 
-  const currentMode = CAMERA_MODES[activeMode].type;
-
   return (
       <View style={styles.container}>
+        {/* Cámara */}
         <Camera
             ref={camera}
             device={device}
-            isActive={true}
+            isActive={!showEditor}
             style={StyleSheet.absoluteFill}
-            photo={currentMode === 'photo' || currentMode === 'scan'}
-            video={currentMode === 'video' || currentMode === 'dual-video'}
-            audio={currentMode === 'video' || currentMode === 'dual-video'}
+            photo={true}
+            codeScanner={mode === 'scan' ? codeScanner : undefined}
         />
-
-        {/* Settings Overlay */}
-        {showSettings && (
-            <View style={styles.settingsPanel}>
-              <View style={styles.settingsGrid}>
-                <SettingButton
-                    icon="4:3"
-                    label="Relación de aspecto"
-                    active={aspectRatio === '4:3'}
-                    onPress={() => setAspectRatio(aspectRatio === '4:3' ? '16:9' : '4:3')}
-                />
-                <SettingButton
-                    icon="⊞"
-                    label="Mostrar Cuadrícula"
-                    active={showGrid}
-                    onPress={() => setShowGrid(!showGrid)}
-                />
-                <SettingButton
-                    icon="⚖"
-                    label="Mostrar Level"
-                    active={showLevel}
-                    onPress={() => setShowLevel(!showLevel)}
-                />
-                <SettingButton
-                    icon="✎"
-                    label="Modo de Edición"
-                    onPress={() => Alert.alert('Modo edición', 'Función en desarrollo')}
-                />
-                <SettingButton
-                    icon="📍"
-                    label="Sellar Lat/Long"
-                    active={stampGPS}
-                    onPress={() => setStampGPS(!stampGPS)}
-                />
-                <SettingButton
-                    icon="📅"
-                    label="Sellar Date/Time"
-                    active={stampDateTime}
-                    onPress={() => setStampDateTime(!stampDateTime)}
-                />
-              </View>
-
-              <TouchableOpacity style={styles.allSettings}>
-                <Text style={styles.allSettingsText}>
-                  Todos los ajustes de cámara ›
-                </Text>
-              </TouchableOpacity>
-            </View>
-        )}
 
         {/* Grid Overlay */}
         {showGrid && <GridOverlay />}
 
-        {/* Top Controls */}
-        <View style={styles.topControls}>
-          <TouchableOpacity style={styles.topButton} onPress={toggleFlash}>
-            <Text style={styles.topButtonIcon}>
-              {flash === 'off' ? '⚡' : flash === 'on' ? '⚡' : 'A'}
-            </Text>
-            {flash !== 'off' && (
-                <View style={styles.flashIndicator}>
-                  <Text style={styles.flashText}>{flash === 'on' ? 'ON' : 'A'}</Text>
-                </View>
-            )}
+        {/* Indicador de QR detectado */}
+        {mode === 'scan' && detectedQR && (
+            <View style={styles.qrIndicator}>
+              <Text style={styles.qrText}>QR Detectado</Text>
+            </View>
+        )}
+
+        {/* Top Bar - Estilo Instagram */}
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.topButton} onPress={handleClose}>
+            <Ionicons name="close" size={32} color="white" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.topButton} onPress={toggleCamera}>
-            <Text style={styles.topButtonIcon}>🔄</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-              style={styles.topButton}
-              onPress={() => setShowSettings(!showSettings)}
-          >
-            <Text style={styles.topButtonIcon}>⚙</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Bottom Controls */}
-        <View style={styles.bottomControls}>
-          {/* Mode Selector - Estilo iPhone */}
-          <View style={styles.modeSelectorContainer}>
-            <FlatList
-                ref={modeListRef}
-                data={CAMERA_MODES}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                snapToInterval={MODE_WIDTH}
-                decelerationRate="fast"
-                contentContainerStyle={styles.modeList}
-                initialScrollIndex={2}
-                getItemLayout={(data, index) => ({
-                  length: MODE_WIDTH,
-                  offset: MODE_WIDTH * index,
-                  index,
-                })}
-                onMomentumScrollEnd={(e) => {
-                  const index = Math.round(e.nativeEvent.contentOffset.x / MODE_WIDTH);
-                  setActiveMode(index);
-                }}
-                renderItem={({ item, index }) => (
-                    <ModeButton
-                        mode={item}
-                        isActive={index === activeMode}
-                        onPress={() => handleModeChange(index)}
-                    />
-                )}
-                keyExtractor={(item) => item.id}
-            />
-          </View>
-
-          {/* Capture Controls */}
-          <View style={styles.captureRow}>
-            <TouchableOpacity style={styles.galleryButton}>
-              <Text style={styles.buttonIcon}>🖼️</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                style={[
-                  styles.captureButton,
-                  isRecording && styles.captureButtonRecording,
-                ]}
-                onPress={handleCapture}
-            >
-              <View
-                  style={[
-                    styles.captureButtonInner,
-                    isRecording && styles.captureButtonInnerRecording,
-                  ]}
+          <View style={styles.topRight}>
+            <TouchableOpacity style={styles.topButton} onPress={toggleFlash}>
+              <Ionicons
+                  name={flash === 'off' ? 'flash-off' : 'flash'}
+                  size={28}
+                  color="white"
               />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.doneButton}>
-              <Text style={styles.doneButtonText}>Listo</Text>
+            <TouchableOpacity
+                style={styles.topButton}
+                onPress={() => setShowGrid(!showGrid)}
+            >
+              <Ionicons name="grid-outline" size={28} color="white" />
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Bottom Controls - Estilo Instagram */}
+        <View style={styles.bottomContainer}>
+          {/* Mode Selector */}
+          <View style={styles.modeSelector}>
+            <TouchableOpacity
+                style={styles.modeButton}
+                onPress={() => setMode('photo')}
+            >
+              <Text
+                  style={[
+                    styles.modeText,
+                    mode === 'photo' && styles.modeTextActive,
+                  ]}
+              >
+                FOTO
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+                style={styles.modeButton}
+                onPress={() => setMode('scan')}
+            >
+              <Text
+                  style={[
+                    styles.modeText,
+                    mode === 'scan' && styles.modeTextActive,
+                  ]}
+              >
+                ESCANEAR
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Capture Row */}
+          <View style={styles.captureRow}>
+            {/* Galería */}
+            <TouchableOpacity style={styles.galleryButton} onPress={openGallery}>
+              <Ionicons name="images" size={28} color="white" />
+            </TouchableOpacity>
+
+            {/* Botón de captura */}
+            <TouchableOpacity style={styles.captureButton} onPress={takePhoto}>
+              <View style={styles.captureButtonInner} />
+            </TouchableOpacity>
+
+            {/* Flip camera */}
+            <TouchableOpacity style={styles.flipButton} onPress={toggleCamera}>
+              <Ionicons name="camera-reverse" size={28} color="white" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Editor Modal */}
+        {capturedPhoto && (
+            <PhotoEditorModal
+                visible={showEditor}
+                photoUri={`file://${capturedPhoto.path}`}
+                onSave={handleSavePhoto}
+                onDiscard={handleDiscardPhoto}
+            />
+        )}
       </View>
   );
 };
 
-// Botón de modo estilo iPhone
-const ModeButton: React.FC<{
-  mode: CameraMode;
-  isActive: boolean;
-  onPress: () => void;
-}> = ({ mode, isActive, onPress }) => {
-  return (
-      <TouchableOpacity
-          style={[styles.modeButton, { width: MODE_WIDTH }]}
-          onPress={onPress}
-          activeOpacity={0.7}
-      >
-        <Text
-            style={[
-              styles.modeText,
-              isActive && styles.modeTextActive,
-            ]}
-        >
-          {mode.label}
-        </Text>
-      </TouchableOpacity>
-  );
-};
-
-const SettingButton: React.FC<{
-  icon: string;
-  label: string;
-  active?: boolean;
-  onPress: () => void;
-}> = ({ icon, label, active, onPress }) => (
-    <TouchableOpacity
-        style={[styles.settingButton, active && styles.settingButtonActive]}
-        onPress={onPress}
-    >
-      <Text style={styles.settingIcon}>{icon}</Text>
-      <Text style={styles.settingLabel}>{label}</Text>
-    </TouchableOpacity>
-);
-
+// Grid Overlay
 const GridOverlay: React.FC = () => (
     <View style={styles.gridOverlay} pointerEvents="none">
       <View style={[styles.gridLine, { top: '33.33%' }]} />
@@ -353,83 +299,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'black',
   },
-  topControls: {
+  topBar: {
     position: 'absolute',
-    top: 50,
-    right: 16,
-    gap: 12,
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 50,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
     zIndex: 10,
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
   topButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  topButtonIcon: {
-    fontSize: 20,
-    color: 'white',
+  topRight: {
+    flexDirection: 'row',
+    gap: 8,
   },
-  flashIndicator: {
+  qrIndicator: {
     position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: '#FFD700',
-    borderRadius: 8,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-  },
-  flashText: {
-    fontSize: 8,
-    fontWeight: 'bold',
-    color: 'black',
-  },
-  settingsPanel: {
-    position: 'absolute',
-    top: 100,
+    top: 120,
     left: 20,
     right: 20,
-    backgroundColor: 'rgba(28, 39, 60, 0.95)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.8)',
     padding: 16,
-    zIndex: 10,
-  },
-  settingsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 16,
-  },
-  settingButton: {
-    width: '30%',
-    aspectRatio: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 12,
-    justifyContent: 'center',
     alignItems: 'center',
-    padding: 8,
+    zIndex: 5,
   },
-  settingButtonActive: {
-    backgroundColor: 'rgba(59, 130, 246, 0.3)',
-  },
-  settingIcon: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  settingLabel: {
-    color: 'white',
-    fontSize: 10,
-    textAlign: 'center',
-  },
-  allSettings: {
-    padding: 12,
-    alignItems: 'center',
-  },
-  allSettingsText: {
+  qrText: {
     color: 'white',
     fontSize: 14,
+    fontWeight: '600',
   },
   gridOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -445,7 +353,7 @@ const styles = StyleSheet.create({
     width: 1,
     height: '100%',
   },
-  bottomControls: {
+  bottomContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -453,35 +361,31 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     zIndex: 10,
   },
-  modeSelectorContainer: {
-    height: 60,
-    marginBottom: 24,
+  modeSelector: {
+    flexDirection: 'row',
     justifyContent: 'center',
-  },
-  modeList: {
-    paddingHorizontal: (SCREEN_WIDTH - MODE_WIDTH) / 2,
+    gap: 32,
+    marginBottom: 32,
   },
   modeButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
     paddingVertical: 8,
+    paddingHorizontal: 16,
   },
   modeText: {
     color: 'rgba(255,255,255,0.5)',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    textTransform: 'uppercase',
   },
   modeTextActive: {
     color: 'white',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
   },
   captureRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 40,
   },
   galleryButton: {
     width: 50,
@@ -491,46 +395,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  buttonIcon: {
-    fontSize: 24,
-  },
   captureButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: 'white',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 4,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  captureButtonRecording: {
-    borderColor: '#FF0000',
+    borderColor: 'white',
   },
   captureButtonInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     backgroundColor: 'white',
   },
-  captureButtonInnerRecording: {
-    width: 30,
-    height: 30,
-    borderRadius: 4,
-    backgroundColor: '#FF0000',
-  },
-  doneButton: {
+  flipButton: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  doneButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
   },
 });
 

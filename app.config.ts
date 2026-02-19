@@ -30,9 +30,10 @@ const config: ExpoConfig = {
         deploymentTarget: "15.1", // RN 0.81 requiere mínimo 15.1
         infoPlist: {
             UIBackgroundModes: ["remote-notification"],
-            NSPhotoLibraryUsageDescription:
-                "Necesitamos acceso a tu galería para seleccionar fotos",
-            NSCameraUsageDescription: "Necesitamos acceso a tu cámara para tomar fotos",
+            NSCameraUsageDescription: "Necesitamos acceso a tu cámara",
+            NSMicrophoneUsageDescription: "Necesitamos acceso a tu micrófono",
+            NSPhotoLibraryUsageDescription: "Necesitamos acceso a tu galería",
+            NSPhotoLibraryAddUsageDescription: "Necesitamos permiso para guardar fotos",
         },
     },
     android: {
