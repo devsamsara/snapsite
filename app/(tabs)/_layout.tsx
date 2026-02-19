@@ -9,6 +9,7 @@ import HomeScreen from "./index";
 import ProjectsScreen from "./projects";
 import ProfileScreen from "./profile";
 import CameraScreen from "@/app/(tabs)/camera";
+import {NativeTabs, Label, Icon} from "expo-router/unstable-native-tabs";
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -22,9 +23,9 @@ interface Tab {
 }
 
 const tabs: Tab[] = [
-  { name: 'home', title: 'Home', icon: 'house.fill', component: HomeScreen },
+  { name: 'index', title: 'Home', icon: 'house.fill', component: HomeScreen },
   { name: 'projects', title: 'Projects', icon: 'photo.stack.fill', component: ProjectsScreen },
-  { name: 'camera', title: 'Camera', icon: 'camera.fill', component: CameraScreen },
+  // { name: 'camera', title: 'Camera', icon: 'camera.fill', component: CameraScreen },
 ];
 
 // Keep profile component for direct navigation
@@ -61,129 +62,32 @@ export default function TabLayout() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Content Area */}
-      <View style={{ flex: 1 }}>
-        <ActiveComponent />
-      </View>
-
-      {/* Floating Bottom Menu with Glassmorphism */}
-      <BlurView
-        intensity={colorScheme === 'dark' ? 80 : 60}
-        tint={colorScheme === 'dark' ? 'dark' : 'light'}
-        style={{
-          position: 'absolute',
-          bottom: insets.bottom + 12,
-          left: '50%',
-          transform: [{ translateX: -((SCREEN_WIDTH * 0.7) / 2) }],
-          width: SCREEN_WIDTH * 0.7,
-          borderRadius: 20,
-          overflow: 'hidden',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: colorScheme === 'dark' ? 0.4 : 0.2,
-          shadowRadius: 12,
-          elevation: 10,
-        }}
+      <NativeTabs
+          iconColor={colors.primary}
+          blurEffect="systemChromeMaterialDark"
+          indicatorColor={colors.primary}
+          minimizeBehavior="onScrollUp"
+          tintColor={colors.primary}
+          shadowColor={colors.primary}
+          rippleColor={colors.primary}
+          backgroundColor={colors.primary}
       >
-        <View
-          style={{
-            backgroundColor: colorScheme === 'dark' 
-              ? 'rgba(30, 41, 59, 0.7)' 
-              : 'rgba(248, 250, 252, 0.8)',
-            borderWidth: 1,
-            borderColor: colorScheme === 'dark'
-              ? 'rgba(255, 255, 255, 0.1)'
-              : 'rgba(0, 0, 0, 0.05)',
-            paddingVertical: 6,
-            paddingHorizontal: 6,
-            flexDirection: 'row',
-            position: 'relative',
-          }}
-          onLayout={(e) => {
-            const width = e.nativeEvent.layout.width;
-            setTabWidth((width - 12) / tabs.length);
-          }}
-        >
-          {/* Animated Selector Background with Glassmorphism */}
-          {tabWidth > 0 && (
-            <Animated.View
-              style={{
-                position: 'absolute',
-                left: 6,
-                top: 6,
-                bottom: 6,
-                width: tabWidth,
-                borderRadius: 14,
-                overflow: 'hidden',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 3,
-                elevation: 3,
-                transform: [
-                  {
-                    translateX: selectorAnim.interpolate({
-                      inputRange: [0, 1, 2],
-                      outputRange: [0, tabWidth, tabWidth * 2],
-                    }),
-                  },
-                ],
-              }}
-            >
-              <BlurView
-                intensity={80}
-                tint={colorScheme === 'dark' ? 'prominent' : 'light'}
-                style={{
-                  flex: 1,
-                  backgroundColor: colorScheme === 'dark'
-                    ? 'rgba(255, 255, 255, 0.15)'
-                    : 'rgba(37, 99, 235, 0.25)',
-                }}
-              />
-            </Animated.View>
-          )}
-
-          {/* Tab Buttons */}
           {tabs.map((tab, index) => {
-            const isActive = activeTab === tab.name;
-            const isPressed = pressedTab === tab.name;
-            return (
-              <TouchableOpacity
-                key={tab.name}
-                onPressIn={() => setPressedTab(tab.name)}
-                onPressOut={() => setPressedTab(null)}
-                onPress={() => handleTabPress(tab.name)}
-                style={{
-                  flex: 1,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  paddingVertical: 6,
-                  paddingHorizontal: 4,
-                  transform: [{ scale: isPressed ? 0.95 : 1 }],
-                }}
-                activeOpacity={1}
-              >
-                <IconSymbol
-                  size={22}
-                  name={tab.icon as any}
-                  color={isActive ? colors.primary : colors.muted}
-                />
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: isActive ? '600' : '500',
-                    color: isActive ? colors.primary : colors.muted,
-                    marginTop: 2,
-                  }}
-                >
-                  {tab.title}
-                </Text>
-              </TouchableOpacity>
-            );
+              return (
+                  <NativeTabs.Trigger
+                      name={tab.name}
+                      options={{
+                          selectedIconColor: colors.primary,
+                          iconColor: colors.primary,
+                          indicatorColor: colors.primary,
+                          shadowColor: colors.primary,
+                      }}
+                  >
+                      <Label>{tab.title}</Label>
+                      <Icon sf={tab.icon} drawable="ic_menu_mylocation " />
+                  </NativeTabs.Trigger>
+              );
           })}
-        </View>
-      </BlurView>
-    </View>
+      </NativeTabs>
   );
 }
