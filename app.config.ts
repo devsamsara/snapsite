@@ -67,6 +67,7 @@ const config: ExpoConfig = {
         favicon: "./assets/images/favicon.png",
     },
     plugins: [
+        'expo-media-library',
         [
             "react-native-vision-camera",
             {
