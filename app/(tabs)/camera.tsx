@@ -21,7 +21,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import { Ionicons } from '@expo/vector-icons';
-import PhotoEditorModal from './PhotoEditorModal';
+import PhotoEditorModal from "@/components/PhotoEditorModal";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 

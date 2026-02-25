@@ -23,7 +23,6 @@ const config: ExpoConfig = {
     icon: "./assets/images/icon.png",
     scheme: env.scheme,
     userInterfaceStyle: "automatic",
-    newArchEnabled: true, // Reanimated 4 requiere Nueva Arquitectura
     ios: {
         supportsTablet: true,
         bundleIdentifier: env.iosBundleId,
