@@ -49,6 +49,8 @@ export default function CreateProjectLocationScreen() {
     longitude: BASE_LNG,
   });
   const [address, setAddress] = useState<string>('Buscando dirección...');
+  const [city, setCity] = useState<string>('');
+  const [postalCode, setPostalCode] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   // Función Haversine para calcular distancia en km
@@ -112,8 +114,10 @@ export default function CreateProjectLocationScreen() {
       const result = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
       if (result.length > 0) {
         const addr = result[0];
-        const fullAddress = `${addr.street || ''} ${addr.streetNumber || ''}, ${addr.city || ''}, ${addr.region || ''}`;
+        const fullAddress = `${addr.street || ''} ${addr.streetNumber || ''}`;
         setAddress(fullAddress.trim() || 'Ubicación desconocida');
+        setCity(addr.city || addr.subregion || '');
+        setPostalCode(addr.postalCode || '');
       }
     } catch (e) {
       setAddress('Dirección no encontrada');
@@ -137,6 +141,8 @@ export default function CreateProjectLocationScreen() {
         latitude: selectedLocation.latitude,
         longitude: selectedLocation.longitude,
         address: address,
+        city: city,
+        postalCode: postalCode,
       }
     });
   };

@@ -22,7 +22,13 @@ type ProjectFormValues = z.infer<typeof projectSchema>;
 export default function CreateProjectDetailsScreen() {
   const router = useRouter();
   const colors = useColors();
-  const params = useLocalSearchParams<{ latitude: string, longitude: string, address: string }>();
+  const params = useLocalSearchParams<{ 
+    latitude: string, 
+    longitude: string, 
+    address: string,
+    city: string,
+    postalCode: string 
+  }>();
   const [loading, setLoading] = useState(false);
 
   const { control, handleSubmit, formState: { errors } } = useForm<ProjectFormValues>({
@@ -30,8 +36,8 @@ export default function CreateProjectDetailsScreen() {
     defaultValues: {
       name: '',
       address: params.address || '',
-      city: '',
-      postalCode: '',
+      city: params.city || '',
+      postalCode: params.postalCode || '',
       notes: '',
     }
   });
