@@ -6,13 +6,12 @@ import { useState, useRef, useEffect } from 'react';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, runOnJS } from 'react-native-reanimated';
 import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
 import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const EDITOR_SIZE = SCREEN_WIDTH;
 
 type EditMode = 'none' | 'draw' | 'crop';
 
@@ -37,6 +36,7 @@ export default function ImageEditorScreen() {
   const [currentImageUri, setCurrentImageUri] = useState(imageUri);
   const [editMode, setEditMode] = useState<EditMode>('none');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [imageSize, setImageSize] = useState({ width: SCREEN_WIDTH, height: SCREEN_WIDTH });
   
   // Drawing state
   const [paths, setPaths] = useState<DrawPath[]>([]);
@@ -55,6 +55,12 @@ export default function ImageEditorScreen() {
   useEffect(() => {
     if (imageUri) {
       setCurrentImageUri(imageUri);
+      Image.getSize(imageUri, (w, h) => {
+        const aspectRatio = w / h;
+        const displayWidth = SCREEN_WIDTH;
+        const displayHeight = SCREEN_WIDTH / aspectRatio;
+        setImageSize({ width: displayWidth, height: displayHeight });
+      });
     }
   }, [imageUri]);
 
@@ -88,8 +94,8 @@ export default function ImageEditorScreen() {
   const cropGestureTL = Gesture.Pan()
     .onUpdate((g) => {
       if (editMode !== 'crop') return;
-      const newTop = Math.max(0, Math.min(EDITOR_SIZE - cropBottom.value - 50, g.y));
-      const newLeft = Math.max(0, Math.min(EDITOR_SIZE - cropRight.value - 50, g.x));
+      const newTop = Math.max(0, Math.min(imageSize.height - cropBottom.value - 50, g.y));
+      const newLeft = Math.max(0, Math.min(imageSize.width - cropRight.value - 50, g.x));
       cropTop.value = newTop;
       cropLeft.value = newLeft;
     });
@@ -98,8 +104,8 @@ export default function ImageEditorScreen() {
   const cropGestureBR = Gesture.Pan()
     .onUpdate((g) => {
       if (editMode !== 'crop') return;
-      const newBottom = Math.max(0, Math.min(EDITOR_SIZE - cropTop.value - 50, EDITOR_SIZE - g.y));
-      const newRight = Math.max(0, Math.min(EDITOR_SIZE - cropLeft.value - 50, EDITOR_SIZE - g.x));
+      const newBottom = Math.max(0, Math.min(imageSize.height - cropTop.value - 50, imageSize.height - g.y));
+      const newRight = Math.max(0, Math.min(imageSize.width - cropLeft.value - 50, imageSize.width - g.x));
       cropBottom.value = newBottom;
       cropRight.value = newRight;
     });
@@ -112,12 +118,6 @@ export default function ImageEditorScreen() {
     borderColor: '#FFF',
     borderWidth: 2,
     position: 'absolute',
-  }));
-
-  const overlayStyle = useAnimatedStyle(() => ({
-    position: 'absolute',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    top: 0, left: 0, right: 0, bottom: 0,
   }));
 
   if (!currentImageUri) {
@@ -157,6 +157,13 @@ export default function ImageEditorScreen() {
         { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
       );
       setCurrentImageUri(manipResult.uri);
+      // Update image size after rotation
+      Image.getSize(manipResult.uri, (w, h) => {
+        const aspectRatio = w / h;
+        const displayWidth = SCREEN_WIDTH;
+        const displayHeight = SCREEN_WIDTH / aspectRatio;
+        setImageSize({ width: displayWidth, height: displayHeight });
+      });
     } catch (error) {
       Alert.alert("Error", "No se pudo rotar la imagen");
     } finally {
@@ -168,16 +175,15 @@ export default function ImageEditorScreen() {
     setIsProcessing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      // Obtenemos las dimensiones reales de la imagen para calcular el ratio
       const { width: imgW, height: imgH } = await new Promise<{width: number, height: number}>((resolve) => {
         Image.getSize(currentImageUri, (w, h) => resolve({width: w, height: h}));
       });
 
-      const scale = imgW / EDITOR_SIZE;
+      const scale = imgW / imageSize.width;
       const cropX = cropLeft.value * scale;
       const cropY = cropTop.value * scale;
-      const cropW = (EDITOR_SIZE - cropLeft.value - cropRight.value) * scale;
-      const cropH = (EDITOR_SIZE - cropTop.value - cropBottom.value) * scale;
+      const cropW = (imageSize.width - cropLeft.value - cropRight.value) * scale;
+      const cropH = (imageSize.height - cropTop.value - cropBottom.value) * scale;
 
       const manipResult = await ImageManipulator.manipulateAsync(
         currentImageUri,
@@ -186,6 +192,15 @@ export default function ImageEditorScreen() {
       );
       setCurrentImageUri(manipResult.uri);
       setEditMode('none');
+      
+      // Update image size after crop
+      Image.getSize(manipResult.uri, (w, h) => {
+        const aspectRatio = w / h;
+        const displayWidth = SCREEN_WIDTH;
+        const displayHeight = SCREEN_WIDTH / aspectRatio;
+        setImageSize({ width: displayWidth, height: displayHeight });
+      });
+
       // Reset crop values
       cropTop.value = 0; cropLeft.value = 0; cropRight.value = 0; cropBottom.value = 0;
     } catch (error) {
@@ -258,7 +273,11 @@ export default function ImageEditorScreen() {
       {/* Main Editor Area */}
       <View style={styles.editorArea}>
         <GestureDetector gesture={drawGesture}>
-          <View ref={imageViewRef} collapsable={false} style={styles.imageWrapper}>
+          <View 
+            ref={imageViewRef} 
+            collapsable={false} 
+            style={[styles.imageWrapper, { width: imageSize.width, height: imageSize.height }]}
+          >
             <Image source={{ uri: currentImageUri }} style={styles.mainImage} resizeMode="contain" />
             <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
               {paths.map((p, i) => (
@@ -350,7 +369,7 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.3 },
   applyCropButton: { backgroundColor: '#007AFF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   editorArea: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' },
-  imageWrapper: { width: EDITOR_SIZE, height: EDITOR_SIZE, backgroundColor: '#111', position: 'relative' },
+  imageWrapper: { backgroundColor: '#111', position: 'relative' },
   mainImage: { width: '100%', height: '100%' },
   cropHandle: { width: 30, height: 30, backgroundColor: '#FFF', borderRadius: 15, position: 'absolute', zIndex: 10 },
   gridLine: { position: 'absolute', backgroundColor: 'rgba(255,255,255,0.5)' },
