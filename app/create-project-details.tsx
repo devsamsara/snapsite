@@ -58,9 +58,13 @@ export default function CreateProjectDetailsScreen() {
       
       setTimeout(() => {
         setLoading(false);
-        Alert.alert('¡Éxito!', 'El proyecto ha sido creado correctamente.', [
-          { text: 'Ir al Home', onPress: () => router.dismissAll() }
-        ]);
+        router.replace({
+          pathname: '/add-photos-prompt',
+          params: { 
+            projectId: newProject.id,
+            projectName: newProject.name
+          }
+        });
       }, 1500);
     } catch (error) {
       setLoading(false);

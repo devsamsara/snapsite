@@ -227,7 +227,19 @@ export default function ImageEditorScreen() {
         await MediaLibrary.saveToLibraryAsync(finalUri);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert("Éxito", "Imagen guardada en tu galería", [
-          { text: "OK", onPress: () => router.dismissAll() }
+          { 
+            text: "OK", 
+            onPress: () => {
+              if (params.projectId) {
+                router.push({
+                  pathname: '/(tabs)/projects',
+                  params: { id: params.projectId }
+                });
+              } else {
+                router.dismissAll();
+              }
+            } 
+          }
         ]);
       } else {
         Alert.alert("Permiso denegado", "No podemos guardar la imagen sin permisos de galería.");
