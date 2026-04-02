@@ -1,21 +1,32 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AppInput } from '@/components/ui/app-input';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+const confirmEmailSchema = z.object({
+  code: z.string().length(4, 'El código debe tener 4 dígitos'),
+});
+
+type ConfirmEmailFormValues = z.infer<typeof confirmEmailSchema>;
 
 export default function ConfirmEmailScreen() {
-  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const colors = useColors();
   const router = useRouter();
 
-  const handleConfirm = async () => {
-    if (code.length < 4) {
-      Alert.alert('Error', 'Por favor ingresa el código de 4 dígitos');
-      return;
+  const { control, handleSubmit, formState: { errors } } = useForm<ConfirmEmailFormValues>({
+    resolver: zodResolver(confirmEmailSchema),
+    defaultValues: {
+      code: '',
     }
+  });
 
+  const handleConfirm = async (data: ConfirmEmailFormValues) => {
     setLoading(true);
     // Simular confirmación
     setTimeout(() => {
@@ -45,26 +56,19 @@ export default function ConfirmEmailScreen() {
         </View>
 
         <View style={styles.form}>
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.foreground }]}>Código de Verificación</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.surface, color: colors.foreground, borderColor: colors.border }]}
-              placeholder="1234"
-              placeholderTextColor={colors.muted}
-              value={code}
-              onChangeText={setCode}
-              keyboardType="number-pad"
-              maxLength={4}
-              textAlign="center"
-              letterSpacing={10}
-              fontSize={24}
-              fontWeight="700"
-            />
-          </View>
+          <AppInput
+            label="Código de Verificación"
+            name="code"
+            control={control}
+            placeholder="1234"
+            keyboardType="number-pad"
+            maxLength={4}
+            style={styles.codeInput}
+          />
 
           <TouchableOpacity 
             style={[styles.button, { backgroundColor: colors.primary }]}
-            onPress={handleConfirm}
+            onPress={handleSubmit(handleConfirm)}
             disabled={loading}
           >
             {loading ? (
@@ -92,9 +96,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '800', marginBottom: 12, textAlign: 'center' },
   subtitle: { fontSize: 16, textAlign: 'center', lineHeight: 24 },
   form: { width: '100%' },
-  inputGroup: { marginBottom: 24 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 8, textAlign: 'center' },
-  input: { height: 64, borderRadius: 16, paddingHorizontal: 16, borderWidth: 1 },
+  codeInput: { textAlign: 'center', letterSpacing: 10, fontSize: 24, fontWeight: '700' },
   button: { height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   buttonText: { color: '#FFF', fontSize: 17, fontWeight: '700' },
   resendButton: { marginTop: 24, alignSelf: 'center' },

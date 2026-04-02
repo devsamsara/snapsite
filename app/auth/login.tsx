@@ -1,26 +1,38 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AppInput } from '@/components/ui/app-input';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+const loginSchema = z.object({
+  username: z.string().min(1, 'El usuario es requerido'),
+  password: z.string().min(1, 'La contraseña es requerida'),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginScreen() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   const colors = useColors();
   const router = useRouter();
 
-  const handleLogin = async () => {
-    if (!username || !password) {
-      Alert.alert('Error', 'Por favor ingresa usuario y contraseña');
-      return;
+  const { control, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: '',
+      password: '',
     }
+  });
 
+  const onLogin = async (data: LoginFormValues) => {
     setLoading(true);
-    const success = await signIn(username, password);
+    const success = await signIn(data.username, data.password);
     setLoading(false);
 
     if (!success) {
@@ -43,29 +55,23 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.form}>
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.foreground }]}>Usuario</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.surface, color: colors.foreground, borderColor: colors.border }]}
-              placeholder="juan"
-              placeholderTextColor={colors.muted}
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-            />
-          </View>
+          <AppInput
+            label="Usuario"
+            name="username"
+            control={control}
+            placeholder="juan"
+            icon="person.fill"
+            autoCapitalize="none"
+          />
 
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.foreground }]}>Contraseña</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.surface, color: colors.foreground, borderColor: colors.border }]}
-              placeholder="••••••••"
-              placeholderTextColor={colors.muted}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-          </View>
+          <AppInput
+            label="Contraseña"
+            name="password"
+            control={control}
+            placeholder="••••••••"
+            icon="lock.fill"
+            secureTextEntry
+          />
 
           <TouchableOpacity 
             onPress={() => router.push('/auth/forgot-password')}
@@ -76,7 +82,7 @@ export default function LoginScreen() {
 
           <TouchableOpacity 
             style={[styles.button, { backgroundColor: colors.primary }]}
-            onPress={handleLogin}
+            onPress={handleSubmit(onLogin)}
             disabled={loading}
           >
             {loading ? (
@@ -106,9 +112,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '800', marginBottom: 8 },
   subtitle: { fontSize: 16 },
   form: { width: '100%' },
-  inputGroup: { marginBottom: 20 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
-  input: { height: 56, borderRadius: 16, paddingHorizontal: 16, fontSize: 16, borderWidth: 1 },
   forgotPassword: { alignSelf: 'flex-end', marginBottom: 24 },
   button: { height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
   buttonText: { color: '#FFF', fontSize: 17, fontWeight: '700' },

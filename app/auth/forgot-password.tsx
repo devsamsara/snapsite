@@ -1,21 +1,32 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AppInput } from '@/components/ui/app-input';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email('Correo electrónico inválido'),
+});
+
+type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 
 export default function ForgotPasswordScreen() {
-  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const colors = useColors();
   const router = useRouter();
 
-  const handleReset = async () => {
-    if (!email) {
-      Alert.alert('Error', 'Por favor ingresa tu correo electrónico');
-      return;
+  const { control, handleSubmit, formState: { errors } } = useForm<ForgotPasswordFormValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
+      email: '',
     }
+  });
 
+  const handleReset = async (data: ForgotPasswordFormValues) => {
     setLoading(true);
     // Simular envío de correo
     setTimeout(() => {
@@ -45,22 +56,19 @@ export default function ForgotPasswordScreen() {
         </View>
 
         <View style={styles.form}>
-          <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.foreground }]}>Correo Electrónico</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.surface, color: colors.foreground, borderColor: colors.border }]}
-              placeholder="juan@ejemplo.com"
-              placeholderTextColor={colors.muted}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
+          <AppInput
+            label="Correo Electrónico"
+            name="email"
+            control={control}
+            placeholder="juan@ejemplo.com"
+            icon="envelope.fill"
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
 
           <TouchableOpacity 
             style={[styles.button, { backgroundColor: colors.primary }]}
-            onPress={handleReset}
+            onPress={handleSubmit(handleReset)}
             disabled={loading}
           >
             {loading ? (
@@ -84,9 +92,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '800', marginBottom: 12, textAlign: 'center' },
   subtitle: { fontSize: 16, textAlign: 'center', lineHeight: 24 },
   form: { width: '100%' },
-  inputGroup: { marginBottom: 24 },
-  label: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
-  input: { height: 56, borderRadius: 16, paddingHorizontal: 16, fontSize: 16, borderWidth: 1 },
   button: { height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   buttonText: { color: '#FFF', fontSize: 17, fontWeight: '700' },
 });
