@@ -161,10 +161,8 @@ const CameraScreen: React.FC = () => {
                 <View style={styles.captureInner} />
               </TouchableOpacity>
 
-              {/* Settings Placeholder - Consistent with app design */}
-              <TouchableOpacity style={styles.thumbnailButton} onPress={() => router.push('/settings')}>
-                <IconSymbol name="gear" size={24} color="#FFF" />
-              </TouchableOpacity>
+              {/* Placeholder to maintain spacing */}
+              <View style={{ width: 50 }} />
             </View>
             
             {/* Mode Selector */}
