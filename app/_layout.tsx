@@ -92,7 +92,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="oauth/callback" />
             <Stack.Screen
-                name="photo-editor"
+                name="company-cam-clone"
                 options={{
                   headerShown: false,
                   presentation: 'fullScreenModal',

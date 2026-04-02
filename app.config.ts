@@ -115,11 +115,11 @@ const config: ExpoConfig = {
                 ios: {
                     useFrameworks: "static", // CRÍTICO para cassert
                     deploymentTarget: "15.1",
-                    newArchEnabled: true,
+                    newArchEnabled: false,
                 },
                 android: {
                     buildArchs: ["armeabi-v7a", "arm64-v8a"],
-                    newArchEnabled: true,
+                    newArchEnabled: false,
                     minSdkVersion: 24,
                 },
             },
