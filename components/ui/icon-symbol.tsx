@@ -39,6 +39,13 @@ const MAPPING = {
   "pencil.tip.crop.circle": "edit",
   "rotate.right": "rotate-right",
   "crop": "crop",
+  "plus": "add",
+  "star": "star",
+  "square.and.arrow.up": "share",
+  "pencil": "edit",
+  "checkmark": "check",
+  "location.north.fill": "near-me",
+  "arrow.triangle.2.circlepath": "sync",
 } as IconMapping;
 
 /**
