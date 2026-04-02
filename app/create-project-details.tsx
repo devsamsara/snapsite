@@ -123,17 +123,13 @@ export default function CreateProjectDetailsScreen() {
                 />
               </View>
             </View>
-
-            <AppInput
-              label="Notas (Opcional)"
-              name="notes"
-              control={control}
-              placeholder="Detalles adicionales..."
-              icon="text.bubble.fill"
-              multiline
-              numberOfLines={3}
-              style={{ height: 100, textAlignVertical: 'top', paddingTop: 12 }}
-            />
+             <AppInput
+                 label="Notas (Opcional)"
+                 name="notes"
+                 control={control}
+                 placeholder="Detalles adicionales..."
+                 icon="text.bubble.fill"
+             />
 
             <TouchableOpacity 
               style={[styles.saveButton, { backgroundColor: colors.primary }]}
