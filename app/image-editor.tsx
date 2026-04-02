@@ -1,114 +1,103 @@
-import { Text, View, TouchableOpacity, Image, Alert, Dimensions, StyleSheet } from "react-native";
+import { Text, View, TouchableOpacity, Image, Alert, Dimensions, StyleSheet, Platform, ScrollView } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { Canvas, Path, Skia } from '@shopify/react-native-skia';
-import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { Canvas, Path, Skia, TouchInfo, useTouchHandler, SkPath } from '@shopify/react-native-skia';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { captureRef } from 'react-native-view-shot';
+import * as MediaLibrary from 'expo-media-library';
+import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const IMAGE_SIZE = SCREEN_WIDTH;
+const CANVAS_SIZE = SCREEN_WIDTH;
 
-type EditMode = 'none' | 'crop' | 'draw' | 'adjust';
+type EditMode = 'none' | 'crop' | 'draw' | 'rotate';
 
 interface DrawPath {
-  path: string;
+  path: SkPath;
   color: string;
   strokeWidth: number;
 }
 
+const COLORS = [
+  '#FFFFFF', '#000000', '#FF3B30', '#FF9500', '#FFCC00', 
+  '#4CD964', '#5AC8FA', '#007AFF', '#5856D6', '#FF2D55'
+];
+
+const STROKE_WIDTHS = [3, 5, 8, 12, 20];
+
 export default function ImageEditorScreen() {
   const router = useRouter();
   const colors = useColors();
-  const { imageUri, latitude, longitude, address } = useLocalSearchParams<{ 
-    imageUri: string;
-    latitude?: string;
-    longitude?: string;
-    address?: string;
-  }>();
+  const { imageUri } = useLocalSearchParams<{ imageUri: string }>();
+  
   const [currentImageUri, setCurrentImageUri] = useState(imageUri);
   const [editMode, setEditMode] = useState<EditMode>('none');
   const [isProcessing, setIsProcessing] = useState(false);
   
   // Drawing state
   const [paths, setPaths] = useState<DrawPath[]>([]);
-  const [currentPath, setCurrentPath] = useState<any>(null);
-  const [drawColor, setDrawColor] = useState('#FF0000');
-  const [strokeWidth, setStrokeWidth] = useState(5);
+  const [redoStack, setRedoStack] = useState<DrawPath[]>([]);
+  const [drawColor, setDrawColor] = useState(COLORS[2]); // Default Red
+  const [strokeWidth, setStrokeWidth] = useState(STROKE_WIDTHS[1]);
+  
   const imageViewRef = useRef<View>(null);
 
   if (!imageUri) {
     return (
-      <View className="flex-1 bg-background justify-center items-center">
-        <Text style={{ color: colors.muted }}>No image selected</Text>
+      <View style={[styles.container, styles.center, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.muted }}>No se seleccionó ninguna imagen</Text>
       </View>
     );
   }
 
-  // Pan gesture for drawing
-  const panGesture = Gesture.Pan()
-    .onStart((event) => {
+  // Skia Touch Handler for Drawing
+  const onTouch = useTouchHandler({
+    onStart: (pt) => {
+      if (editMode !== 'draw') return;
       const newPath = Skia.Path.Make();
-      newPath.moveTo(event.x, event.y);
-      setCurrentPath(newPath);
-    })
-    .onUpdate((event) => {
-      if (currentPath) {
-        const updatedPath = currentPath.copy();
-        updatedPath.lineTo(event.x, event.y);
-        setCurrentPath(updatedPath);
+      newPath.moveTo(pt.x, pt.y);
+      setPaths(prev => [...prev, { path: newPath, color: drawColor, strokeWidth }]);
+      setRedoStack([]); // Clear redo on new action
+    },
+    onActive: (pt) => {
+      if (editMode !== 'draw') return;
+      const lastPathObj = paths[paths.length - 1];
+      if (lastPathObj) {
+        lastPathObj.path.lineTo(pt.x, pt.y);
+        setPaths([...paths]); // Trigger re-render
       }
-    })
-    .onEnd(() => {
-      if (currentPath) {
-        setPaths([...paths, {
-          path: currentPath.toSVGString(),
-          color: drawColor,
-          strokeWidth: strokeWidth,
-        }]);
-        setCurrentPath(null);
-      }
-    });
+    },
+  }, [editMode, drawColor, strokeWidth, paths]);
 
-  const handleClearDrawing = () => {
-    setPaths([]);
-    setCurrentPath(null);
+  const handleUndo = () => {
+    if (paths.length > 0) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const last = paths[paths.length - 1];
+      setRedoStack(prev => [last, ...prev]);
+      setPaths(prev => prev.slice(0, -1));
+    }
   };
 
-  const handleSaveDrawing = async () => {
-    if (paths.length === 0) {
-      Alert.alert("Sin Cambios", "No has dibujado nada en la imagen.");
-      return;
-    }
-
-    setIsProcessing(true);
-    try {
-      // Capture the view with the image and drawings
-      if (imageViewRef.current) {
-        const uri = await captureRef(imageViewRef, {
-          format: 'jpg',
-          quality: 0.9,
-        });
-        setCurrentImageUri(uri);
-        setPaths([]);
-        setEditMode('none');
-      }
-    } catch (error) {
-      Alert.alert("Error", "No se pudo guardar el dibujo");
-    } finally {
-      setIsProcessing(false);
+  const handleRedo = () => {
+    if (redoStack.length > 0) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const first = redoStack[0];
+      setRedoStack(prev => prev.slice(1));
+      setPaths(prev => [...prev, first]);
     }
   };
 
   const handleRotate = async () => {
     setIsProcessing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const manipResult = await ImageManipulator.manipulateAsync(
         currentImageUri,
         [{ rotate: 90 }],
-        { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
+        { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
       );
       setCurrentImageUri(manipResult.uri);
     } catch (error) {
@@ -118,314 +107,162 @@ export default function ImageEditorScreen() {
     }
   };
 
-  const handleFlip = async () => {
+  const handleCrop = async () => {
     setIsProcessing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
+      // Basic square crop for demo, in a real app we'd use a UI selector
       const manipResult = await ImageManipulator.manipulateAsync(
         currentImageUri,
-        [{ flip: ImageManipulator.FlipType.Horizontal }],
-        { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
+        [{ crop: { originX: 0, originY: 0, width: 1000, height: 1000 } }], // Placeholder logic
+        { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
       );
       setCurrentImageUri(manipResult.uri);
+      setEditMode('none');
     } catch (error) {
-      Alert.alert("Error", "No se pudo voltear la imagen");
+      Alert.alert("Error", "No se pudo recortar la imagen");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleCrop = async () => {
+  const handleSave = async () => {
     setIsProcessing(true);
     try {
-      // Get image dimensions first
-      Image.getSize(currentImageUri, async (width, height) => {
-        const cropSize = Math.min(width, height);
-        const originX = (width - cropSize) / 2;
-        const originY = (height - cropSize) / 2;
+      let finalUri = currentImageUri;
+      
+      // If there are drawings, capture the view
+      if (paths.length > 0 && imageViewRef.current) {
+        finalUri = await captureRef(imageViewRef, {
+          format: 'jpg',
+          quality: 1,
+        });
+      }
 
-        const manipResult = await ImageManipulator.manipulateAsync(
-          currentImageUri,
-          [
-            {
-              crop: {
-                originX: originX,
-                originY: originY,
-                width: cropSize,
-                height: cropSize,
-              },
-            },
-          ],
-          { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
-        );
-        setCurrentImageUri(manipResult.uri);
-        setEditMode('none');
-        setIsProcessing(false);
-      }, (error) => {
-        Alert.alert("Error", "No se pudo obtener las dimensiones de la imagen");
-        setIsProcessing(false);
-      });
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status === 'granted') {
+        await MediaLibrary.saveToLibraryAsync(finalUri);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert("Éxito", "Imagen guardada en tu galería", [
+          { text: "OK", onPress: () => router.back() }
+        ]);
+      } else {
+        Alert.alert("Permiso denegado", "No podemos guardar la imagen sin permisos de galería.");
+      }
     } catch (error) {
-      Alert.alert("Error", "No se pudo recortar la imagen");
+      Alert.alert("Error", "No se pudo guardar la imagen");
+    } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleSave = () => {
-    // Show location info if available
-    const locationInfo = address ? `\n\nUbicación: ${address}` : "";
-    
-    Alert.alert(
-      "Foto Guardada",
-      `La foto ha sido editada y está lista para guardar.${locationInfo}`,
-      [
-        {
-          text: "OK",
-          onPress: () => {
-            // TODO: Save photo to project with location data
-            // For now, just go back
-            router.dismissAll();
-            router.back();
-          },
-        },
-      ]
-    );
-  };
-
-  const handleCancel = () => {
-    Alert.alert(
-      "Descartar Cambios",
-      "¿Estás seguro de que quieres descartar los cambios?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Descartar",
-          style: "destructive",
-          onPress: () => {
-            router.dismissAll();
-            router.back();
-          },
-        },
-      ]
-    );
-  };
-
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={handleCancel}
-            style={styles.headerButton}
+    <GestureHandlerRootView style={[styles.container, { backgroundColor: '#000' }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+          <Text style={styles.cancelText}>Cancelar</Text>
+        </TouchableOpacity>
+        
+        <View style={styles.headerActions}>
+          <TouchableOpacity 
+            onPress={handleUndo} 
+            disabled={paths.length === 0}
+            style={[styles.iconButton, paths.length === 0 && styles.disabled]}
           >
-            <Text style={styles.cancelText}>Cancelar</Text>
+            <IconSymbol name="arrow.uturn.backward" size={20} color="#FFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Editar Foto</Text>
-          <TouchableOpacity
-            onPress={handleSave}
-            disabled={isProcessing}
-            style={[styles.headerButton, isProcessing && styles.disabledButton]}
+          <TouchableOpacity 
+            onPress={handleRedo} 
+            disabled={redoStack.length === 0}
+            style={[styles.iconButton, redoStack.length === 0 && styles.disabled]}
           >
-            <Text style={[styles.saveText, { color: colors.primary }]}>Guardar</Text>
+            <IconSymbol name="arrow.uturn.forward" size={20} color="#FFF" />
           </TouchableOpacity>
         </View>
 
-        {/* Image Preview with Drawing Canvas */}
-        <View style={styles.imageContainer}>
-          <View ref={imageViewRef} collapsable={false}>
-            <Image
-              source={{ uri: currentImageUri }}
-              style={styles.image}
-              resizeMode="contain"
-            />
-            {editMode === 'draw' && (
-              <GestureDetector gesture={panGesture}>
-                <Canvas style={styles.canvas}>
-                  {paths.map((p, index) => {
-                    const path = Skia.Path.MakeFromSVGString(p.path);
-                    return path ? (
-                      <Path
-                        key={index}
-                        path={path}
-                        color={p.color}
-                        style="stroke"
-                        strokeWidth={p.strokeWidth}
-                        strokeCap="round"
-                        strokeJoin="round"
-                      />
-                    ) : null;
-                  })}
-                  {currentPath && (
-                    <Path
-                      path={currentPath}
-                      color={drawColor}
-                      style="stroke"
-                      strokeWidth={strokeWidth}
-                      strokeCap="round"
-                      strokeJoin="round"
-                    />
-                  )}
-                </Canvas>
-              </GestureDetector>
-            )}
-          </View>
-          
-          {isProcessing && (
-            <View style={styles.processingOverlay}>
-              <Text style={styles.processingText}>Procesando...</Text>
-            </View>
-          )}
+        <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
+          <Text style={[styles.doneText, { color: colors.primary }]}>Listo</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Main Editor Area */}
+      <View style={styles.editorArea}>
+        <View ref={imageViewRef} collapsable={false} style={styles.imageWrapper}>
+          <Image
+            source={{ uri: currentImageUri }}
+            style={styles.mainImage}
+            resizeMode="contain"
+          />
+          <Canvas style={StyleSheet.absoluteFill} onTouch={onTouch}>
+            {paths.map((p, i) => (
+              <Path
+                key={i}
+                path={p.path}
+                color={p.color}
+                style="stroke"
+                strokeWidth={p.strokeWidth}
+                strokeCap="round"
+                strokeJoin="round"
+              />
+            ))}
+          </Canvas>
         </View>
+      </View>
 
-        {/* Edit Mode Panels */}
-        {editMode === 'crop' && (
-          <View style={styles.panel}>
-            <Text style={styles.panelTitle}>Recortar Imagen</Text>
-            <Text style={styles.panelDescription}>Se recortará al centro en formato cuadrado</Text>
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                onPress={handleCrop}
-                style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-              >
-                <Text style={styles.primaryButtonText}>Aplicar Recorte</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => setEditMode('none')}
-                style={styles.secondaryButton}
-              >
-                <Text style={styles.secondaryButtonText}>Cancelar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {editMode === 'draw' && (
-          <View style={styles.panel}>
-            <Text style={styles.panelTitle}>Dibujar</Text>
-            
-            {/* Color Picker */}
-            <View style={styles.colorPicker}>
-              {['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFFFFF', '#000000'].map((color) => (
-                <TouchableOpacity
-                  key={color}
-                  onPress={() => setDrawColor(color)}
-                  style={[
-                    styles.colorButton,
-                    { backgroundColor: color },
-                    drawColor === color && styles.selectedColor,
-                  ]}
+      {/* Bottom Toolbar */}
+      <View style={styles.bottomToolbar}>
+        {editMode === 'draw' ? (
+          <View style={styles.drawingTools}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorList}>
+              {COLORS.map(c => (
+                <TouchableOpacity 
+                  key={c} 
+                  onPress={() => setDrawColor(c)}
+                  style={[styles.colorCircle, { backgroundColor: c }, drawColor === c && styles.activeColor]}
                 />
               ))}
-            </View>
-
-            {/* Stroke Width Selector */}
-            <View style={styles.strokeWidthContainer}>
-              <Text style={styles.strokeWidthLabel}>Grosor:</Text>
-              {[3, 5, 8, 12].map((width) => (
-                <TouchableOpacity
-                  key={width}
-                  onPress={() => setStrokeWidth(width)}
-                  style={[
-                    styles.strokeWidthButton,
-                    strokeWidth === width && styles.selectedStrokeWidth,
-                  ]}
+            </ScrollView>
+            <View style={styles.strokeList}>
+              {STROKE_WIDTHS.map(w => (
+                <TouchableOpacity 
+                  key={w} 
+                  onPress={() => setStrokeWidth(w)}
+                  style={[styles.strokeButton, strokeWidth === w && { backgroundColor: 'rgba(255,255,255,0.2)' }]}
                 >
-                  <Text style={styles.strokeWidthText}>{width}px</Text>
+                  <View style={[styles.strokeIndicator, { width: w, height: w, borderRadius: w/2, backgroundColor: drawColor }]} />
                 </TouchableOpacity>
               ))}
             </View>
-
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                onPress={handleSaveDrawing}
-                style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-                disabled={paths.length === 0}
-              >
-                <Text style={styles.primaryButtonText}>Aplicar Dibujo</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleClearDrawing}
-                style={styles.secondaryButton}
-              >
-                <Text style={styles.secondaryButtonText}>Limpiar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  setPaths([]);
-                  setCurrentPath(null);
-                  setEditMode('none');
-                }}
-                style={styles.secondaryButton}
-              >
-                <Text style={styles.secondaryButtonText}>Cerrar</Text>
-              </TouchableOpacity>
-            </View>
           </View>
-        )}
+        ) : null}
 
-        {editMode === 'adjust' && (
-          <View style={styles.panel}>
-            <Text style={styles.panelTitle}>Ajustes</Text>
-            <View style={styles.adjustButtons}>
-              <TouchableOpacity
-                onPress={handleRotate}
-                style={styles.adjustButton}
-              >
-                <IconSymbol name="rotate.right" size={24} color="#FFFFFF" />
-                <Text style={styles.adjustButtonText}>Rotar 90°</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleFlip}
-                style={styles.adjustButton}
-              >
-                <IconSymbol name="arrow.left.and.right.righttriangle.left.righttriangle.right" size={24} color="#FFFFFF" />
-                <Text style={styles.adjustButtonText}>Voltear</Text>
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity
-              onPress={() => setEditMode('none')}
-              style={styles.secondaryButton}
-            >
-              <Text style={styles.secondaryButtonText}>Cerrar</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <View style={styles.mainTools}>
+          <TouchableOpacity 
+            onPress={() => setEditMode(editMode === 'draw' ? 'none' : 'draw')}
+            style={[styles.toolButton, editMode === 'draw' && styles.activeTool]}
+          >
+            <IconSymbol name="pencil.tip.crop.circle" size={28} color={editMode === 'draw' ? colors.primary : "#FFF"} />
+            <Text style={[styles.toolText, editMode === 'draw' && { color: colors.primary }]}>Dibujar</Text>
+          </TouchableOpacity>
 
-        {/* Bottom Toolbar */}
-        {editMode === 'none' && (
-          <View style={styles.toolbar}>
-            <TouchableOpacity
-              onPress={() => setEditMode('crop')}
-              style={styles.toolButton}
-            >
-              <View style={styles.toolIcon}>
-                <IconSymbol name="crop" size={24} color="#FFFFFF" />
-              </View>
-              <Text style={styles.toolLabel}>Recortar</Text>
-            </TouchableOpacity>
+          <TouchableOpacity onPress={handleRotate} style={styles.toolButton}>
+            <IconSymbol name="rotate.right" size={28} color="#FFF" />
+            <Text style={styles.toolText}>Rotar</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => setEditMode('draw')}
-              style={styles.toolButton}
-            >
-              <View style={styles.toolIcon}>
-                <IconSymbol name="pencil.tip.crop.circle" size={24} color="#FFFFFF" />
-              </View>
-              <Text style={styles.toolLabel}>Dibujar</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setEditMode('adjust')}
-              style={styles.toolButton}
-            >
-              <View style={styles.toolIcon}>
-                <IconSymbol name="slider.horizontal.3" size={24} color="#FFFFFF" />
-              </View>
-              <Text style={styles.toolLabel}>Ajustes</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+          <TouchableOpacity onPress={() => setEditMode('crop')} style={styles.toolButton}>
+            <IconSymbol name="crop" size={28} color="#FFF" />
+            <Text style={styles.toolText}>Recortar</Text>
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {isProcessing && (
+        <View style={styles.loader}>
+          <Text style={{ color: '#FFF', fontWeight: '600' }}>Procesando...</Text>
+        </View>
+      )}
     </GestureHandlerRootView>
   );
 }
@@ -433,194 +270,123 @@ export default function ImageEditorScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+  },
+  center: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+    paddingHorizontal: 16,
+    height: Platform.OS === 'ios' ? 100 : 70,
+    backgroundColor: '#111',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 20,
   },
   headerButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  disabledButton: {
-    opacity: 0.5,
+    padding: 8,
   },
   cancelText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#FFF',
+    fontSize: 17,
   },
-  headerTitle: {
+  doneText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
-  saveText: {
-    fontSize: 16,
-    fontWeight: '600',
+  iconButton: {
+    padding: 4,
   },
-  imageContainer: {
+  disabled: {
+    opacity: 0.3,
+  },
+  editorArea: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#000',
   },
-  image: {
-    width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
+  imageWrapper: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_WIDTH,
+    backgroundColor: '#111',
   },
-  canvas: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
+  mainImage: {
+    width: '100%',
+    height: '100%',
   },
-  processingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  bottomToolbar: {
+    backgroundColor: '#111',
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    paddingTop: 10,
   },
-  processingText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-  },
-  panel: {
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  panelTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  panelDescription: {
-    fontSize: 14,
-    color: '#AAAAAA',
-    marginBottom: 16,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  primaryButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  primaryButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  secondaryButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  colorPicker: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-    flexWrap: 'wrap',
-  },
-  colorButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  selectedColor: {
-    borderColor: '#FFFFFF',
-    borderWidth: 3,
-  },
-  strokeWidthContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 8,
-  },
-  strokeWidthLabel: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    marginRight: 8,
-  },
-  strokeWidthButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  selectedStrokeWidth: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  strokeWidthText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-  },
-  adjustButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  adjustButton: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    gap: 8,
-  },
-  adjustButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  toolbar: {
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    paddingBottom: 40,
+  mainTools: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingTop: 10,
   },
   toolButton: {
     alignItems: 'center',
+    gap: 4,
+    width: 80,
   },
-  toolIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  toolText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  activeTool: {
+    opacity: 1,
+  },
+  drawingTools: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#222',
+    paddingBottom: 15,
+    marginBottom: 10,
+  },
+  colorList: {
+    paddingHorizontal: 20,
+    gap: 15,
+    height: 40,
     alignItems: 'center',
+  },
+  colorCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  activeColor: {
+    borderColor: '#FFF',
+    transform: [{ scale: 1.1 }],
+  },
+  strokeList: {
+    flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 8,
+    gap: 20,
+    marginTop: 15,
   },
-  toolLabel: {
-    fontSize: 12,
-    color: '#FFFFFF',
+  strokeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+  strokeIndicator: {
+    backgroundColor: '#FFF',
+  },
+  loader: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  }
 });
