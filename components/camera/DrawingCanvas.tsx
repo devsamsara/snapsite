@@ -1,14 +1,10 @@
-import React, { useRef, useCallback } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useRef, useCallback, useMemo } from 'react';
+import { StyleSheet, View, PanResponder } from 'react-native';
 import {
   Canvas,
   Path,
   Skia,
-  useTouchHandler,
   useCanvasRef,
-  BlendMode,
-  StrokeCap,
-  StrokeJoin,
 } from '@shopify/react-native-skia';
 import { DrawMode, DrawPath } from './types';
 
@@ -34,101 +30,95 @@ export const DrawingCanvas: React.FC<Props> = ({
   enabled,
 }) => {
   const canvasRef = useCanvasRef();
-  const currentPathRef = useRef<ReturnType<typeof Skia.Path.Make> | null>(null);
+  const currentSkiaPath = useRef<ReturnType<typeof Skia.Path.Make> | null>(null);
   const currentIdRef = useRef<string>('');
+  // Keep a ref so PanResponder callbacks always see latest paths without stale closure
   const pathsRef = useRef<DrawPath[]>(paths);
   pathsRef.current = paths;
 
-  const resolvedColor = mode === 'eraser' ? 'transparent' : color;
-  const resolvedWidth = mode === 'marker' ? strokeWidth * 3 : strokeWidth;
-  const resolvedOpacity = mode === 'marker' ? 0.5 : 1;
+  const resolvedWidth = mode === 'marker' ? strokeWidth * 2.5 : strokeWidth;
 
-  const touchHandler = useTouchHandler(
-    {
-      onStart: ({ x, y }) => {
-        if (!enabled) return;
-        const skPath = Skia.Path.Make();
-        skPath.moveTo(x, y);
-        currentPathRef.current = skPath;
-        currentIdRef.current = `path_${Date.now()}`;
-      },
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => enabled,
+        onMoveShouldSetPanResponder: () => enabled,
+        onStartShouldSetPanResponderCapture: () => enabled,
+        onMoveShouldSetPanResponderCapture: () => enabled,
 
-      onActive: ({ x, y }) => {
-        if (!enabled || !currentPathRef.current) return;
-        currentPathRef.current.lineTo(x, y);
+        onPanResponderGrant: (e) => {
+          const { locationX, locationY } = e.nativeEvent;
+          const skPath = Skia.Path.Make();
+          skPath.moveTo(locationX, locationY);
+          currentSkiaPath.current = skPath;
+          currentIdRef.current = `path_${Date.now()}_${Math.random()}`;
+        },
 
-        const newPath: DrawPath = {
-          id: currentIdRef.current,
-          path: currentPathRef.current.toSVGString(),
-          color: resolvedColor,
-          strokeWidth: resolvedWidth,
-          mode,
-        };
+        onPanResponderMove: (e) => {
+          if (!currentSkiaPath.current) return;
+          const { locationX, locationY } = e.nativeEvent;
+          currentSkiaPath.current.lineTo(locationX, locationY);
 
-        const existing = pathsRef.current.filter(
-          (p) => p.id !== currentIdRef.current
-        );
-        onPathsChange([...existing, newPath]);
-      },
+          const newPath: DrawPath = {
+            id: currentIdRef.current,
+            path: currentSkiaPath.current.toSVGString(),
+            color: mode === 'eraser' ? '#000000' : color,
+            strokeWidth: resolvedWidth,
+            mode,
+          };
 
-      onEnd: () => {
-        currentPathRef.current = null;
-      },
-    },
-    [enabled, resolvedColor, resolvedWidth, mode]
+          const existing = pathsRef.current.filter(
+            (p) => p.id !== currentIdRef.current
+          );
+          onPathsChange([...existing, newPath]);
+        },
+
+        onPanResponderRelease: () => {
+          currentSkiaPath.current = null;
+        },
+
+        onPanResponderTerminate: () => {
+          currentSkiaPath.current = null;
+        },
+      }),
+    // Recreate when drawing params change (new tool/color/size selected)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [enabled, color, resolvedWidth, mode]
   );
 
-  const renderPath = useCallback(
-    (drawPath: DrawPath) => {
-      const skPath = Skia.Path.MakeFromSVGString(drawPath.path);
-      if (!skPath) return null;
+  const renderPath = useCallback((drawPath: DrawPath) => {
+    const skPath = Skia.Path.MakeFromSVGString(drawPath.path);
+    if (!skPath) return null;
 
-      const paint = Skia.Paint();
-      paint.setAntiAlias(true);
-      paint.setStrokeWidth(drawPath.strokeWidth);
-      paint.setStrokeCap(StrokeCap.Round);
-      paint.setStrokeJoin(StrokeJoin.Round);
-      paint.setStyle(1); // Stroke
+    const isEraser = drawPath.mode === 'eraser';
+    const isMarker = drawPath.mode === 'marker';
 
-      if (drawPath.mode === 'eraser') {
-        paint.setBlendMode(BlendMode.Clear);
-      }
-
-      return (
-        <Path
-          key={drawPath.id}
-          path={skPath}
-          color={drawPath.mode === 'eraser' ? 'transparent' : drawPath.color}
-          style="stroke"
-          strokeWidth={drawPath.strokeWidth}
-          strokeCap="round"
-          strokeJoin="round"
-          opacity={drawPath.mode === 'marker' ? 0.5 : 1}
-          blendMode={drawPath.mode === 'eraser' ? 'clear' : 'srcOver'}
-        />
-      );
-    },
-    []
-  );
+    return (
+      <Path
+        key={drawPath.id}
+        path={skPath}
+        color={isEraser ? '#000000' : drawPath.color}
+        style="stroke"
+        strokeWidth={drawPath.strokeWidth}
+        strokeCap="round"
+        strokeJoin="round"
+        opacity={isMarker ? 0.45 : 1}
+        blendMode={isEraser ? 'clear' : 'srcOver'}
+      />
+    );
+  }, []);
 
   return (
-    <View style={[styles.container, { width, height }]} pointerEvents={enabled ? 'auto' : 'none'}>
-      <Canvas
-        ref={canvasRef}
-        style={{ width, height }}
-        onTouch={touchHandler}
-      >
+    <View
+      style={[styles.container, { width, height }]}
+      pointerEvents={enabled ? 'auto' : 'none'}
+      {...panResponder.panHandlers}
+    >
+      <Canvas ref={canvasRef} style={{ width, height }}>
         {paths.map(renderPath)}
       </Canvas>
     </View>
   );
-};
-
-// Expose the canvas ref snapshot capability
-export const captureCanvas = (
-  canvasRef: React.RefObject<ReturnType<typeof useCanvasRef>>
-) => {
-  return canvasRef.current?.makeImageSnapshot();
 };
 
 const styles = StyleSheet.create({
