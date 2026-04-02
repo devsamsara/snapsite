@@ -1,11 +1,12 @@
-import React, { useRef, useCallback, useMemo } from 'react';
-import { StyleSheet, View, PanResponder } from 'react-native';
-import {
-  Canvas,
-  Path,
-  Skia,
-  useCanvasRef,
-} from '@shopify/react-native-skia';
+/**
+ * DrawingCanvas.tsx
+ *
+ * Rewritten using react-native-svg (which you already have installed).
+ * No Skia = no touch conflicts. Same pattern that worked in your original code.
+ */
+import React, { useRef } from 'react';
+import { View, PanResponder, StyleSheet } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { DrawMode, DrawPath } from './types';
 
 interface Props {
@@ -29,102 +30,87 @@ export const DrawingCanvas: React.FC<Props> = ({
   onPathsChange,
   enabled,
 }) => {
-  const canvasRef = useCanvasRef();
-  const currentSkiaPath = useRef<ReturnType<typeof Skia.Path.Make> | null>(null);
-  const currentIdRef = useRef<string>('');
-  // Keep a ref so PanResponder callbacks always see latest paths without stale closure
-  const pathsRef = useRef<DrawPath[]>(paths);
-  pathsRef.current = paths;
+  // Refs so PanResponder (created once) always sees latest values
+  const pathsRef      = useRef(paths);
+  const colorRef      = useRef(color);
+  const strokeRef     = useRef(strokeWidth);
+  const modeRef       = useRef(mode);
+  const onChangeRef   = useRef(onPathsChange);
+  const pointsRef     = useRef<string[]>([]);
+  const currentIdRef  = useRef('');
 
-  const resolvedWidth = mode === 'marker' ? strokeWidth * 2.5 : strokeWidth;
+  pathsRef.current    = paths;
+  colorRef.current    = color;
+  strokeRef.current   = strokeWidth;
+  modeRef.current     = mode;
+  onChangeRef.current = onPathsChange;
 
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => enabled,
-        onMoveShouldSetPanResponder: () => enabled,
-        onStartShouldSetPanResponderCapture: () => enabled,
-        onMoveShouldSetPanResponderCapture: () => enabled,
+  const resolveWidth  = () =>
+    modeRef.current === 'marker' ? strokeRef.current * 2.5 : strokeRef.current;
+  const resolveColor  = () =>
+    modeRef.current === 'eraser' ? '#000000' : colorRef.current;
+  const resolveOpacity = () =>
+    modeRef.current === 'marker' ? 0.45 : 1;
 
-        onPanResponderGrant: (e) => {
-          const { locationX, locationY } = e.nativeEvent;
-          const skPath = Skia.Path.Make();
-          skPath.moveTo(locationX, locationY);
-          currentSkiaPath.current = skPath;
-          currentIdRef.current = `path_${Date.now()}_${Math.random()}`;
-        },
+  // Created ONCE — same reliable pattern as your original working code
+  const pan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponderCapture: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
 
-        onPanResponderMove: (e) => {
-          if (!currentSkiaPath.current) return;
-          const { locationX, locationY } = e.nativeEvent;
-          currentSkiaPath.current.lineTo(locationX, locationY);
+      onPanResponderGrant: (e) => {
+        const { locationX, locationY } = e.nativeEvent;
+        pointsRef.current = [`M${locationX.toFixed(1)},${locationY.toFixed(1)}`];
+        currentIdRef.current = `p_${Date.now()}`;
+      },
 
-          const newPath: DrawPath = {
-            id: currentIdRef.current,
-            path: currentSkiaPath.current.toSVGString(),
-            color: mode === 'eraser' ? '#000000' : color,
-            strokeWidth: resolvedWidth,
-            mode,
-          };
+      onPanResponderMove: (e) => {
+        const { locationX, locationY } = e.nativeEvent;
+        pointsRef.current.push(`L${locationX.toFixed(1)},${locationY.toFixed(1)}`);
 
-          const existing = pathsRef.current.filter(
-            (p) => p.id !== currentIdRef.current
-          );
-          onPathsChange([...existing, newPath]);
-        },
+        const newPath: DrawPath = {
+          id:          currentIdRef.current,
+          path:        pointsRef.current.join(' '),
+          color:       resolveColor(),
+          strokeWidth: resolveWidth(),
+          mode:        modeRef.current,
+        };
 
-        onPanResponderRelease: () => {
-          currentSkiaPath.current = null;
-        },
+        const rest = pathsRef.current.filter(p => p.id !== currentIdRef.current);
+        onChangeRef.current([...rest, newPath]);
+      },
 
-        onPanResponderTerminate: () => {
-          currentSkiaPath.current = null;
-        },
-      }),
-    // Recreate when drawing params change (new tool/color/size selected)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [enabled, color, resolvedWidth, mode]
-  );
-
-  const renderPath = useCallback((drawPath: DrawPath) => {
-    const skPath = Skia.Path.MakeFromSVGString(drawPath.path);
-    if (!skPath) return null;
-
-    const isEraser = drawPath.mode === 'eraser';
-    const isMarker = drawPath.mode === 'marker';
-
-    return (
-      <Path
-        key={drawPath.id}
-        path={skPath}
-        color={isEraser ? '#000000' : drawPath.color}
-        style="stroke"
-        strokeWidth={drawPath.strokeWidth}
-        strokeCap="round"
-        strokeJoin="round"
-        opacity={isMarker ? 0.45 : 1}
-        blendMode={isEraser ? 'clear' : 'srcOver'}
-      />
-    );
-  }, []);
+      onPanResponderRelease: () => {
+        pointsRef.current = [];
+      },
+      onPanResponderTerminate: () => {
+        pointsRef.current = [];
+      },
+    })
+  ).current;
 
   return (
     <View
-      style={[styles.container, { width, height }]}
+      style={[StyleSheet.absoluteFill, { width, height }]}
       pointerEvents={enabled ? 'auto' : 'none'}
-      {...panResponder.panHandlers}
+      {...pan.panHandlers}
     >
-      <Canvas ref={canvasRef} style={{ width, height }}>
-        {paths.map(renderPath)}
-      </Canvas>
+      <Svg width={width} height={height}>
+        {paths.map((p) => (
+          <Path
+            key={p.id}
+            d={p.path}
+            stroke={p.color}
+            strokeWidth={p.strokeWidth}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            opacity={p.mode === 'marker' ? 0.45 : 1}
+          />
+        ))}
+      </Svg>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-});
