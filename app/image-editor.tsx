@@ -280,8 +280,10 @@ export default function ImageEditorScreen() {
           >
             <Image source={{ uri: currentImageUri }} style={styles.mainImage} resizeMode="contain" />
             <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
-              {paths.map((p, i) => (
-                <Path key={i} path={p.segments} color={p.color} style="stroke" strokeWidth={p.strokeWidth} strokeCap="round" strokeJoin="round" />
+              {Array.isArray(paths) && paths.map((p, i) => (
+                p && p.segments ? (
+                  <Path key={i} path={p.segments} color={p.color} style="stroke" strokeWidth={p.strokeWidth} strokeCap="round" strokeJoin="round" />
+                ) : null
               ))}
             </Canvas>
 

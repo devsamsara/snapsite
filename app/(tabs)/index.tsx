@@ -4,6 +4,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { SearchBar } from "@/components/search-bar";
 import { useColors } from "@/hooks/use-colors";
+import { FabOptions } from "@/components/fab-options";
 
 // Mock data for recent projects
 const RECENT_PROJECTS = [
@@ -566,16 +567,8 @@ export default function HomeScreen() {
           )}
         </ScrollView>
 
-        {/* Floating Action Button */}
-        <View style={{ position: 'absolute', bottom: 100, right: 24 }}>
-          <TouchableOpacity
-            onPress={handleCreateProject}
-            className="w-14 h-14 rounded-full items-center justify-center shadow-lg"
-            style={{ backgroundColor: colors.primary }}
-          >
-            <IconSymbol name="plus.circle.fill" size={28} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
+        {/* Floating Action Button Options */}
+        <FabOptions />
       </View>
     </ScreenContainer>
   );
