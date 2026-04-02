@@ -28,6 +28,17 @@ const MAPPING = {
   "square.on.square": "content-copy",
   "bubble.left.and.bubble.right.fill": "chat",
   "clock.fill": "schedule",
+  "xmark": "close",
+  "bolt.fill": "flash-on",
+  "bolt.slash.fill": "flash-off",
+  "bolt.badge.a.fill": "flash-auto",
+  "photo.on.rectangle": "photo-library",
+  "arrow.triangle.2.circlepath.camera": "flip-camera-ios",
+  "arrow.uturn.backward": "undo",
+  "arrow.uturn.forward": "redo",
+  "pencil.tip.crop.circle": "edit",
+  "rotate.right": "rotate-right",
+  "crop": "crop",
 } as IconMapping;
 
 /**
