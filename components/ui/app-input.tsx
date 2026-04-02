@@ -122,6 +122,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: '100%',
     fontSize: 16,
+    textAlignVertical: 'center',
   },
   eyeButton: {
     padding: 8,

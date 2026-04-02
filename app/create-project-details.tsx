@@ -132,7 +132,7 @@ export default function CreateProjectDetailsScreen() {
               icon="text.bubble.fill"
               multiline
               numberOfLines={3}
-              style={{ height: 100, paddingTop: 12 }}
+              style={{ height: 100, textAlignVertical: 'top', paddingTop: 12 }}
             />
 
             <TouchableOpacity 
