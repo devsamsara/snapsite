@@ -1,19 +1,18 @@
-import { Text, View, TouchableOpacity, Image, Alert, Dimensions, StyleSheet, Platform, ScrollView } from "react-native";
+import { Text, View, TouchableOpacity, Image, Alert, Dimensions, StyleSheet, Platform, ScrollView, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { Canvas, Path, Skia, TouchInfo, useTouchHandler, SkPath } from '@shopify/react-native-skia';
+import { Canvas, Path, Skia, useTouchHandler, SkPath } from '@shopify/react-native-skia';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
 import * as Haptics from 'expo-haptics';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CANVAS_SIZE = SCREEN_WIDTH;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type EditMode = 'none' | 'crop' | 'draw' | 'rotate';
+type EditMode = 'none' | 'draw' | 'crop';
 
 interface DrawPath {
   path: SkPath;
@@ -45,10 +44,17 @@ export default function ImageEditorScreen() {
   
   const imageViewRef = useRef<View>(null);
 
-  if (!imageUri) {
+  useEffect(() => {
+    if (imageUri) {
+      setCurrentImageUri(imageUri);
+    }
+  }, [imageUri]);
+
+  if (!currentImageUri) {
     return (
       <View style={[styles.container, styles.center, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.muted }}>No se seleccionó ninguna imagen</Text>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.muted, marginTop: 16 }}>Cargando imagen...</Text>
       </View>
     );
   }
@@ -60,14 +66,14 @@ export default function ImageEditorScreen() {
       const newPath = Skia.Path.Make();
       newPath.moveTo(pt.x, pt.y);
       setPaths(prev => [...prev, { path: newPath, color: drawColor, strokeWidth }]);
-      setRedoStack([]); // Clear redo on new action
+      setRedoStack([]); 
     },
     onActive: (pt) => {
       if (editMode !== 'draw') return;
       const lastPathObj = paths[paths.length - 1];
       if (lastPathObj) {
         lastPathObj.path.lineTo(pt.x, pt.y);
-        setPaths([...paths]); // Trigger re-render
+        setPaths([...paths]); 
       }
     },
   }, [editMode, drawColor, strokeWidth, paths]);
@@ -111,10 +117,10 @@ export default function ImageEditorScreen() {
     setIsProcessing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      // Basic square crop for demo, in a real app we'd use a UI selector
+      // Simulación de recorte cuadrado central
       const manipResult = await ImageManipulator.manipulateAsync(
         currentImageUri,
-        [{ crop: { originX: 0, originY: 0, width: 1000, height: 1000 } }], // Placeholder logic
+        [{ crop: { originX: 0, originY: 0, width: 1000, height: 1000 } }], 
         { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
       );
       setCurrentImageUri(manipResult.uri);
@@ -131,7 +137,6 @@ export default function ImageEditorScreen() {
     try {
       let finalUri = currentImageUri;
       
-      // If there are drawings, capture the view
       if (paths.length > 0 && imageViewRef.current) {
         finalUri = await captureRef(imageViewRef, {
           format: 'jpg',
@@ -144,7 +149,7 @@ export default function ImageEditorScreen() {
         await MediaLibrary.saveToLibraryAsync(finalUri);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert("Éxito", "Imagen guardada en tu galería", [
-          { text: "OK", onPress: () => router.back() }
+          { text: "OK", onPress: () => router.dismissAll() }
         ]);
       } else {
         Alert.alert("Permiso denegado", "No podemos guardar la imagen sin permisos de galería.");
@@ -212,7 +217,7 @@ export default function ImageEditorScreen() {
 
       {/* Bottom Toolbar */}
       <View style={styles.bottomToolbar}>
-        {editMode === 'draw' ? (
+        {editMode === 'draw' && (
           <View style={styles.drawingTools}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorList}>
               {COLORS.map(c => (
@@ -235,7 +240,7 @@ export default function ImageEditorScreen() {
               ))}
             </View>
           </View>
-        ) : null}
+        )}
 
         <View style={styles.mainTools}>
           <TouchableOpacity 
@@ -251,16 +256,17 @@ export default function ImageEditorScreen() {
             <Text style={styles.toolText}>Rotar</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => setEditMode('crop')} style={styles.toolButton}>
-            <IconSymbol name="crop" size={28} color="#FFF" />
-            <Text style={styles.toolText}>Recortar</Text>
+          <TouchableOpacity onPress={() => setEditMode(editMode === 'crop' ? 'none' : 'crop')} style={[styles.toolButton, editMode === 'crop' && styles.activeTool]}>
+            <IconSymbol name="crop" size={28} color={editMode === 'crop' ? colors.primary : "#FFF"} />
+            <Text style={[styles.toolText, editMode === 'crop' && { color: colors.primary }]}>Recortar</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {isProcessing && (
         <View style={styles.loader}>
-          <Text style={{ color: '#FFF', fontWeight: '600' }}>Procesando...</Text>
+          <ActivityIndicator size="large" color="#FFF" />
+          <Text style={{ color: '#FFF', fontWeight: '600', marginTop: 12 }}>Procesando...</Text>
         </View>
       )}
     </GestureHandlerRootView>
@@ -388,5 +394,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1000,
   }
 });
