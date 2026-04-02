@@ -8,6 +8,7 @@ import "react-native-reanimated";
 import { Platform } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { AuthProvider } from "@/lib/auth-context";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -82,9 +83,12 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
-          {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
-          {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
-          <Stack screenOptions={{ headerShown: false }}>
+          <AuthProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="auth/login" />
+              <Stack.Screen name="auth/register" />
+              <Stack.Screen name="auth/forgot-password" />
+              <Stack.Screen name="auth/confirm-email" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="oauth/callback" />
             <Stack.Screen
@@ -95,15 +99,15 @@ export default function RootLayout() {
                   animation: 'slide_from_bottom',
                 }}
             />
-            <Stack.Screen 
-              name="add-photo-modal" 
-              options={{ 
+            <Stack.Screen
+              name="add-photo-modal"
+              options={{
                 presentation: 'modal',
                 animation: 'slide_from_bottom'
-              }} 
+              }}
             />
           </Stack>
-          <StatusBar style="auto" />
+          <StatusBar style="auto" /></AuthProvider>
         </QueryClientProvider>
       </trpc.Provider>
     </GestureHandlerRootView>
