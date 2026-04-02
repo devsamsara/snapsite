@@ -25,16 +25,9 @@ import {
   useImage,
   ColorMatrix,
 } from '@shopify/react-native-skia';
+import {Adjustments, AspectRatio, CropRect, DrawMode, DrawPath, EditorTool} from "@/components/camera";
+import {DEFAULT_ADJUSTMENTS, DEFAULT_CROP} from "@/components/camera/types";
 
-import { CropOverlay } from './CropOverlay';
-import { AdjustPanel } from './AdjustPanel';
-import { EditorToolbar } from './EditorToolbar';
-import { DrawingCanvas } from './DrawingCanvas';
-import {
-  EditorTool, DrawMode, DrawPath, CropRect,
-  Adjustments, AspectRatio,
-  DEFAULT_ADJUSTMENTS, DEFAULT_CROP,
-} from './types';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
