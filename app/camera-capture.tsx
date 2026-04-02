@@ -1,103 +1,74 @@
-import { Text, View, TouchableOpacity, Alert, StyleSheet, Dimensions, Platform, Image } from "react-native";
-import { useRouter } from "expo-router";
+import React, { useState, useRef, useEffect } from "react";
+import { View, StyleSheet, TouchableOpacity, Text, Alert, Dimensions, Image } from "react-native";
+import { CameraView, useCameraPermissions, FlashMode } from "expo-camera";
+import * as ImagePicker from "expo-image-picker";
+import * as Haptics from "expo-haptics";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
-import { CameraView, CameraType, useCameraPermissions, FlashMode } from 'expo-camera';
-import { useState, useRef, useEffect } from 'react';
-import * as Haptics from 'expo-haptics';
-import * as ImagePicker from 'expo-image-picker';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function CameraCaptureScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ projectId?: string }>();
   const colors = useColors();
-  const [facing, setFacing] = useState<CameraType>('back');
-  const [flash, setFlash] = useState<FlashMode>('off');
   const [permission, requestPermission] = useCameraPermissions();
+  const [facing, setFacing] = useState<"back" | "front">("back");
+  const [flash, setFlash] = useState<FlashMode>("off");
+  const [isReady, setIsReady] = useState(false);
   const [lastPhoto, setLastPhoto] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
-  const [isReady, setIsReady] = useState(false);
 
-  // Cargar la última foto de la galería para el thumbnail (opcional, pero mejora la UX)
   useEffect(() => {
-    (async () => {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status === 'granted') {
-        const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ['images'],
-          allowsEditing: false,
-          quality: 0.1,
-          selectionLimit: 1,
-        });
-        if (!result.canceled && result.assets && result.assets[0]) {
-          // No abrimos el picker, solo intentamos obtener una miniatura si fuera posible
-          // Pero para simplificar y no confundir al usuario, usaremos un icono si no hay captura reciente
-        }
-      }
-    })();
-  }, []);
+    if (!permission) {
+      requestPermission();
+    }
+  }, [permission]);
 
   if (!permission) {
-    return <View style={[styles.container, { backgroundColor: '#000' }]} />;
+    return <View style={styles.container} />;
   }
 
   if (!permission.granted) {
     return (
-      <View style={[styles.container, styles.center, { backgroundColor: colors.background, paddingHorizontal: 24 }]}>
-        <IconSymbol name="camera.fill" size={64} color={colors.muted} />
-        <Text style={[styles.permissionTitle, { color: colors.foreground }]}>
-          Permiso de Cámara Requerido
-        </Text>
-        <Text style={[styles.permissionText, { color: colors.muted }]}>
-          Necesitamos acceso a tu cámara para capturar fotos del proyecto con la mejor calidad.
-        </Text>
-        <TouchableOpacity
-          onPress={requestPermission}
-          style={[styles.permissionButton, { backgroundColor: colors.primary }]}
-        >
-          <Text style={styles.permissionButtonText}>Permitir Acceso</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
-          <Text style={{ color: colors.muted, fontSize: 16 }}>Cancelar</Text>
+      <View style={[styles.container, styles.center]}>
+        <Text style={styles.message}>Necesitamos permiso para usar la cámara</Text>
+        <TouchableOpacity onPress={requestPermission} style={styles.permissionButton}>
+          <Text style={styles.permissionButtonText}>Conceder Permiso</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   const toggleCameraFacing = () => {
+    setFacing(current => (current === "back" ? "front" : "back"));
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
   const toggleFlash = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setFlash(current => {
-      if (current === 'off') return 'on';
-      if (current === 'on') return 'auto';
-      return 'off';
+      if (current === "off") return "on";
+      if (current === "on") return "auto";
+      return "off";
     });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const openGallery = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
-    if (status !== 'granted') {
-      Alert.alert('Permiso Requerido', 'Necesitamos acceso a tu galería.');
-      return;
-    }
-
+  const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: false,
       quality: 1,
     });
 
-    if (!result.canceled && result.assets && result.assets[0]) {
+    if (!result.canceled && result.assets && result.assets.length > 0) {
       router.push({
         pathname: "/image-editor",
-        params: { imageUri: result.assets[0].uri }
+        params: { 
+          imageUri: result.assets[0].uri,
+          projectId: params.projectId
+        }
       });
     }
   };
@@ -116,7 +87,10 @@ export default function CameraCaptureScreen() {
           setLastPhoto(photo.uri);
           router.push({
             pathname: "/image-editor",
-            params: { imageUri: photo.uri }
+            params: { 
+              imageUri: photo.uri,
+              projectId: params.projectId 
+            }
           });
         }
       } catch (error) {
@@ -149,39 +123,37 @@ export default function CameraCaptureScreen() {
           </TouchableOpacity>
           
           <TouchableOpacity onPress={toggleFlash} style={styles.iconButton}>
-            <IconSymbol name={renderFlashIcon()} size={22} color={flash !== 'off' ? '#FFD60A' : '#FFF'} />
+            <IconSymbol 
+              name={renderFlashIcon()} 
+              size={22} 
+              color={flash !== 'off' ? '#FFD60A' : '#FFF'} 
+            />
           </TouchableOpacity>
         </View>
 
         {/* Bottom Controls Overlay */}
-        <View style={styles.bottomContainer}>
+        <View style={styles.bottomControls}>
           <View style={styles.controlsRow}>
-            {/* Gallery Preview */}
-            <TouchableOpacity 
-              onPress={openGallery}
-              style={styles.thumbnailButton}
-            >
+            {/* Gallery Preview / Button */}
+            <TouchableOpacity onPress={pickImage} style={styles.galleryButton}>
               {lastPhoto ? (
-                <Image source={{ uri: lastPhoto }} style={styles.thumbnailImage} />
+                <Image source={{ uri: lastPhoto }} style={styles.galleryPreview} />
               ) : (
-                <IconSymbol name="photo.on.rectangle" size={24} color="#FFF" />
+                <View style={styles.galleryPlaceholder}>
+                  <IconSymbol name="photo.on.rectangle" size={24} color="#FFF" />
+                </View>
               )}
             </TouchableOpacity>
 
-            {/* Capture Button */}
-            <TouchableOpacity onPress={takePicture} style={styles.captureOuter}>
-              <View style={styles.captureInner} />
+            {/* Shutter Button */}
+            <TouchableOpacity onPress={takePicture} style={styles.shutterOuter}>
+              <View style={styles.shutterInner} />
             </TouchableOpacity>
 
-            {/* Flip Camera */}
-            <TouchableOpacity onPress={toggleCameraFacing} style={styles.thumbnailButton}>
-              <IconSymbol name="arrow.triangle.2.circlepath.camera" size={26} color="#FFF" />
+            {/* Flip Camera Button */}
+            <TouchableOpacity onPress={toggleCameraFacing} style={styles.iconButton}>
+              <IconSymbol name="arrow.triangle.2.circlepath" size={26} color="#FFF" />
             </TouchableOpacity>
-          </View>
-          
-          {/* Mode Selector */}
-          <View style={styles.modeSelector}>
-            <Text style={styles.modeTextActive}>FOTO</Text>
           </View>
         </View>
       </CameraView>
@@ -192,104 +164,95 @@ export default function CameraCaptureScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: "#000",
   },
   center: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
   },
   camera: {
     flex: 1,
   },
   topControls: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    position: "absolute",
+    top: 50,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 25,
+    zIndex: 10,
+  },
+  bottomControls: {
+    position: "absolute",
+    bottom: 50,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 30,
+    zIndex: 10,
+  },
+  controlsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   iconButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  bottomContainer: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    paddingBottom: Platform.OS === 'ios' ? 50 : 30,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  controlsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  captureOuter: {
+  shutterOuter: {
     width: 80,
     height: 80,
     borderRadius: 40,
     borderWidth: 4,
-    borderColor: '#FFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderColor: "#FFF",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  captureInner: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#FFF',
+  shutterInner: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    backgroundColor: "#FFF",
   },
-  thumbnailButton: {
-    width: 50,
-    height: 50,
+  galleryButton: {
+    width: 44,
+    height: 44,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
+    overflow: "hidden",
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  thumbnailImage: {
-    width: '100%',
-    height: '100%',
+  galleryPreview: {
+    width: "100%",
+    height: "100%",
   },
-  modeSelector: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+  galleryPlaceholder: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  modeTextActive: {
-    color: '#FFD60A',
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 1,
-  },
-  permissionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginTop: 24,
-    textAlign: 'center',
-  },
-  permissionText: {
+  message: {
+    color: "#FFF",
     fontSize: 16,
-    textAlign: 'center',
-    marginTop: 12,
-    marginBottom: 32,
-    lineHeight: 22,
+    textAlign: "center",
+    marginBottom: 20,
   },
   permissionButton: {
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 16,
-    width: '100%',
-    alignItems: 'center',
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
   },
   permissionButtonText: {
-    color: '#FFF',
-    fontSize: 17,
-    fontWeight: '600',
+    color: "#FFF",
+    fontWeight: "bold",
   },
 });
