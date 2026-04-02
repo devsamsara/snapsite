@@ -2,6 +2,7 @@ import { ScrollView, Text, View, TouchableOpacity, FlatList, TextInput } from "r
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { SearchInput } from "@/components/ui/search-input";
 import { useColors } from "@/hooks/use-colors";
 import { useState } from "react";
 
@@ -153,20 +154,12 @@ export default function ProjectsScreen() {
           </Text>
 
           {/* Search Bar */}
-          <View
-            className="flex-row items-center px-4 py-3 rounded-xl border border-border mb-4"
-            style={{ backgroundColor: colors.surface }}
-          >
-            <IconSymbol name="chevron.right" size={16} color={colors.muted} />
-            <TextInput
-              className="flex-1 text-foreground"
-              style={{ marginLeft: 12 }}
-              placeholder="Search projects..."
-              placeholderTextColor={colors.muted}
-              value={searchText}
-              onChangeText={setSearchText}
-            />
-          </View>
+          <SearchInput 
+            placeholder="Search projects..." 
+            value={searchText}
+            onChangeText={setSearchText}
+            style={{ marginBottom: 16 }}
+          />
 
           {/* Filter Buttons */}
           <View className="flex-row gap-2">
