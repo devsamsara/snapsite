@@ -1,424 +1,113 @@
-// components/InstagramCamera.tsx
-import React, { useState, useRef, useCallback } from 'react';
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  Text,
-  Dimensions,
-  Alert,
-  Image,
-  Modal,
-  Platform,
-} from 'react-native';
-import {
-  Camera,
-  useCameraDevice,
-  PhotoFile,
-  useCameraPermission,
-  useCodeScanner,
-} from 'react-native-vision-camera';
+import React, { useState, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Image, Alert, PanResponder } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
-import { Ionicons } from '@expo/vector-icons';
-import PhotoEditorModal from "@/components/PhotoEditorModal";
+import Svg, { Path } from 'react-native-svg';
+import ViewShot, { captureRef } from 'react-native-view-shot';
+import PhotoEditor from "@/components/camera/PhotoEditor";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+export default function PhotoEditorPro() {
+  const [image, setImage] = useState(null);
+  const [paths, setPaths] = useState([]);
+  const [currentPath, setCurrentPath] = useState([]);
+  const [penColor, setPenColor] = useState('red');
+  const [strokeWidth, setStrokeWidth] = useState(5);
+  const [isSaving, setIsSaving] = useState(false);
 
-type CameraMode = 'photo' | 'scan';
+  // Referencia a la vista contenedora que queremos capturar
+  const viewShotRef = useRef();
 
-const CameraScreen: React.FC = () => {
-  const camera = useRef<Camera>(null);
+  // 1. Seleccionar Imagen y Recortar (nativo)
+  const pickAndCropImage = async () => {
+    // Limpiamos ediciones previas
+    setPaths([]);
+    setCurrentPath([]);
 
-  const [mode, setMode] = useState<CameraMode>('photo');
-  const [flash, setFlash] = useState<'off' | 'on'>('off');
-  const [cameraPosition, setCameraPosition] = useState<'back' | 'front'>('back');
-  const [capturedPhoto, setCapturedPhoto] = useState<PhotoFile | null>(null);
-  const [showEditor, setShowEditor] = useState(false);
-  const [showGrid, setShowGrid] = useState(false);
-  const [detectedQR, setDetectedQR] = useState<string | null>(null);
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true, // Recorte básico nativo
+      aspect: [4, 3],
+      quality: 1,
+    });
 
-  const device = useCameraDevice(cameraPosition);
-  const { hasPermission, requestPermission } = useCameraPermission();
-
-  // Scanner de QR y documentos
-  const codeScanner = useCodeScanner({
-    codeTypes: ['qr', 'ean-13'],
-    onCodeScanned: (codes) => {
-      if (mode === 'scan' && codes.length > 0) {
-        const qrValue = codes[0].value;
-        setDetectedQR(qrValue);
-
-        // Si es URL, mostrar opción de abrir
-        if (qrValue?.startsWith('http')) {
-          Alert.alert(
-              'QR Detectado',
-              qrValue,
-              [
-                { text: 'Cancelar', style: 'cancel' },
-                { text: 'Abrir', onPress: () => console.log('Abrir:', qrValue) },
-              ]
-          );
-        }
-      }
-    },
-  });
-
-  // Solicitar permisos
-  React.useEffect(() => {
-    if (!hasPermission) {
-      requestPermission();
-    }
-
-    (async () => {
-      await MediaLibrary.requestPermissionsAsync();
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-    })();
-  }, [hasPermission]);
-
-  // Tomar foto
-  const takePhoto = async () => {
-    if (!camera.current) return;
-
-    try {
-      const photo = await camera.current.takePhoto({
-        flash: flash,
-        enableShutterSound: true,
-      });
-
-      setCapturedPhoto(photo);
-      setShowEditor(true);
-
-    } catch (error) {
-      console.error('Error taking photo:', error);
-      Alert.alert('Error', 'No se pudo tomar la foto');
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
     }
   };
 
-  // Abrir galería
-  const openGallery = async () => {
+  // 2. Lógica de Dibujo (PanResponder)
+  const panResponder = useRef(
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onPanResponderGrant: (evt) => {
+          const { locationX, locationY } = evt.nativeEvent;
+          setCurrentPath([`M${locationX},${locationY}`]);
+        },
+        onPanResponderMove: (evt) => {
+          const { locationX, locationY } = evt.nativeEvent;
+          setCurrentPath((prev) => [...prev, `L${locationX},${locationY}`]);
+        },
+        onPanResponderRelease: () => {
+          if (currentPath.length > 1) { // Aseguramos que sea un trazo válido
+            setPaths((prev) => [...prev, { path: currentPath.join(' '), color: penColor, width: strokeWidth }]);
+          }
+          setCurrentPath([]);
+        },
+      })
+  ).current;
+
+  // 3. LA SOLUCIÓN: Capturar la Vista y Guardar
+  const saveFinalImage = async () => {
+    if (!image) return;
+    setIsSaving(true);
+
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
+      // Primero, pedimos permisos para la galería
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert("Permisos requeridos", "Necesitamos permiso para guardar en tu galería.");
+        setIsSaving(false);
+        return;
+      }
+
+      // Capturamos el contenido de viewShotRef
+      // Esto genera un nuevo archivo temporal JPG con la foto y el dibujo
+      const resultUri = await captureRef(viewShotRef, {
+        format: 'jpg',
         quality: 1,
+        result: 'tmpfile'
       });
 
-      if (!result.canceled && result.assets[0]) {
-        // Convertir a formato PhotoFile para el editor
-        const photo: PhotoFile = {
-          path: result.assets[0].uri,
-          width: result.assets[0].width || 0,
-          height: result.assets[0].height || 0,
-        };
+      // Ahora guardamos *ese* nuevo archivo en la biblioteca de medios
+      await MediaLibrary.saveToLibraryAsync(resultUri);
+      Alert.alert("¡Éxito!", "Imagen guardada con tus dibujos en la galería.");
 
-        setCapturedPhoto(photo);
-        setShowEditor(true);
-      }
-    } catch (error) {
-      console.error('Error opening gallery:', error);
+    } catch (e) {
+      console.error("Error al guardar:", e);
+      Alert.alert("Error", "No se pudo generar o guardar la imagen.");
+    } finally {
+      setIsSaving(false);
     }
   };
-
-  // Guardar foto editada
-  const handleSavePhoto = async (editedUri: string) => {
-    try {
-      const asset = await MediaLibrary.createAssetAsync(editedUri);
-      await MediaLibrary.createAlbumAsync('SnapSite', asset, false);
-
-      Alert.alert('Guardado', 'Foto guardada en la galería');
-      setShowEditor(false);
-      setCapturedPhoto(null);
-    } catch (error) {
-      console.error('Error saving photo:', error);
-      Alert.alert('Error', 'No se pudo guardar la foto');
-    }
-  };
-
-  // Descartar foto
-  const handleDiscardPhoto = () => {
-    setShowEditor(false);
-    setCapturedPhoto(null);
-  };
-
-  // Toggle flash
-  const toggleFlash = () => {
-    setFlash((prev) => (prev === 'off' ? 'on' : 'off'));
-  };
-
-  // Toggle cámara
-  const toggleCamera = () => {
-    setCameraPosition((prev) => (prev === 'back' ? 'front' : 'back'));
-  };
-
-  // Cerrar (volver atrás)
-  const handleClose = () => {
-    // Navegar hacia atrás
-    console.log('Close camera');
-  };
-
-  if (!hasPermission) {
-    return (
-        <View style={styles.container}>
-          <Text style={{ color: 'white' }}>Solicitando permisos...</Text>
-        </View>
-    );
-  }
-
-  if (!device) {
-    return (
-        <View style={styles.container}>
-          <Text style={{ color: 'white' }}>Cámara no disponible</Text>
-        </View>
-    );
-  }
 
   return (
       <View style={styles.container}>
-        {/* Cámara */}
-        <Camera
-            ref={camera}
-            device={device}
-            isActive={!showEditor}
-            style={StyleSheet.absoluteFill}
-            photo={true}
-            codeScanner={mode === 'scan' ? codeScanner : undefined}
-        />
-
-        {/* Grid Overlay */}
-        {showGrid && <GridOverlay />}
-
-        {/* Indicador de QR detectado */}
-        {mode === 'scan' && detectedQR && (
-            <View style={styles.qrIndicator}>
-              <Text style={styles.qrText}>QR Detectado</Text>
-            </View>
-        )}
-
-        {/* Top Bar - Estilo Instagram */}
-        <View style={styles.topBar}>
-          <TouchableOpacity style={styles.topButton} onPress={handleClose}>
-            <Ionicons name="close" size={32} color="white" />
-          </TouchableOpacity>
-
-          <View style={styles.topRight}>
-            <TouchableOpacity style={styles.topButton} onPress={toggleFlash}>
-              <Ionicons
-                  name={flash === 'off' ? 'flash-off' : 'flash'}
-                  size={28}
-                  color="white"
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                style={styles.topButton}
-                onPress={() => setShowGrid(!showGrid)}
-            >
-              <Ionicons name="grid-outline" size={28} color="white" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Bottom Controls - Estilo Instagram */}
-        <View style={styles.bottomContainer}>
-          {/* Mode Selector */}
-          <View style={styles.modeSelector}>
-            <TouchableOpacity
-                style={styles.modeButton}
-                onPress={() => setMode('photo')}
-            >
-              <Text
-                  style={[
-                    styles.modeText,
-                    mode === 'photo' && styles.modeTextActive,
-                  ]}
-              >
-                FOTO
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                style={styles.modeButton}
-                onPress={() => setMode('scan')}
-            >
-              <Text
-                  style={[
-                    styles.modeText,
-                    mode === 'scan' && styles.modeTextActive,
-                  ]}
-              >
-                ESCANEAR
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Capture Row */}
-          <View style={styles.captureRow}>
-            {/* Galería */}
-            <TouchableOpacity style={styles.galleryButton} onPress={openGallery}>
-              <Ionicons name="images" size={28} color="white" />
-            </TouchableOpacity>
-
-            {/* Botón de captura */}
-            <TouchableOpacity style={styles.captureButton} onPress={takePhoto}>
-              <View style={styles.captureButtonInner} />
-            </TouchableOpacity>
-
-            {/* Flip camera */}
-            <TouchableOpacity style={styles.flipButton} onPress={toggleCamera}>
-              <Ionicons name="camera-reverse" size={28} color="white" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Editor Modal */}
-        {capturedPhoto && (
-            <PhotoEditorModal
-                visible={showEditor}
-                photoUri={`file://${capturedPhoto.path}`}
-                onSave={handleSavePhoto}
-                onDiscard={handleDiscardPhoto}
-            />
-        )}
+        <PhotoEditor  />
       </View>
   );
-};
-
-// Grid Overlay
-const GridOverlay: React.FC = () => (
-    <View style={styles.gridOverlay} pointerEvents="none">
-      <View style={[styles.gridLine, { top: '33.33%' }]} />
-      <View style={[styles.gridLine, { top: '66.66%' }]} />
-      <View style={[styles.gridLine, styles.gridLineVertical, { left: '33.33%' }]} />
-      <View style={[styles.gridLine, styles.gridLineVertical, { left: '66.66%' }]} />
-    </View>
-);
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'black',
-  },
-  topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 50,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    zIndex: 10,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  topButton: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  topRight: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  qrIndicator: {
-    position: 'absolute',
-    top: 120,
-    left: 20,
-    right: 20,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    zIndex: 5,
-  },
-  qrText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  gridOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 5,
-  },
-  gridLine: {
-    position: 'absolute',
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    height: 1,
-    width: '100%',
-  },
-  gridLineVertical: {
-    width: 1,
-    height: '100%',
-  },
-  bottomContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingBottom: 40,
-    zIndex: 10,
-  },
-  modeSelector: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 32,
-    marginBottom: 32,
-  },
-  modeButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  modeText: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  modeTextActive: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  captureRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  galleryButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  captureButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'transparent',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 4,
-    borderColor: 'white',
-  },
-  captureButtonInner: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: 'white',
-  },
-  flipButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  container: { flex: 1, backgroundColor: '#1e1e1e', justifyContent: 'center' },
+  canvasWrapper: { alignItems: 'center', justifyContent: 'center', padding: 10 },
+  canvas: { width: 350, height: 466, backgroundColor: '#000', borderRadius: 8, overflow: 'hidden' }, // Relación 4:3
+  image: { width: '100%', height: '100%' },
+  toolbar: { position: 'absolute', bottom: 0, width: '100%', backgroundColor: '#2a2a2a', padding: 20, borderTopLeftRadius: 15, borderTopRightRadius: 15 },
+  colorRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 15 },
+  colorDot: { width: 35, height: 35, borderRadius: 17.5, marginHorizontal: 8, borderWidth: 3 },
+  sizeRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  sizeBtn: { width: 40, height: 40, borderRadius: 20, marginHorizontal: 6, justifyContent: 'center', alignItems: 'center' },
+  buttonMain: { backgroundColor: '#2196F3', padding: 18, borderRadius: 10, alignSelf: 'center' },
+  saveBtn: { backgroundColor: '#4CAF50', padding: 15, borderRadius: 8, width: '100%', alignItems: 'center' },
+  text: { color: 'white', fontWeight: 'bold', fontSize: 16 }
 });
-
-export default CameraScreen;
