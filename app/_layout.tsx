@@ -87,6 +87,14 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="oauth/callback" />
+            <Stack.Screen
+                name="photo-editor"
+                options={{
+                  headerShown: false,
+                  presentation: 'fullScreenModal',
+                  animation: 'slide_from_bottom',
+                }}
+            />
             <Stack.Screen 
               name="add-photo-modal" 
               options={{ 
