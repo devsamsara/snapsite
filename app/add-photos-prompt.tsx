@@ -18,11 +18,10 @@ export default function AddPhotosPromptScreen() {
   };
 
   const handleSkip = () => {
-    // Ir directamente a los detalles del proyecto
-    router.push({
-      pathname: '/(tabs)/projects', // Por ahora a la lista, o a un detalle si existiera la ruta
-      params: { id: params.projectId }
-    });
+    // Ir directamente a los detalles del proyecto (ruta dinámica project/[id])
+    // Usamos el ID del proyecto recién creado o uno de prueba si no existe
+    const targetId = params.projectId || '1'; 
+    router.push(`/project/${targetId}`);
   };
 
   return (
