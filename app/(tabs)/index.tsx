@@ -2,9 +2,10 @@ import { Text, View, TouchableOpacity, ScrollView, FlatList, Image } from "react
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { SearchBar } from "@/components/search-bar";
+import { SearchInput } from "@/components/ui/search-input";
 import { useColors } from "@/hooks/use-colors";
 import { FabOptions } from "@/components/fab-options";
+import { useState } from "react";
 
 // Mock data for recent projects
 const RECENT_PROJECTS = [
@@ -137,6 +138,7 @@ const RECENT_LOCATIONS = [
 export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleCreateProject = () => {
     // TODO: Navigate to create project screen
@@ -422,7 +424,11 @@ export default function HomeScreen() {
           </View>
 
           {/* Search Bar */}
-          <SearchBar placeholder="Search projects, images..." />
+          <SearchInput 
+            placeholder="Search projects, images..." 
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
         </View>
 
         {/* Content */}
