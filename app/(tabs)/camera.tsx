@@ -7,8 +7,10 @@ import { useColors } from "@/hooks/use-colors";
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { BlurView } from 'expo-blur';
+import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const CameraScreen: React.FC = () => {
   const router = useRouter();
@@ -19,6 +21,10 @@ const CameraScreen: React.FC = () => {
   const [lastPhoto, setLastPhoto] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const [isReady, setIsReady] = useState(false);
+  
+  // Zoom state
+  const zoom = useSharedValue(0);
+  const startZoom = useSharedValue(0);
 
   if (!permission) {
     return <View style={[styles.container, { backgroundColor: '#000' }]} />;
@@ -47,6 +53,7 @@ const CameraScreen: React.FC = () => {
   const toggleCameraFacing = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setFacing(current => (current === 'back' ? 'front' : 'back'));
+    zoom.value = 0; // Reset zoom on flip
   };
 
   const toggleFlash = () => {
@@ -104,6 +111,17 @@ const CameraScreen: React.FC = () => {
     }
   };
 
+  // Pinch to Zoom Gesture
+  const pinchGesture = Gesture.Pinch()
+    .onStart(() => {
+      startZoom.value = zoom.value;
+    })
+    .onUpdate((event) => {
+      const newZoom = startZoom.value + (event.scale - 1) * 0.5;
+      zoom.value = Math.max(0, Math.min(1, newZoom));
+    })
+    .runOnJS(true);
+
   const renderFlashIcon = () => {
     switch (flash) {
       case 'on': return 'bolt.fill';
@@ -113,68 +131,80 @@ const CameraScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <CameraView 
-        ref={cameraRef} 
-        style={styles.camera} 
-        facing={facing}
-        flash={flash}
-        onCameraReady={() => setIsReady(true)}
-      >
-        {/* Top Controls Overlay */}
-        <View style={styles.topControls}>
-          <View style={styles.topBlurContainer}>
-            <BlurView intensity={20} tint="dark" style={styles.blurWrapper}>
-              <TouchableOpacity onPress={toggleFlash} style={styles.iconButton}>
-                <IconSymbol name={renderFlashIcon()} size={22} color={flash !== 'off' ? '#FFD60A' : '#FFF'} />
-              </TouchableOpacity>
-            </BlurView>
-          </View>
-          
-          <View style={styles.topBlurContainer}>
-            <BlurView intensity={20} tint="dark" style={styles.blurWrapper}>
-              <TouchableOpacity onPress={toggleCameraFacing} style={styles.iconButton}>
-                <IconSymbol name="arrow.triangle.2.circlepath.camera" size={22} color="#FFF" />
-              </TouchableOpacity>
-            </BlurView>
-          </View>
-        </View>
-
-        {/* Bottom Controls Overlay */}
-        <View style={styles.bottomContainer}>
-          <BlurView intensity={40} tint="dark" style={styles.bottomBlur}>
-            <View style={styles.controlsRow}>
-              {/* Gallery Preview */}
-              <TouchableOpacity 
-                onPress={openGallery}
-                style={styles.thumbnailButton}
-              >
-                {lastPhoto ? (
-                  <Image source={{ uri: lastPhoto }} style={styles.thumbnailImage} />
-                ) : (
-                  <IconSymbol name="photo.on.rectangle" size={24} color="#FFF" />
-                )}
-              </TouchableOpacity>
-
-              {/* Capture Button */}
-              <TouchableOpacity onPress={takePicture} style={styles.captureOuter}>
-                <View style={styles.captureInner} />
-              </TouchableOpacity>
-
-              {/* Settings Placeholder - Consistent with app design */}
-              <TouchableOpacity style={styles.thumbnailButton} onPress={() => router.push('/settings')}>
-                <IconSymbol name="gear" size={24} color="#FFF" />
-              </TouchableOpacity>
+    <GestureHandlerRootView style={styles.container}>
+      <GestureDetector gesture={pinchGesture}>
+        <View style={styles.container}>
+          <CameraView 
+            ref={cameraRef} 
+            style={StyleSheet.absoluteFill} 
+            facing={facing}
+            flash={flash}
+            zoom={zoom.value}
+            onCameraReady={() => setIsReady(true)}
+          >
+            {/* Top Controls Overlay */}
+            <View style={styles.topControls}>
+              <View style={styles.topBlurContainer}>
+                <BlurView intensity={20} tint="dark" style={styles.blurWrapper}>
+                  <TouchableOpacity onPress={toggleFlash} style={styles.iconButton}>
+                    <IconSymbol name={renderFlashIcon()} size={22} color={flash !== 'off' ? '#FFD60A' : '#FFF'} />
+                  </TouchableOpacity>
+                </BlurView>
+              </View>
+              
+              <View style={styles.topBlurContainer}>
+                <BlurView intensity={20} tint="dark" style={styles.blurWrapper}>
+                  <TouchableOpacity onPress={toggleCameraFacing} style={styles.iconButton}>
+                    <IconSymbol name="arrow.triangle.2.circlepath.camera" size={22} color="#FFF" />
+                  </TouchableOpacity>
+                </BlurView>
+              </View>
             </View>
-            
-            {/* Mode Selector */}
-            <View style={styles.modeSelector}>
-              <Text style={styles.modeTextActive}>FOTO</Text>
+
+            {/* Zoom Indicator */}
+            {zoom.value > 0 && (
+              <View style={styles.zoomIndicator}>
+                <BlurView intensity={30} tint="dark" style={styles.zoomBlur}>
+                  <Text style={styles.zoomText}>{(1 + zoom.value * 4).toFixed(1)}x</Text>
+                </BlurView>
+              </View>
+            )}
+
+            {/* Bottom Controls Overlay */}
+            <View style={styles.bottomContainer}>
+              <BlurView intensity={40} tint="dark" style={styles.bottomBlur}>
+                <View style={styles.controlsRow}>
+                  {/* Gallery Preview */}
+                  <TouchableOpacity 
+                    onPress={openGallery}
+                    style={styles.thumbnailButton}
+                  >
+                    {lastPhoto ? (
+                      <Image source={{ uri: lastPhoto }} style={styles.thumbnailImage} />
+                    ) : (
+                      <IconSymbol name="photo.on.rectangle" size={24} color="#FFF" />
+                    )}
+                  </TouchableOpacity>
+
+                  {/* Capture Button */}
+                  <TouchableOpacity onPress={takePicture} style={styles.captureOuter}>
+                    <View style={styles.captureInner} />
+                  </TouchableOpacity>
+
+                  {/* Placeholder to maintain spacing */}
+                  <View style={{ width: 50 }} />
+                </View>
+                
+                {/* Mode Selector */}
+                <View style={styles.modeSelector}>
+                  <Text style={styles.modeTextActive}>FOTO</Text>
+                </View>
+              </BlurView>
             </View>
-          </BlurView>
+          </CameraView>
         </View>
-      </CameraView>
-    </View>
+      </GestureDetector>
+    </GestureHandlerRootView>
   );
 };
 
@@ -186,9 +216,6 @@ const styles = StyleSheet.create({
   center: {
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  camera: {
-    flex: 1,
   },
   topControls: {
     flexDirection: 'row',
@@ -208,6 +235,22 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  zoomIndicator: {
+    position: 'absolute',
+    bottom: 180,
+    alignSelf: 'center',
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  zoomBlur: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  zoomText: {
+    color: '#FFD60A',
+    fontSize: 14,
+    fontWeight: '700',
   },
   bottomContainer: {
     position: 'absolute',

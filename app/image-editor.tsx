@@ -5,17 +5,16 @@ import { useColors } from "@/hooks/use-colors";
 import { useState, useRef, useEffect } from 'react';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
-import { GestureHandlerRootView, PanGestureHandler, Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
+import Animated, { useSharedValue, useAnimatedStyle, runOnJS } from 'react-native-reanimated';
 import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
 import * as Haptics from 'expo-haptics';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 type EditMode = 'none' | 'draw' | 'crop';
 
-// Usamos strings SVG para representar los caminos, esto es mucho más seguro para el estado de React
-// que los objetos SkPath nativos que pueden causar errores de "undefined" si no se manejan bien.
 interface DrawPath {
   segments: string;
   color: string;
@@ -37,23 +36,36 @@ export default function ImageEditorScreen() {
   const [currentImageUri, setCurrentImageUri] = useState(imageUri);
   const [editMode, setEditMode] = useState<EditMode>('none');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [imageSize, setImageSize] = useState({ width: SCREEN_WIDTH, height: SCREEN_WIDTH });
   
   // Drawing state
   const [paths, setPaths] = useState<DrawPath[]>([]);
   const [redoStack, setRedoStack] = useState<DrawPath[]>([]);
-  const [drawColor, setDrawColor] = useState(COLORS[2]); // Default Red
+  const [drawColor, setDrawColor] = useState(COLORS[2]);
   const [strokeWidth, setStrokeWidth] = useState(STROKE_WIDTHS[1]);
+  
+  // Crop state (Reanimated)
+  const cropTop = useSharedValue(0);
+  const cropLeft = useSharedValue(0);
+  const cropRight = useSharedValue(0);
+  const cropBottom = useSharedValue(0);
   
   const imageViewRef = useRef<View>(null);
 
   useEffect(() => {
     if (imageUri) {
       setCurrentImageUri(imageUri);
+      Image.getSize(imageUri, (w, h) => {
+        const aspectRatio = w / h;
+        const displayWidth = SCREEN_WIDTH;
+        const displayHeight = SCREEN_WIDTH / aspectRatio;
+        setImageSize({ width: displayWidth, height: displayHeight });
+      });
     }
   }, [imageUri]);
 
-  // Gesture Handler para dibujar
-  const gesture = Gesture.Pan()
+  // Gesture for Drawing
+  const drawGesture = Gesture.Pan()
     .onStart((g) => {
       if (editMode !== 'draw') return;
       const newPath: DrawPath = {
@@ -61,12 +73,12 @@ export default function ImageEditorScreen() {
         color: drawColor,
         strokeWidth: strokeWidth,
       };
-      setPaths((prev) => [...prev, newPath]);
-      setRedoStack([]);
+      runOnJS(setPaths)((prev) => [...prev, newPath]);
+      runOnJS(setRedoStack)([]);
     })
     .onUpdate((g) => {
       if (editMode !== 'draw') return;
-      setPaths((prev) => {
+      runOnJS(setPaths)((prev) => {
         const lastPath = prev[prev.length - 1];
         if (!lastPath) return prev;
         const updatedPath = {
@@ -77,6 +89,36 @@ export default function ImageEditorScreen() {
       });
     })
     .runOnJS(true);
+
+  // Gesture for Cropping (Top-Left Corner)
+  const cropGestureTL = Gesture.Pan()
+    .onUpdate((g) => {
+      if (editMode !== 'crop') return;
+      const newTop = Math.max(0, Math.min(imageSize.height - cropBottom.value - 50, g.y));
+      const newLeft = Math.max(0, Math.min(imageSize.width - cropRight.value - 50, g.x));
+      cropTop.value = newTop;
+      cropLeft.value = newLeft;
+    });
+
+  // Gesture for Cropping (Bottom-Right Corner)
+  const cropGestureBR = Gesture.Pan()
+    .onUpdate((g) => {
+      if (editMode !== 'crop') return;
+      const newBottom = Math.max(0, Math.min(imageSize.height - cropTop.value - 50, imageSize.height - g.y));
+      const newRight = Math.max(0, Math.min(imageSize.width - cropLeft.value - 50, imageSize.width - g.x));
+      cropBottom.value = newBottom;
+      cropRight.value = newRight;
+    });
+
+  const animatedCropStyle = useAnimatedStyle(() => ({
+    top: cropTop.value,
+    left: cropLeft.value,
+    right: cropRight.value,
+    bottom: cropBottom.value,
+    borderColor: '#FFF',
+    borderWidth: 2,
+    position: 'absolute',
+  }));
 
   if (!currentImageUri) {
     return (
@@ -115,8 +157,54 @@ export default function ImageEditorScreen() {
         { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
       );
       setCurrentImageUri(manipResult.uri);
+      // Update image size after rotation
+      Image.getSize(manipResult.uri, (w, h) => {
+        const aspectRatio = w / h;
+        const displayWidth = SCREEN_WIDTH;
+        const displayHeight = SCREEN_WIDTH / aspectRatio;
+        setImageSize({ width: displayWidth, height: displayHeight });
+      });
     } catch (error) {
       Alert.alert("Error", "No se pudo rotar la imagen");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const applyCrop = async () => {
+    setIsProcessing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const { width: imgW, height: imgH } = await new Promise<{width: number, height: number}>((resolve) => {
+        Image.getSize(currentImageUri, (w, h) => resolve({width: w, height: h}));
+      });
+
+      const scale = imgW / imageSize.width;
+      const cropX = cropLeft.value * scale;
+      const cropY = cropTop.value * scale;
+      const cropW = (imageSize.width - cropLeft.value - cropRight.value) * scale;
+      const cropH = (imageSize.height - cropTop.value - cropBottom.value) * scale;
+
+      const manipResult = await ImageManipulator.manipulateAsync(
+        currentImageUri,
+        [{ crop: { originX: cropX, originY: cropY, width: cropW, height: cropH } }],
+        { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      setCurrentImageUri(manipResult.uri);
+      setEditMode('none');
+      
+      // Update image size after crop
+      Image.getSize(manipResult.uri, (w, h) => {
+        const aspectRatio = w / h;
+        const displayWidth = SCREEN_WIDTH;
+        const displayHeight = SCREEN_WIDTH / aspectRatio;
+        setImageSize({ width: displayWidth, height: displayHeight });
+      });
+
+      // Reset crop values
+      cropTop.value = 0; cropLeft.value = 0; cropRight.value = 0; cropBottom.value = 0;
+    } catch (error) {
+      Alert.alert("Error", "No se pudo recortar la imagen");
     } finally {
       setIsProcessing(false);
     }
@@ -160,20 +248,21 @@ export default function ImageEditorScreen() {
         </TouchableOpacity>
         
         <View style={styles.headerActions}>
-          <TouchableOpacity 
-            onPress={handleUndo} 
-            disabled={paths.length === 0}
-            style={[styles.iconButton, paths.length === 0 && styles.disabled]}
-          >
-            <IconSymbol name="arrow.uturn.backward" size={20} color="#FFF" />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={handleRedo} 
-            disabled={redoStack.length === 0}
-            style={[styles.iconButton, redoStack.length === 0 && styles.disabled]}
-          >
-            <IconSymbol name="arrow.uturn.forward" size={20} color="#FFF" />
-          </TouchableOpacity>
+          {editMode === 'draw' && (
+            <>
+              <TouchableOpacity onPress={handleUndo} disabled={paths.length === 0} style={[styles.iconButton, paths.length === 0 && styles.disabled]}>
+                <IconSymbol name="arrow.uturn.backward" size={20} color="#FFF" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleRedo} disabled={redoStack.length === 0} style={[styles.iconButton, redoStack.length === 0 && styles.disabled]}>
+                <IconSymbol name="arrow.uturn.forward" size={20} color="#FFF" />
+              </TouchableOpacity>
+            </>
+          )}
+          {editMode === 'crop' && (
+            <TouchableOpacity onPress={applyCrop} style={styles.applyCropButton}>
+              <Text style={{ color: '#FFF', fontWeight: '600' }}>Aplicar</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
@@ -183,26 +272,36 @@ export default function ImageEditorScreen() {
 
       {/* Main Editor Area */}
       <View style={styles.editorArea}>
-        <GestureDetector gesture={gesture}>
-          <View ref={imageViewRef} collapsable={false} style={styles.imageWrapper}>
-            <Image
-              source={{ uri: currentImageUri }}
-              style={styles.mainImage}
-              resizeMode="contain"
-            />
+        <GestureDetector gesture={drawGesture}>
+          <View 
+            ref={imageViewRef} 
+            collapsable={false} 
+            style={[styles.imageWrapper, { width: imageSize.width, height: imageSize.height }]}
+          >
+            <Image source={{ uri: currentImageUri }} style={styles.mainImage} resizeMode="contain" />
             <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
               {paths.map((p, i) => (
-                <Path
-                  key={i}
-                  path={p.segments}
-                  color={p.color}
-                  style="stroke"
-                  strokeWidth={p.strokeWidth}
-                  strokeCap="round"
-                  strokeJoin="round"
-                />
+                <Path key={i} path={p.segments} color={p.color} style="stroke" strokeWidth={p.strokeWidth} strokeCap="round" strokeJoin="round" />
               ))}
             </Canvas>
+
+            {editMode === 'crop' && (
+              <>
+                <Animated.View style={animatedCropStyle}>
+                  <GestureDetector gesture={cropGestureTL}>
+                    <View style={[styles.cropHandle, { top: -15, left: -15 }]} />
+                  </GestureDetector>
+                  <GestureDetector gesture={cropGestureBR}>
+                    <View style={[styles.cropHandle, { bottom: -15, right: -15 }]} />
+                  </GestureDetector>
+                  {/* Grid lines */}
+                  <View style={[styles.gridLine, { top: '33.3%', width: '100%', height: 1 }]} />
+                  <View style={[styles.gridLine, { top: '66.6%', width: '100%', height: 1 }]} />
+                  <View style={[styles.gridLine, { left: '33.3%', height: '100%', width: 1 }]} />
+                  <View style={[styles.gridLine, { left: '66.6%', height: '100%', width: 1 }]} />
+                </Animated.View>
+              </>
+            )}
           </View>
         </GestureDetector>
       </View>
@@ -213,20 +312,12 @@ export default function ImageEditorScreen() {
           <View style={styles.drawingTools}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorList}>
               {COLORS.map(c => (
-                <TouchableOpacity 
-                  key={c} 
-                  onPress={() => setDrawColor(c)}
-                  style={[styles.colorCircle, { backgroundColor: c }, drawColor === c && styles.activeColor]}
-                />
+                <TouchableOpacity key={c} onPress={() => setDrawColor(c)} style={[styles.colorCircle, { backgroundColor: c }, drawColor === c && styles.activeColor]} />
               ))}
             </ScrollView>
             <View style={styles.strokeList}>
               {STROKE_WIDTHS.map(w => (
-                <TouchableOpacity 
-                  key={w} 
-                  onPress={() => setStrokeWidth(w)}
-                  style={[styles.strokeButton, strokeWidth === w && { backgroundColor: 'rgba(255,255,255,0.2)' }]}
-                >
+                <TouchableOpacity key={w} onPress={() => setStrokeWidth(w)} style={[styles.strokeButton, strokeWidth === w && { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
                   <View style={[styles.strokeIndicator, { width: w, height: w, borderRadius: w/2, backgroundColor: drawColor }]} />
                 </TouchableOpacity>
               ))}
@@ -235,10 +326,7 @@ export default function ImageEditorScreen() {
         )}
 
         <View style={styles.mainTools}>
-          <TouchableOpacity 
-            onPress={() => setEditMode(editMode === 'draw' ? 'none' : 'draw')}
-            style={[styles.toolButton, editMode === 'draw' && styles.activeTool]}
-          >
+          <TouchableOpacity onPress={() => setEditMode(editMode === 'draw' ? 'none' : 'draw')} style={[styles.toolButton, editMode === 'draw' && styles.activeTool]}>
             <IconSymbol name="pencil.tip.crop.circle" size={28} color={editMode === 'draw' ? colors.primary : "#FFF"} />
             <Text style={[styles.toolText, editMode === 'draw' && { color: colors.primary }]}>Dibujar</Text>
           </TouchableOpacity>
@@ -248,9 +336,9 @@ export default function ImageEditorScreen() {
             <Text style={styles.toolText}>Rotar</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => Alert.alert("Próximamente", "La herramienta de recorte estará disponible pronto.")} style={styles.toolButton}>
-            <IconSymbol name="crop" size={28} color="#FFF" />
-            <Text style={styles.toolText}>Recortar</Text>
+          <TouchableOpacity onPress={() => setEditMode(editMode === 'crop' ? 'none' : 'crop')} style={[styles.toolButton, editMode === 'crop' && styles.activeTool]}>
+            <IconSymbol name="crop" size={28} color={editMode === 'crop' ? colors.primary : "#FFF"} />
+            <Text style={[styles.toolText, editMode === 'crop' && { color: colors.primary }]}>Recortar</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -266,126 +354,36 @@ export default function ImageEditorScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  container: { flex: 1 },
+  center: { justifyContent: 'center', alignItems: 'center' },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-    paddingHorizontal: 16,
-    height: Platform.OS === 'ios' ? 100 : 70,
-    backgroundColor: '#111',
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingTop: Platform.OS === 'ios' ? 50 : 20, paddingHorizontal: 16,
+    height: Platform.OS === 'ios' ? 100 : 70, backgroundColor: '#111',
   },
-  headerActions: {
-    flexDirection: 'row',
-    gap: 20,
-  },
-  headerButton: {
-    padding: 8,
-  },
-  cancelText: {
-    color: '#FFF',
-    fontSize: 17,
-  },
-  doneText: {
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  iconButton: {
-    padding: 4,
-  },
-  disabled: {
-    opacity: 0.3,
-  },
-  editorArea: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#000',
-  },
-  imageWrapper: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH,
-    backgroundColor: '#111',
-  },
-  mainImage: {
-    width: '100%',
-    height: '100%',
-  },
-  bottomToolbar: {
-    backgroundColor: '#111',
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-    paddingTop: 10,
-  },
-  mainTools: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingTop: 10,
-  },
-  toolButton: {
-    alignItems: 'center',
-    gap: 4,
-    width: 80,
-  },
-  toolText: {
-    color: '#FFF',
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  activeTool: {
-    opacity: 1,
-  },
-  drawingTools: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#222',
-    paddingBottom: 15,
-    marginBottom: 10,
-  },
-  colorList: {
-    paddingHorizontal: 20,
-    gap: 15,
-    height: 40,
-    alignItems: 'center',
-  },
-  colorCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  activeColor: {
-    borderColor: '#FFF',
-    transform: [{ scale: 1.1 }],
-  },
-  strokeList: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 20,
-    marginTop: 15,
-  },
-  strokeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  strokeIndicator: {
-    backgroundColor: '#FFF',
-  },
-  loader: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  }
+  headerActions: { flexDirection: 'row', gap: 20, alignItems: 'center' },
+  headerButton: { padding: 8 },
+  cancelText: { color: '#FFF', fontSize: 17 },
+  doneText: { fontSize: 17, fontWeight: '600' },
+  iconButton: { padding: 4 },
+  disabled: { opacity: 0.3 },
+  applyCropButton: { backgroundColor: '#007AFF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  editorArea: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' },
+  imageWrapper: { backgroundColor: '#111', position: 'relative' },
+  mainImage: { width: '100%', height: '100%' },
+  cropHandle: { width: 30, height: 30, backgroundColor: '#FFF', borderRadius: 15, position: 'absolute', zIndex: 10 },
+  gridLine: { position: 'absolute', backgroundColor: 'rgba(255,255,255,0.5)' },
+  bottomToolbar: { backgroundColor: '#111', paddingBottom: Platform.OS === 'ios' ? 40 : 20, paddingTop: 10 },
+  mainTools: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: 10 },
+  toolButton: { alignItems: 'center', gap: 4, width: 80 },
+  toolText: { color: '#FFF', fontSize: 11, fontWeight: '500' },
+  activeTool: { opacity: 1 },
+  drawingTools: { borderBottomWidth: 1, borderBottomColor: '#222', paddingBottom: 15, marginBottom: 10 },
+  colorList: { paddingHorizontal: 20, gap: 15, height: 40, alignItems: 'center' },
+  colorCircle: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: 'transparent' },
+  activeColor: { borderColor: '#FFF', transform: [{ scale: 1.1 }] },
+  strokeList: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 15 },
+  strokeButton: { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  strokeIndicator: { backgroundColor: '#FFF' },
+  loader: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }
 });
