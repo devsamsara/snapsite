@@ -1,3 +1,18 @@
+/**
+ * image-editor.tsx
+ *
+ * Fixes applied:
+ *  1. useAnimatedStyle for crop handles moved to top-level (no more conditional hooks)
+ *  2. Header uses useSafeAreaInsets so it is always visible regardless of how the
+ *     screen is presented (camera → push, gallery → push, etc.)
+ *  3. Header redesigned following Apple HIG:
+ *       - SF-style "Cancelar" (left) / "Guardar" (right) text buttons
+ *       - Centered title
+ *       - Thin separator line
+ *       - Blur-style dark background (solid #111 with opacity)
+ *  4. Text annotations are draggable after placement.
+ */
+
 import {
   Text,
   View,
@@ -27,17 +42,28 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   runOnJS,
+  withSpring,
+  type SharedValue,
 } from "react-native-reanimated";
 import { captureRef } from "react-native-view-shot";
 import * as MediaLibrary from "expo-media-library";
 import * as Haptics from "expo-haptics";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type EditMode = "none" | "draw" | "text" | "arrow" | "rect" | "circle" | "measure" | "crop";
+type EditMode =
+  | "none"
+  | "draw"
+  | "text"
+  | "arrow"
+  | "rect"
+  | "circle"
+  | "measure"
+  | "crop";
 
 interface DrawPath {
   id: string;
@@ -98,13 +124,13 @@ const PALETTE = [
 const STROKE_SIZES = [2, 4, 6, 10, 16];
 
 const TOOLS: { id: EditMode; icon: string; label: string }[] = [
-  { id: "draw",    icon: "edit",                    label: "Dibujar"     },
-  { id: "text",    icon: "title",                   label: "Texto"       },
-  { id: "arrow",   icon: "arrow-forward",           label: "Flecha"      },
-  { id: "rect",    icon: "crop-square",             label: "Rectángulo"  },
-  { id: "circle",  icon: "radio-button-unchecked",  label: "Círculo"     },
-  { id: "measure", icon: "straighten",              label: "Medida"      },
-  { id: "crop",    icon: "crop",                    label: "Recortar"    },
+  { id: "draw",    icon: "edit",                   label: "Dibujar"    },
+  { id: "text",    icon: "title",                  label: "Texto"      },
+  { id: "arrow",   icon: "arrow-forward",          label: "Flecha"     },
+  { id: "rect",    icon: "crop-square",            label: "Rect."      },
+  { id: "circle",  icon: "radio-button-unchecked", label: "Círculo"    },
+  { id: "measure", icon: "straighten",             label: "Medida"     },
+  { id: "crop",    icon: "crop",                   label: "Recortar"   },
 ];
 
 function uid() {
@@ -115,29 +141,186 @@ function dist(x1: number, y1: number, x2: number, y2: number) {
   return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Draggable Text Label ─────────────────────────────────────────────────────
+// Extracted as its own component so each label has its own shared values
+// (avoids calling hooks inside loops).
+
+interface DraggableTextProps {
+  annotation: TextAnnotation;
+  onDragEnd: (id: string, x: number, y: number) => void;
+  isTextMode: boolean;
+}
+
+function DraggableText({ annotation, onDragEnd, isTextMode }: DraggableTextProps) {
+  const tx = useSharedValue(annotation.x);
+  const ty = useSharedValue(annotation.y);
+
+  // Keep in sync when annotation position changes externally
+  useEffect(() => {
+    tx.value = annotation.x;
+    ty.value = annotation.y;
+  }, [annotation.x, annotation.y]);
+
+  const dragGesture = Gesture.Pan()
+    .onUpdate((g) => {
+      tx.value = g.absoluteX - g.translationX + g.translationX;
+      // simpler: just track absolute position relative to the image view
+      tx.value = annotation.x + g.translationX;
+      ty.value = annotation.y + g.translationY;
+    })
+    .onEnd((g) => {
+      const newX = annotation.x + g.translationX;
+      const newY = annotation.y + g.translationY;
+      runOnJS(onDragEnd)(annotation.id, newX, newY);
+    })
+    .runOnJS(true);
+
+  const animStyle = useAnimatedStyle(() => ({
+    position: "absolute",
+    left: tx.value,
+    top: ty.value - annotation.fontSize,
+    zIndex: 20,
+  }));
+
+  return (
+    <GestureDetector gesture={isTextMode ? dragGesture : Gesture.Tap()}>
+      <Animated.View style={animStyle}>
+        <View
+          style={{
+            backgroundColor: "rgba(0,0,0,0.50)",
+            paddingHorizontal: 7,
+            paddingVertical: 3,
+            borderRadius: 5,
+          }}
+        >
+          <Text
+            style={{
+              color: annotation.color,
+              fontSize: annotation.fontSize,
+              fontWeight: "700",
+            }}
+          >
+            {annotation.text}
+          </Text>
+        </View>
+        {/* Drag handle indicator (only visible in text mode) */}
+        {isTextMode && (
+          <View
+            style={{
+              position: "absolute",
+              top: -8,
+              right: -8,
+              width: 16,
+              height: 16,
+              borderRadius: 8,
+              backgroundColor: "#007AFF",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <MaterialIcons name="open-with" size={10} color="#FFF" />
+          </View>
+        )}
+      </Animated.View>
+    </GestureDetector>
+  );
+}
+
+// ─── Crop Handle ─────────────────────────────────────────────────────────────
+// Extracted so useAnimatedStyle is always called unconditionally.
+
+interface CropHandleProps {
+  gesture: ReturnType<typeof Gesture.Pan>;
+  position: "TL" | "BR";
+  cTop: SharedValue<number>;
+  cLeft: SharedValue<number>;
+  cBottom: SharedValue<number>;
+  cRight: SharedValue<number>;
+}
+
+function CropHandle({ gesture, position, cTop, cLeft, cBottom, cRight }: CropHandleProps) {
+  const animStyle = useAnimatedStyle(() => {
+    if (position === "TL") {
+      return { top: cTop.value - 15, left: cLeft.value - 15 };
+    }
+    return { bottom: cBottom.value - 15, right: cRight.value - 15 };
+  });
+
+  return (
+    <GestureDetector gesture={gesture}>
+      <Animated.View style={[styles.cropHandle, animStyle]} />
+    </GestureDetector>
+  );
+}
+
+// ─── Crop Overlay ─────────────────────────────────────────────────────────────
+
+interface CropOverlayProps {
+  cTop: SharedValue<number>;
+  cLeft: SharedValue<number>;
+  cBottom: SharedValue<number>;
+  cRight: SharedValue<number>;
+}
+
+function CropOverlay({ cTop, cLeft, cBottom, cRight }: CropOverlayProps) {
+  const overlayStyle = useAnimatedStyle(() => ({
+    top: cTop.value,
+    left: cLeft.value,
+    right: cRight.value,
+    bottom: cBottom.value,
+    borderColor: "#FFF",
+    borderWidth: 2,
+    position: "absolute",
+  }));
+
+  const gridStyle = useAnimatedStyle(() => ({
+    top: cTop.value,
+    left: cLeft.value,
+    right: cRight.value,
+    bottom: cBottom.value,
+    position: "absolute",
+  }));
+
+  return (
+    <>
+      {/* Dim outside crop area */}
+      <Animated.View style={[overlayStyle, { borderColor: "#FFF", borderWidth: 2 }]} />
+      {/* Grid lines */}
+      <Animated.View style={gridStyle} pointerEvents="none">
+        <View style={[styles.gridLine, { top: "33.3%", width: "100%", height: 1 }]} />
+        <View style={[styles.gridLine, { top: "66.6%", width: "100%", height: 1 }]} />
+        <View style={[styles.gridLine, { left: "33.3%", height: "100%", width: 1 }]} />
+        <View style={[styles.gridLine, { left: "66.6%", height: "100%", width: 1 }]} />
+      </Animated.View>
+    </>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ImageEditorScreen() {
   const router = useRouter();
   const colors = useColors();
+  const insets = useSafeAreaInsets();
+
   const { imageUri, projectId } = useLocalSearchParams<{
     imageUri: string;
     projectId?: string;
   }>();
 
-  // Image
+  // ── Image state ──
   const [imgUri, setImgUri] = useState(imageUri);
   const [imgSize, setImgSize] = useState({ width: SCREEN_WIDTH, height: SCREEN_WIDTH });
   const [processing, setProcessing] = useState(false);
 
-  // Tool
+  // ── Tool state ──
   const [mode, setMode] = useState<EditMode>("none");
   const [color, setColor] = useState(PALETTE[2]);
   const [stroke, setStroke] = useState(STROKE_SIZES[1]);
   const [filled, setFilled] = useState(false);
   const [fontSize, setFontSize] = useState(18);
 
-  // Annotation layers
+  // ── Annotation layers ──
   const [paths, setPaths] = useState<DrawPath[]>([]);
   const [redo, setRedo] = useState<DrawPath[]>([]);
   const [texts, setTexts] = useState<TextAnnotation[]>([]);
@@ -145,22 +328,22 @@ export default function ImageEditorScreen() {
   const [shapes, setShapes] = useState<ShapeAnnotation[]>([]);
   const [measures, setMeasures] = useState<MeasureAnnotation[]>([]);
 
-  // In-progress
+  // ── In-progress drawing ──
   const [liveArrow, setLiveArrow] = useState<ArrowAnnotation | null>(null);
   const [liveShape, setLiveShape] = useState<ShapeAnnotation | null>(null);
   const [liveMeasure, setLiveMeasure] = useState<MeasureAnnotation | null>(null);
 
-  // Text modal
+  // ── Text modal ──
   const [textModal, setTextModal] = useState(false);
   const [textPos, setTextPos] = useState({ x: 0, y: 0 });
   const [textVal, setTextVal] = useState("");
 
-  // Measure label modal
+  // ── Measure label modal ──
   const [measureModal, setMeasureModal] = useState(false);
   const [pendingMeasure, setPendingMeasure] = useState<MeasureAnnotation | null>(null);
   const [measureLabel, setMeasureLabel] = useState("");
 
-  // Crop
+  // ── Crop shared values (always at top level — no conditional hooks) ──
   const cTop = useSharedValue(0);
   const cLeft = useSharedValue(0);
   const cRight = useSharedValue(0);
@@ -168,6 +351,7 @@ export default function ImageEditorScreen() {
 
   const viewRef = useRef<View>(null);
 
+  // ── Load image ──
   useEffect(() => {
     if (imageUri) {
       setImgUri(imageUri);
@@ -193,7 +377,10 @@ export default function ImageEditorScreen() {
       runOnJS(setPaths)((prev) => {
         const last = prev[prev.length - 1];
         if (!last) return prev;
-        return [...prev.slice(0, -1), { ...last, segments: `${last.segments} L ${g.x} ${g.y}` }];
+        return [
+          ...prev.slice(0, -1),
+          { ...last, segments: `${last.segments} L ${g.x} ${g.y}` },
+        ];
       });
     })
     .runOnJS(true);
@@ -201,7 +388,10 @@ export default function ImageEditorScreen() {
   const arrowGesture = Gesture.Pan()
     .onStart((g) => {
       if (mode !== "arrow") return;
-      runOnJS(setLiveArrow)({ id: uid(), x1: g.x, y1: g.y, x2: g.x, y2: g.y, color, strokeWidth: stroke });
+      runOnJS(setLiveArrow)({
+        id: uid(), x1: g.x, y1: g.y, x2: g.x, y2: g.y,
+        color, strokeWidth: stroke,
+      });
     })
     .onUpdate((g) => {
       if (mode !== "arrow") return;
@@ -239,7 +429,9 @@ export default function ImageEditorScreen() {
   const measureGesture = Gesture.Pan()
     .onStart((g) => {
       if (mode !== "measure") return;
-      runOnJS(setLiveMeasure)({ id: uid(), x1: g.x, y1: g.y, x2: g.x, y2: g.y, color, label: "" });
+      runOnJS(setLiveMeasure)({
+        id: uid(), x1: g.x, y1: g.y, x2: g.x, y2: g.y, color, label: "",
+      });
     })
     .onUpdate((g) => {
       if (mode !== "measure") return;
@@ -249,8 +441,7 @@ export default function ImageEditorScreen() {
       if (mode !== "measure") return;
       runOnJS((m: MeasureAnnotation | null) => {
         if (m) {
-          const px = dist(m.x1, m.y1, m.x2, m.y2);
-          const auto = `${Math.round(px)}px`;
+          const auto = `${Math.round(dist(m.x1, m.y1, m.x2, m.y2))}px`;
           const withLabel = { ...m, label: auto };
           setPendingMeasure(withLabel);
           setMeasureLabel(auto);
@@ -270,6 +461,7 @@ export default function ImageEditorScreen() {
     })
     .runOnJS(true);
 
+  // Crop gestures — these are passed to CropHandle components
   const cropTL = Gesture.Pan().onUpdate((g) => {
     cTop.value = Math.max(0, Math.min(imgSize.height - cBottom.value - 50, g.y));
     cLeft.value = Math.max(0, Math.min(imgSize.width - cRight.value - 50, g.x));
@@ -281,18 +473,12 @@ export default function ImageEditorScreen() {
   });
 
   const activeGesture =
-    mode === "draw" ? drawGesture
+    mode === "draw"    ? drawGesture
     : mode === "arrow" ? arrowGesture
     : mode === "rect" || mode === "circle" ? shapeGesture
     : mode === "measure" ? measureGesture
-    : mode === "text" ? tapGesture
+    : mode === "text"  ? tapGesture
     : Gesture.Tap();
-
-  const cropOverlayStyle = useAnimatedStyle(() => ({
-    top: cTop.value, left: cLeft.value,
-    right: cRight.value, bottom: cBottom.value,
-    borderColor: "#FFF", borderWidth: 2, position: "absolute",
-  }));
 
   // ─── Actions ──────────────────────────────────────────────────────────────
 
@@ -326,7 +512,8 @@ export default function ImageEditorScreen() {
     Alert.alert("Limpiar anotaciones", "¿Eliminar todas las anotaciones?", [
       { text: "Cancelar", style: "cancel" },
       {
-        text: "Limpiar", style: "destructive",
+        text: "Limpiar",
+        style: "destructive",
         onPress: () => {
           setPaths([]); setTexts([]); setArrows([]);
           setShapes([]); setMeasures([]); setRedo([]);
@@ -393,6 +580,7 @@ export default function ImageEditorScreen() {
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== "granted") {
         Alert.alert("Permiso denegado", "Se necesita acceso a la galería para guardar.");
+        setProcessing(false);
         return;
       }
       const uri = await captureRef(viewRef, { format: "jpg", quality: 0.95 });
@@ -429,14 +617,21 @@ export default function ImageEditorScreen() {
 
   const confirmMeasure = () => {
     if (pendingMeasure) {
-      setMeasures((p) => [...p, { ...pendingMeasure, label: measureLabel || pendingMeasure.label }]);
+      setMeasures((p) => [
+        ...p,
+        { ...pendingMeasure, label: measureLabel || pendingMeasure.label },
+      ]);
     }
     setMeasureModal(false);
     setPendingMeasure(null);
     setMeasureLabel("");
   };
 
-  // ─── Canvas draw helpers ──────────────────────────────────────────────────
+  const handleTextDragEnd = (id: string, x: number, y: number) => {
+    setTexts((prev) => prev.map((t) => (t.id === id ? { ...t, x, y } : t)));
+  };
+
+  // ─── Canvas helpers ───────────────────────────────────────────────────────
 
   const buildArrowPath = (a: ArrowAnnotation) => {
     const angle = Math.atan2(a.y2 - a.y1, a.x2 - a.x1);
@@ -479,7 +674,7 @@ export default function ImageEditorScreen() {
     return p;
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────────
+  // ─── Derived ──────────────────────────────────────────────────────────────
 
   const hasAnnotations =
     paths.length > 0 || texts.length > 0 ||
@@ -489,55 +684,104 @@ export default function ImageEditorScreen() {
     mode === "draw" || mode === "arrow" || mode === "rect" ||
     mode === "circle" || mode === "measure" || mode === "text";
 
+  const canUndo =
+    (mode === "draw" && paths.length > 0) ||
+    (mode === "text" && texts.length > 0) ||
+    (mode === "arrow" && arrows.length > 0) ||
+    ((mode === "rect" || mode === "circle") && shapes.length > 0) ||
+    (mode === "measure" && measures.length > 0);
+
   if (!imgUri) {
     return (
-      <View style={[S.container, S.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ color: colors.muted, marginTop: 16 }}>Cargando imagen...</Text>
+      <View style={[styles.container, styles.center, { backgroundColor: "#000" }]}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={{ color: "#999", marginTop: 16 }}>Cargando imagen...</Text>
       </View>
     );
   }
 
-  return (
-    <GestureHandlerRootView style={S.container}>
+  // ─── Header height = safe area top + 44pt (Apple HIG navigation bar height) ──
+  const NAV_HEIGHT = 44;
+  const headerPaddingTop = insets.top;
 
-      {/* ── Header ── */}
-      <View style={S.header}>
-        <TouchableOpacity onPress={() => router.back()} style={S.hBtn}>
-          <Text style={S.cancelTxt}>Cancelar</Text>
+  return (
+    <GestureHandlerRootView style={styles.container}>
+
+      {/* ── Apple HIG Navigation Bar ── */}
+      <View
+        style={[
+          styles.navBar,
+          {
+            paddingTop: headerPaddingTop,
+            height: headerPaddingTop + NAV_HEIGHT,
+          },
+        ]}
+      >
+        {/* Left: Cancelar */}
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.navSideBtn}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text style={styles.navCancelText}>Cancelar</Text>
         </TouchableOpacity>
-        <Text style={{ color: "#FFF", fontSize: 17, fontWeight: "700" }}>Anotar Foto</Text>
-        <View style={S.hActions}>
+
+        {/* Center: Title */}
+        <Text style={styles.navTitle} numberOfLines={1}>
+          Anotar Foto
+        </Text>
+
+        {/* Right: actions */}
+        <View style={styles.navRight}>
           {hasAnnotations && (
-            <TouchableOpacity onPress={clearAll} style={S.hBtn}>
-              <MaterialIcons name="delete-sweep" size={22} color="#FF3B30" />
+            <TouchableOpacity
+              onPress={clearAll}
+              style={styles.navIconBtn}
+              hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+            >
+              <MaterialIcons name="delete-sweep" size={20} color="#FF3B30" />
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={undo} style={S.hBtn}>
-            <MaterialIcons name="undo" size={22} color={hasAnnotations ? "#FFF" : "#444"} />
+          <TouchableOpacity
+            onPress={undo}
+            disabled={!canUndo}
+            style={styles.navIconBtn}
+            hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+          >
+            <MaterialIcons name="undo" size={20} color={canUndo ? "#FFF" : "#444"} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={redoAction} style={S.hBtn}>
-            <MaterialIcons name="redo" size={22} color={redo.length > 0 ? "#FFF" : "#444"} />
+          <TouchableOpacity
+            onPress={redoAction}
+            disabled={redo.length === 0}
+            style={styles.navIconBtn}
+            hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+          >
+            <MaterialIcons name="redo" size={20} color={redo.length > 0 ? "#FFF" : "#444"} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={save}>
-            <Text style={[S.saveTxt, { color: colors.primary }]}>Guardar</Text>
+          <TouchableOpacity
+            onPress={save}
+            hitSlop={{ top: 10, bottom: 10, left: 6, right: 10 }}
+          >
+            <Text style={styles.navSaveText}>Guardar</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* ── Editor ── */}
-      <View style={S.editorArea}>
+      {/* Thin separator */}
+      <View style={styles.navSeparator} />
+
+      {/* ── Editor Area ── */}
+      <View style={styles.editorArea}>
         <GestureDetector gesture={activeGesture}>
           <View
             ref={viewRef}
             collapsable={false}
-            style={[S.imgWrapper, { width: imgSize.width, height: imgSize.height }]}
+            style={[styles.imgWrapper, { width: imgSize.width, height: imgSize.height }]}
           >
-            <Image source={{ uri: imgUri }} style={S.img} resizeMode="contain" />
+            <Image source={{ uri: imgUri }} style={styles.img} resizeMode="contain" />
 
-            {/* Skia canvas */}
+            {/* Skia canvas — draw paths, arrows, shapes, measures */}
             <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
-              {/* Draw paths */}
               {paths.map((p) => {
                 const skPath = Skia.Path.MakeFromSVGString(p.segments);
                 if (!skPath) return null;
@@ -551,7 +795,6 @@ export default function ImageEditorScreen() {
                 return <Path key={p.id} path={skPath} paint={paint} />;
               })}
 
-              {/* Arrows */}
               {[...arrows, ...(liveArrow ? [liveArrow] : [])].map((a) => {
                 const paint = Skia.Paint();
                 paint.setColor(Skia.Color(a.color));
@@ -561,7 +804,6 @@ export default function ImageEditorScreen() {
                 return <Path key={a.id} path={buildArrowPath(a)} paint={paint} />;
               })}
 
-              {/* Shapes */}
               {[...shapes, ...(liveShape ? [liveShape] : [])].map((s) => {
                 const paint = Skia.Paint();
                 paint.setColor(Skia.Color(s.color));
@@ -571,7 +813,6 @@ export default function ImageEditorScreen() {
                 return <Path key={s.id} path={buildShapePath(s)} paint={paint} />;
               })}
 
-              {/* Measures */}
               {[...measures, ...(liveMeasure ? [liveMeasure] : [])].map((m) => {
                 const paint = Skia.Paint();
                 paint.setColor(Skia.Color(m.color));
@@ -582,21 +823,14 @@ export default function ImageEditorScreen() {
               })}
             </Canvas>
 
-            {/* Text overlays (native) */}
+            {/* Draggable text annotations */}
             {texts.map((t) => (
-              <View
+              <DraggableText
                 key={t.id}
-                style={{
-                  position: "absolute", left: t.x, top: t.y - t.fontSize,
-                  backgroundColor: "rgba(0,0,0,0.45)",
-                  paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
-                }}
-                pointerEvents="none"
-              >
-                <Text style={{ color: t.color, fontSize: t.fontSize, fontWeight: "700" }}>
-                  {t.text}
-                </Text>
-              </View>
+                annotation={t}
+                onDragEnd={handleTextDragEnd}
+                isTextMode={mode === "text"}
+              />
             ))}
 
             {/* Measure labels */}
@@ -607,8 +841,10 @@ export default function ImageEditorScreen() {
                   position: "absolute",
                   left: (m.x1 + m.x2) / 2 - 30,
                   top: (m.y1 + m.y2) / 2 - 18,
-                  backgroundColor: "rgba(0,0,0,0.6)",
-                  paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
+                  backgroundColor: "rgba(0,0,0,0.65)",
+                  paddingHorizontal: 6,
+                  paddingVertical: 2,
+                  borderRadius: 4,
                 }}
                 pointerEvents="none"
               >
@@ -618,26 +854,23 @@ export default function ImageEditorScreen() {
               </View>
             ))}
 
-            {/* Crop overlay */}
+            {/* Crop overlay — rendered via sub-components to avoid conditional hooks */}
             {mode === "crop" && (
               <>
-                <Animated.View style={cropOverlayStyle} />
-                <Animated.View style={[cropOverlayStyle, { borderColor: "transparent" }]}>
-                  <View style={[S.gridLine, { top: "33.3%", width: "100%", height: 1 }]} />
-                  <View style={[S.gridLine, { top: "66.6%", width: "100%", height: 1 }]} />
-                  <View style={[S.gridLine, { left: "33.3%", height: "100%", width: 1 }]} />
-                  <View style={[S.gridLine, { left: "66.6%", height: "100%", width: 1 }]} />
-                </Animated.View>
-                <GestureDetector gesture={cropTL}>
-                  <Animated.View
-                    style={[S.cropHandle, useAnimatedStyle(() => ({ top: cTop.value - 15, left: cLeft.value - 15 }))]}
-                  />
-                </GestureDetector>
-                <GestureDetector gesture={cropBR}>
-                  <Animated.View
-                    style={[S.cropHandle, useAnimatedStyle(() => ({ bottom: cBottom.value - 15, right: cRight.value - 15 }))]}
-                  />
-                </GestureDetector>
+                <CropOverlay
+                  cTop={cTop} cLeft={cLeft}
+                  cBottom={cBottom} cRight={cRight}
+                />
+                <CropHandle
+                  gesture={cropTL} position="TL"
+                  cTop={cTop} cLeft={cLeft}
+                  cBottom={cBottom} cRight={cRight}
+                />
+                <CropHandle
+                  gesture={cropBR} position="BR"
+                  cTop={cTop} cLeft={cLeft}
+                  cBottom={cBottom} cRight={cRight}
+                />
               </>
             )}
           </View>
@@ -645,49 +878,64 @@ export default function ImageEditorScreen() {
       </View>
 
       {/* ── Bottom Toolbar ── */}
-      <View style={S.toolbar}>
-        {/* Color + options row */}
+      <View style={styles.toolbar}>
+        {/* Color + stroke / font-size / fill options */}
         {showOptions && (
-          <View style={S.optRow}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.colorRow}>
+          <View style={styles.optRow}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.colorRow}
+            >
               {PALETTE.map((c) => (
                 <TouchableOpacity
                   key={c}
                   onPress={() => setColor(c)}
-                  style={[S.dot, { backgroundColor: c }, color === c && S.dotActive]}
+                  style={[styles.dot, { backgroundColor: c }, color === c && styles.dotActive]}
                 />
               ))}
             </ScrollView>
 
-            <View style={S.subRow}>
-              {mode !== "text" && mode !== "measure" && STROKE_SIZES.map((w) => (
-                <TouchableOpacity
-                  key={w}
-                  onPress={() => setStroke(w)}
-                  style={[S.strokeBtn, stroke === w && S.strokeBtnActive]}
-                >
-                  <View style={{ width: w, height: w, borderRadius: w / 2, backgroundColor: color }} />
-                </TouchableOpacity>
-              ))}
+            <View style={styles.subRow}>
+              {/* Stroke sizes (draw, arrow, rect, circle) */}
+              {mode !== "text" && mode !== "measure" &&
+                STROKE_SIZES.map((w) => (
+                  <TouchableOpacity
+                    key={w}
+                    onPress={() => setStroke(w)}
+                    style={[styles.subBtn, stroke === w && styles.subBtnActive]}
+                  >
+                    <View
+                      style={{
+                        width: w, height: w, borderRadius: w / 2,
+                        backgroundColor: color,
+                      }}
+                    />
+                  </TouchableOpacity>
+                ))}
 
-              {mode === "text" && [12, 16, 20, 26, 32].map((fs) => (
-                <TouchableOpacity
-                  key={fs}
-                  onPress={() => setFontSize(fs)}
-                  style={[S.strokeBtn, fontSize === fs && S.strokeBtnActive]}
-                >
-                  <Text style={{ color, fontSize: 10, fontWeight: "700" }}>{fs}</Text>
-                </TouchableOpacity>
-              ))}
+              {/* Font sizes (text) */}
+              {mode === "text" &&
+                [12, 16, 20, 26, 32].map((fs) => (
+                  <TouchableOpacity
+                    key={fs}
+                    onPress={() => setFontSize(fs)}
+                    style={[styles.subBtn, fontSize === fs && styles.subBtnActive]}
+                  >
+                    <Text style={{ color, fontSize: 10, fontWeight: "700" }}>{fs}</Text>
+                  </TouchableOpacity>
+                ))}
 
+              {/* Fill toggle (rect, circle) */}
               {(mode === "rect" || mode === "circle") && (
                 <TouchableOpacity
                   onPress={() => setFilled((v) => !v)}
-                  style={[S.strokeBtn, filled && S.strokeBtnActive]}
+                  style={[styles.subBtn, filled && styles.subBtnActive]}
                 >
                   <MaterialIcons
                     name={filled ? "format-color-fill" : "format-color-reset"}
-                    size={18} color="#FFF"
+                    size={18}
+                    color="#FFF"
                   />
                 </TouchableOpacity>
               )}
@@ -696,55 +944,86 @@ export default function ImageEditorScreen() {
         )}
 
         {/* Tool tabs */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.toolRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.toolRow}
+        >
           {TOOLS.map((t) => {
             const active = mode === t.id;
             return (
               <TouchableOpacity
                 key={t.id}
-                onPress={() => { Haptics.selectionAsync(); setMode(active ? "none" : t.id); }}
-                style={[S.toolBtn, active && S.toolBtnActive]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setMode(active ? "none" : t.id);
+                }}
+                style={[styles.toolBtn, active && styles.toolBtnActive]}
               >
-                <MaterialIcons name={t.icon as any} size={24} color={active ? colors.primary : "#FFF"} />
-                <Text style={[S.toolTxt, active && { color: colors.primary }]}>{t.label}</Text>
+                <MaterialIcons
+                  name={t.icon as any}
+                  size={22}
+                  color={active ? "#007AFF" : "#FFF"}
+                />
+                <Text style={[styles.toolTxt, active && { color: "#007AFF" }]}>
+                  {t.label}
+                </Text>
               </TouchableOpacity>
             );
           })}
-          <TouchableOpacity onPress={rotate} style={S.toolBtn}>
-            <MaterialIcons name="rotate-right" size={24} color="#FFF" />
-            <Text style={S.toolTxt}>Rotar</Text>
+          <TouchableOpacity onPress={rotate} style={styles.toolBtn}>
+            <MaterialIcons name="rotate-right" size={22} color="#FFF" />
+            <Text style={styles.toolTxt}>Rotar</Text>
           </TouchableOpacity>
         </ScrollView>
 
+        {/* Apply crop CTA */}
         {mode === "crop" && (
-          <TouchableOpacity onPress={applyCrop} style={S.applyBtn}>
-            <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Aplicar Recorte</Text>
+          <TouchableOpacity onPress={applyCrop} style={styles.applyBtn}>
+            <Text style={styles.applyBtnText}>Aplicar Recorte</Text>
           </TouchableOpacity>
         )}
+
+        {/* Bottom safe area spacer */}
+        <View style={{ height: insets.bottom }} />
       </View>
 
-      {/* ── Text Modal ── */}
-      <Modal visible={textModal} transparent animationType="fade" onRequestClose={() => setTextModal(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={S.overlay}>
-          <View style={[S.modalCard, { backgroundColor: colors.surface }]}>
-            <Text style={{ color: colors.foreground, fontSize: 17, fontWeight: "700", marginBottom: 16 }}>
-              Agregar Texto
-            </Text>
+      {/* ── Text Input Modal ── */}
+      <Modal
+        visible={textModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setTextModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.overlay}
+        >
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Agregar Texto</Text>
             <TextInput
               value={textVal}
               onChangeText={setTextVal}
               placeholder="Escribe aquí..."
-              placeholderTextColor={colors.muted}
-              style={[S.input, { color: colors.foreground, borderColor: colors.border }]}
+              placeholderTextColor="#666"
+              style={styles.sheetInput}
               autoFocus
               multiline
+              returnKeyType="done"
             />
-            <View style={S.modalBtns}>
-              <TouchableOpacity onPress={() => setTextModal(false)} style={[S.mBtn, { backgroundColor: colors.border }]}>
-                <Text style={{ color: colors.foreground, fontWeight: "600" }}>Cancelar</Text>
+            <View style={styles.sheetBtns}>
+              <TouchableOpacity
+                onPress={() => setTextModal(false)}
+                style={[styles.sheetBtn, styles.sheetBtnCancel]}
+              >
+                <Text style={styles.sheetBtnCancelText}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={confirmText} style={[S.mBtn, { backgroundColor: colors.primary }]}>
-                <Text style={{ color: "#FFF", fontWeight: "700" }}>Agregar</Text>
+              <TouchableOpacity
+                onPress={confirmText}
+                style={[styles.sheetBtn, styles.sheetBtnConfirm]}
+              >
+                <Text style={styles.sheetBtnConfirmText}>Agregar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -752,29 +1031,42 @@ export default function ImageEditorScreen() {
       </Modal>
 
       {/* ── Measure Label Modal ── */}
-      <Modal visible={measureModal} transparent animationType="fade" onRequestClose={() => setMeasureModal(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={S.overlay}>
-          <View style={[S.modalCard, { backgroundColor: colors.surface }]}>
-            <Text style={{ color: colors.foreground, fontSize: 17, fontWeight: "700", marginBottom: 6 }}>
-              Etiqueta de Medida
-            </Text>
-            <Text style={{ color: colors.muted, fontSize: 13, marginBottom: 14 }}>
+      <Modal
+        visible={measureModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setMeasureModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.overlay}
+        >
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Etiqueta de Medida</Text>
+            <Text style={styles.sheetSubtitle}>
               Personaliza la etiqueta (ej: "2.5 m", "120 cm")
             </Text>
             <TextInput
               value={measureLabel}
               onChangeText={setMeasureLabel}
               placeholder="Ej: 2.5 m"
-              placeholderTextColor={colors.muted}
-              style={[S.input, { color: colors.foreground, borderColor: colors.border }]}
+              placeholderTextColor="#666"
+              style={styles.sheetInput}
               autoFocus
             />
-            <View style={S.modalBtns}>
-              <TouchableOpacity onPress={() => setMeasureModal(false)} style={[S.mBtn, { backgroundColor: colors.border }]}>
-                <Text style={{ color: colors.foreground, fontWeight: "600" }}>Cancelar</Text>
+            <View style={styles.sheetBtns}>
+              <TouchableOpacity
+                onPress={() => setMeasureModal(false)}
+                style={[styles.sheetBtn, styles.sheetBtnCancel]}
+              >
+                <Text style={styles.sheetBtnCancelText}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={confirmMeasure} style={[S.mBtn, { backgroundColor: colors.primary }]}>
-                <Text style={{ color: "#FFF", fontWeight: "700" }}>Confirmar</Text>
+              <TouchableOpacity
+                onPress={confirmMeasure}
+                style={[styles.sheetBtn, styles.sheetBtnConfirm]}
+              >
+                <Text style={styles.sheetBtnConfirmText}>Confirmar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -783,9 +1075,9 @@ export default function ImageEditorScreen() {
 
       {/* ── Processing overlay ── */}
       {processing && (
-        <View style={S.loader}>
+        <View style={styles.loader}>
           <ActivityIndicator size="large" color="#FFF" />
-          <Text style={{ color: "#FFF", fontWeight: "600", marginTop: 12 }}>Procesando...</Text>
+          <Text style={styles.loaderText}>Procesando...</Text>
         </View>
       )}
     </GestureHandlerRootView>
@@ -794,52 +1086,232 @@ export default function ImageEditorScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const S = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0A0A0A" },
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#000" },
   center: { justifyContent: "center", alignItems: "center" },
-  header: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    paddingTop: Platform.OS === "ios" ? 52 : 20,
-    paddingHorizontal: 16, paddingBottom: 12,
-    backgroundColor: "#111",
+
+  // ── Apple HIG Navigation Bar ──
+  navBar: {
+    backgroundColor: "rgba(18,18,18,0.97)",
+    flexDirection: "row",
+    alignItems: "flex-end",
+    paddingHorizontal: 8,
+    paddingBottom: 0,
   },
-  hActions: { flexDirection: "row", gap: 6, alignItems: "center" },
-  hBtn: { padding: 8 },
-  cancelTxt: { color: "#FFF", fontSize: 17 },
-  saveTxt: { fontSize: 17, fontWeight: "700" },
-  editorArea: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#000" },
+  navSeparator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  navSideBtn: {
+    width: 80,
+    height: 44,
+    justifyContent: "center",
+    paddingLeft: 8,
+  },
+  navCancelText: {
+    color: "#FFF",
+    fontSize: 17,
+    fontWeight: "400",
+    letterSpacing: -0.2,
+  },
+  navTitle: {
+    flex: 1,
+    textAlign: "center",
+    color: "#FFF",
+    fontSize: 17,
+    fontWeight: "600",
+    letterSpacing: -0.3,
+    height: 44,
+    lineHeight: 44,
+  },
+  navRight: {
+    width: 80,
+    height: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 2,
+    paddingRight: 4,
+  },
+  navIconBtn: {
+    width: 32,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  navSaveText: {
+    color: "#007AFF",
+    fontSize: 17,
+    fontWeight: "600",
+    letterSpacing: -0.2,
+    height: 44,
+    lineHeight: 44,
+    paddingRight: 4,
+  },
+
+  // ── Editor ──
+  editorArea: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#000",
+  },
   imgWrapper: { position: "relative", backgroundColor: "#111" },
   img: { width: "100%", height: "100%" },
-  cropHandle: { width: 30, height: 30, backgroundColor: "#FFF", borderRadius: 15, position: "absolute", zIndex: 10 },
-  gridLine: { position: "absolute", backgroundColor: "rgba(255,255,255,0.4)" },
-  toolbar: { backgroundColor: "#111", paddingBottom: Platform.OS === "ios" ? 36 : 16, paddingTop: 8 },
-  optRow: { borderBottomWidth: 1, borderBottomColor: "#222", paddingBottom: 10, marginBottom: 4 },
-  colorRow: { paddingHorizontal: 16, gap: 12, height: 40, alignItems: "center" },
-  dot: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, borderColor: "transparent" },
-  dotActive: { borderColor: "#FFF", transform: [{ scale: 1.15 }] },
-  subRow: { flexDirection: "row", justifyContent: "center", gap: 10, marginTop: 10, paddingHorizontal: 16 },
-  strokeBtn: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
-  strokeBtnActive: { backgroundColor: "rgba(255,255,255,0.2)" },
-  toolRow: { paddingHorizontal: 8, gap: 4, alignItems: "center", paddingVertical: 6 },
-  toolBtn: { alignItems: "center", gap: 3, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, minWidth: 64 },
-  toolBtnActive: { backgroundColor: "rgba(255,255,255,0.15)" },
-  toolTxt: { color: "#FFF", fontSize: 10, fontWeight: "500" },
+
+  // ── Crop ──
+  cropHandle: {
+    width: 28,
+    height: 28,
+    backgroundColor: "#FFF",
+    borderRadius: 14,
+    position: "absolute",
+    zIndex: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  gridLine: {
+    position: "absolute",
+    backgroundColor: "rgba(255,255,255,0.35)",
+  },
+
+  // ── Bottom Toolbar ──
+  toolbar: {
+    backgroundColor: "rgba(18,18,18,0.97)",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255,255,255,0.12)",
+    paddingTop: 8,
+  },
+  optRow: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(255,255,255,0.1)",
+    paddingBottom: 10,
+    marginBottom: 2,
+  },
+  colorRow: {
+    paddingHorizontal: 16,
+    gap: 12,
+    height: 40,
+    alignItems: "center",
+  },
+  dot: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  dotActive: {
+    borderColor: "#FFF",
+    transform: [{ scale: 1.18 }],
+  },
+  subRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 10,
+    paddingHorizontal: 16,
+  },
+  subBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  subBtnActive: { backgroundColor: "rgba(255,255,255,0.18)" },
+  toolRow: {
+    paddingHorizontal: 6,
+    gap: 2,
+    alignItems: "center",
+    paddingVertical: 6,
+  },
+  toolBtn: {
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    minWidth: 58,
+  },
+  toolBtnActive: { backgroundColor: "rgba(0,122,255,0.15)" },
+  toolTxt: { color: "#CCC", fontSize: 10, fontWeight: "500" },
   applyBtn: {
-    marginHorizontal: 16, marginTop: 8,
-    backgroundColor: "#007AFF", paddingVertical: 14,
-    borderRadius: 14, alignItems: "center",
+    marginHorizontal: 16,
+    marginTop: 6,
+    backgroundColor: "#007AFF",
+    paddingVertical: 13,
+    borderRadius: 12,
+    alignItems: "center",
   },
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  modalCard: {
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, paddingBottom: Platform.OS === "ios" ? 40 : 24,
+  applyBtnText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
+
+  // ── Bottom Sheet (modals) ──
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "flex-end",
   },
-  input: { borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 16, minHeight: 52 },
-  modalBtns: { flexDirection: "row", gap: 12, marginTop: 16 },
-  mBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: "center" },
+  sheet: {
+    backgroundColor: "#1C1C1E",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.25)",
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  sheetTitle: {
+    color: "#FFF",
+    fontSize: 17,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  sheetSubtitle: {
+    color: "#999",
+    fontSize: 13,
+    marginBottom: 14,
+  },
+  sheetInput: {
+    backgroundColor: "#2C2C2E",
+    borderRadius: 10,
+    padding: 14,
+    fontSize: 16,
+    color: "#FFF",
+    minHeight: 52,
+  },
+  sheetBtns: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
+  },
+  sheetBtn: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  sheetBtnCancel: { backgroundColor: "#2C2C2E" },
+  sheetBtnCancelText: { color: "#FFF", fontWeight: "500", fontSize: 15 },
+  sheetBtnConfirm: { backgroundColor: "#007AFF" },
+  sheetBtnConfirmText: { color: "#FFF", fontWeight: "700", fontSize: 15 },
+
+  // ── Processing ──
   loader: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "center", alignItems: "center", zIndex: 1000,
+    backgroundColor: "rgba(0,0,0,0.72)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
   },
+  loaderText: { color: "#FFF", fontWeight: "600", marginTop: 12, fontSize: 15 },
 });
