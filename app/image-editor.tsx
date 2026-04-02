@@ -2,10 +2,10 @@ import { Text, View, TouchableOpacity, Image, Alert, Dimensions, StyleSheet, Pla
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { Canvas, Path, Skia, useTouchHandler, SkPath } from '@shopify/react-native-skia';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Canvas, Path, Skia } from '@shopify/react-native-skia';
+import { GestureHandlerRootView, PanGestureHandler, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { captureRef } from 'react-native-view-shot';
 import * as MediaLibrary from 'expo-media-library';
 import * as Haptics from 'expo-haptics';
@@ -14,8 +14,10 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type EditMode = 'none' | 'draw' | 'crop';
 
+// Usamos strings SVG para representar los caminos, esto es mucho más seguro para el estado de React
+// que los objetos SkPath nativos que pueden causar errores de "undefined" si no se manejan bien.
 interface DrawPath {
-  path: SkPath;
+  segments: string;
   color: string;
   strokeWidth: number;
 }
@@ -50,25 +52,31 @@ export default function ImageEditorScreen() {
     }
   }, [imageUri]);
 
-  // Skia Touch Handler for Drawing
-  // Usamos useMemo para asegurar que Skia esté disponible y no recrear el handler innecesariamente
-  const onTouch = useTouchHandler({
-    onStart: (pt) => {
-      if (editMode !== 'draw' || !Skia) return;
-      const newPath = Skia.Path.Make();
-      newPath.moveTo(pt.x, pt.y);
-      setPaths(prev => [...prev, { path: newPath, color: drawColor, strokeWidth }]);
-      setRedoStack([]); 
-    },
-    onActive: (pt) => {
+  // Gesture Handler para dibujar
+  const gesture = Gesture.Pan()
+    .onStart((g) => {
       if (editMode !== 'draw') return;
-      const lastPathObj = paths[paths.length - 1];
-      if (lastPathObj) {
-        lastPathObj.path.lineTo(pt.x, pt.y);
-        setPaths([...paths]); 
-      }
-    },
-  }, [editMode, drawColor, strokeWidth, paths]);
+      const newPath: DrawPath = {
+        segments: `M ${g.x} ${g.y}`,
+        color: drawColor,
+        strokeWidth: strokeWidth,
+      };
+      setPaths((prev) => [...prev, newPath]);
+      setRedoStack([]);
+    })
+    .onUpdate((g) => {
+      if (editMode !== 'draw') return;
+      setPaths((prev) => {
+        const lastPath = prev[prev.length - 1];
+        if (!lastPath) return prev;
+        const updatedPath = {
+          ...lastPath,
+          segments: `${lastPath.segments} L ${g.x} ${g.y}`,
+        };
+        return [...prev.slice(0, -1), updatedPath];
+      });
+    })
+    .runOnJS(true);
 
   if (!currentImageUri) {
     return (
@@ -109,25 +117,6 @@ export default function ImageEditorScreen() {
       setCurrentImageUri(manipResult.uri);
     } catch (error) {
       Alert.alert("Error", "No se pudo rotar la imagen");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleCrop = async () => {
-    setIsProcessing(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    try {
-      // Simulación de recorte cuadrado central
-      const manipResult = await ImageManipulator.manipulateAsync(
-        currentImageUri,
-        [{ crop: { originX: 0, originY: 0, width: 1000, height: 1000 } }], 
-        { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      setCurrentImageUri(manipResult.uri);
-      setEditMode('none');
-    } catch (error) {
-      Alert.alert("Error", "No se pudo recortar la imagen");
     } finally {
       setIsProcessing(false);
     }
@@ -194,26 +183,28 @@ export default function ImageEditorScreen() {
 
       {/* Main Editor Area */}
       <View style={styles.editorArea}>
-        <View ref={imageViewRef} collapsable={false} style={styles.imageWrapper}>
-          <Image
-            source={{ uri: currentImageUri }}
-            style={styles.mainImage}
-            resizeMode="contain"
-          />
-          <Canvas style={StyleSheet.absoluteFill} onTouch={onTouch}>
-            {paths.map((p, i) => (
-              <Path
-                key={i}
-                path={p.path}
-                color={p.color}
-                style="stroke"
-                strokeWidth={p.strokeWidth}
-                strokeCap="round"
-                strokeJoin="round"
-              />
-            ))}
-          </Canvas>
-        </View>
+        <GestureDetector gesture={gesture}>
+          <View ref={imageViewRef} collapsable={false} style={styles.imageWrapper}>
+            <Image
+              source={{ uri: currentImageUri }}
+              style={styles.mainImage}
+              resizeMode="contain"
+            />
+            <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
+              {paths.map((p, i) => (
+                <Path
+                  key={i}
+                  path={p.segments}
+                  color={p.color}
+                  style="stroke"
+                  strokeWidth={p.strokeWidth}
+                  strokeCap="round"
+                  strokeJoin="round"
+                />
+              ))}
+            </Canvas>
+          </View>
+        </GestureDetector>
       </View>
 
       {/* Bottom Toolbar */}
@@ -257,9 +248,9 @@ export default function ImageEditorScreen() {
             <Text style={styles.toolText}>Rotar</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => setEditMode(editMode === 'crop' ? 'none' : 'crop')} style={[styles.toolButton, editMode === 'crop' && styles.activeTool]}>
-            <IconSymbol name="crop" size={28} color={editMode === 'crop' ? colors.primary : "#FFF"} />
-            <Text style={[styles.toolText, editMode === 'crop' && { color: colors.primary }]}>Recortar</Text>
+          <TouchableOpacity onPress={() => Alert.alert("Próximamente", "La herramienta de recorte estará disponible pronto.")} style={styles.toolButton}>
+            <IconSymbol name="crop" size={28} color="#FFF" />
+            <Text style={styles.toolText}>Recortar</Text>
           </TouchableOpacity>
         </View>
       </View>
