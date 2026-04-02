@@ -1,4 +1,4 @@
-import { Text, View, TouchableOpacity, Alert } from "react-native";
+import { Text, View, TouchableOpacity, Alert, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
@@ -40,7 +40,7 @@ export default function GalleryPickerScreen() {
       return;
     }
 
-    // Launch image picker
+    // Launch image library
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
@@ -49,13 +49,13 @@ export default function GalleryPickerScreen() {
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
-        // Navigate to image editor with the selected photo
+        // Redirigir al editor con la imagen seleccionada
         router.replace({
           pathname: "/image-editor",
           params: { imageUri: result.assets[0].uri }
         });
       } else {
-        // User cancelled, go back
+        // El usuario canceló, volver atrás
         setIsPickerOpen(false);
         router.back();
       }
@@ -68,11 +68,33 @@ export default function GalleryPickerScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background justify-center items-center">
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <IconSymbol name="photo.on.rectangle" size={64} color={colors.muted} />
-      <Text style={{ fontSize: 16, color: colors.muted, marginTop: 16 }}>
-        Seleccionando foto...
+      <Text style={[styles.text, { color: colors.muted }]}>
+        Abriendo galería...
       </Text>
+      <TouchableOpacity 
+        onPress={() => router.back()}
+        style={styles.cancelButton}
+      >
+        <Text style={{ color: colors.primary, fontSize: 16, fontWeight: '500' }}>Cancelar</Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  text: {
+    fontSize: 16,
+    marginTop: 16,
+  },
+  cancelButton: {
+    marginTop: 32,
+    padding: 10,
+  }
+});

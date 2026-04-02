@@ -1,13 +1,13 @@
-import { Text, View, TouchableOpacity, Alert, StyleSheet, Dimensions, Platform } from "react-native";
+import { Text, View, TouchableOpacity, Alert, StyleSheet, Dimensions, Platform, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { CameraView, CameraType, useCameraPermissions, FlashMode } from 'expo-camera';
 import { useState, useRef, useEffect } from 'react';
-import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function CameraCaptureScreen() {
   const router = useRouter();
@@ -15,8 +15,28 @@ export default function CameraCaptureScreen() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [flash, setFlash] = useState<FlashMode>('off');
   const [permission, requestPermission] = useCameraPermissions();
+  const [lastPhoto, setLastPhoto] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const [isReady, setIsReady] = useState(false);
+
+  // Cargar la última foto de la galería para el thumbnail (opcional, pero mejora la UX)
+  useEffect(() => {
+    (async () => {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status === 'granted') {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsEditing: false,
+          quality: 0.1,
+          selectionLimit: 1,
+        });
+        if (!result.canceled && result.assets && result.assets[0]) {
+          // No abrimos el picker, solo intentamos obtener una miniatura si fuera posible
+          // Pero para simplificar y no confundir al usuario, usaremos un icono si no hay captura reciente
+        }
+      }
+    })();
+  }, []);
 
   if (!permission) {
     return <View style={[styles.container, { backgroundColor: '#000' }]} />;
@@ -59,6 +79,29 @@ export default function CameraCaptureScreen() {
     });
   };
 
+  const openGallery = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permiso Requerido', 'Necesitamos acceso a tu galería.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets && result.assets[0]) {
+      router.push({
+        pathname: "/image-editor",
+        params: { imageUri: result.assets[0].uri }
+      });
+    }
+  };
+
   const takePicture = async () => {
     if (cameraRef.current && isReady) {
       try {
@@ -70,6 +113,7 @@ export default function CameraCaptureScreen() {
         });
         
         if (photo) {
+          setLastPhoto(photo.uri);
           router.push({
             pathname: "/image-editor",
             params: { imageUri: photo.uri }
@@ -112,12 +156,16 @@ export default function CameraCaptureScreen() {
         {/* Bottom Controls Overlay */}
         <View style={styles.bottomContainer}>
           <View style={styles.controlsRow}>
-            {/* Gallery Preview Placeholder or Last Photo */}
+            {/* Gallery Preview */}
             <TouchableOpacity 
-              onPress={() => router.push('/gallery-picker')}
+              onPress={openGallery}
               style={styles.thumbnailButton}
             >
-              <IconSymbol name="photo.on.rectangle" size={24} color="#FFF" />
+              {lastPhoto ? (
+                <Image source={{ uri: lastPhoto }} style={styles.thumbnailImage} />
+              ) : (
+                <IconSymbol name="photo.on.rectangle" size={24} color="#FFF" />
+              )}
             </TouchableOpacity>
 
             {/* Capture Button */}
@@ -131,7 +179,7 @@ export default function CameraCaptureScreen() {
             </TouchableOpacity>
           </View>
           
-          {/* Mode Selector Placeholder */}
+          {/* Mode Selector */}
           <View style={styles.modeSelector}>
             <Text style={styles.modeTextActive}>FOTO</Text>
           </View>
@@ -172,7 +220,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     paddingBottom: Platform.OS === 'ios' ? 50 : 30,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
   controlsRow: {
     flexDirection: 'row',
@@ -198,10 +246,15 @@ const styles = StyleSheet.create({
   thumbnailButton: {
     width: 50,
     height: 50,
-    borderRadius: 25,
+    borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  thumbnailImage: {
+    width: '100%',
+    height: '100%',
   },
   modeSelector: {
     flexDirection: 'row',
