@@ -25,7 +25,7 @@ interface Tab {
 const tabs: Tab[] = [
   { name: 'index', title: 'Home', icon: 'house.fill', component: HomeScreen },
   { name: 'projects', title: 'Projects', icon: 'photo.stack.fill', component: ProjectsScreen },
-  { name: 'camera', title: 'Camera', icon: 'camera.fill', component: CameraScreen },
+  // { name: 'camera', title: 'Camera', icon: 'camera.fill', component: CameraScreen },
 ];
 
 // Keep profile component for direct navigation
