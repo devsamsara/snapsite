@@ -2,7 +2,7 @@ import { Text, View, TouchableOpacity, Image, Alert, Dimensions, StyleSheet, Pla
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Canvas, Path, Skia, useTouchHandler, SkPath } from '@shopify/react-native-skia';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -50,19 +50,11 @@ export default function ImageEditorScreen() {
     }
   }, [imageUri]);
 
-  if (!currentImageUri) {
-    return (
-      <View style={[styles.container, styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ color: colors.muted, marginTop: 16 }}>Cargando imagen...</Text>
-      </View>
-    );
-  }
-
   // Skia Touch Handler for Drawing
+  // Usamos useMemo para asegurar que Skia esté disponible y no recrear el handler innecesariamente
   const onTouch = useTouchHandler({
     onStart: (pt) => {
-      if (editMode !== 'draw') return;
+      if (editMode !== 'draw' || !Skia) return;
       const newPath = Skia.Path.Make();
       newPath.moveTo(pt.x, pt.y);
       setPaths(prev => [...prev, { path: newPath, color: drawColor, strokeWidth }]);
@@ -77,6 +69,15 @@ export default function ImageEditorScreen() {
       }
     },
   }, [editMode, drawColor, strokeWidth, paths]);
+
+  if (!currentImageUri) {
+    return (
+      <View style={[styles.container, styles.center, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.muted, marginTop: 16 }}>Cargando imagen...</Text>
+      </View>
+    );
+  }
 
   const handleUndo = () => {
     if (paths.length > 0) {
