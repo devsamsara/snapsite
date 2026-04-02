@@ -151,26 +151,18 @@ export default function CreateProjectLocationScreen() {
         showsMyLocationButton={false}
       >
         {NEARBY_PROJECTS.map((project) => (
-          <React.Fragment key={project.id}>
-            <Marker
-              coordinate={{ latitude: project.latitude, longitude: project.longitude }}
-              title={project.title}
-            >
-              <View style={styles.markerContainer}>
-                <View style={[styles.markerBubble, { borderColor: nearbyProject?.id === project.id ? colors.success : colors.primary }]}>
-                  <Image source={{ uri: project.image }} style={styles.markerImage} />
-                </View>
-                <View style={[styles.markerArrow, { borderTopColor: nearbyProject?.id === project.id ? colors.success : colors.primary }]} />
+          <Marker
+            key={project.id}
+            coordinate={{ latitude: project.latitude, longitude: project.longitude }}
+            title={project.title}
+          >
+            <View style={styles.markerContainer}>
+              <View style={[styles.markerBubble, { borderColor: nearbyProject?.id === project.id ? colors.success : colors.primary, borderWidth: 2 }]}>
+                <Image source={{ uri: project.image }} style={styles.markerImage} />
               </View>
-            </Marker>
-            <Circle 
-              center={{ latitude: project.latitude, longitude: project.longitude }}
-              radius={50}
-              fillColor={nearbyProject?.id === project.id ? "rgba(52, 199, 89, 0.15)" : "rgba(0, 122, 255, 0.05)"}
-              strokeColor={nearbyProject?.id === project.id ? colors.success : colors.primary}
-              strokeWidth={1}
-            />
-          </React.Fragment>
+              <View style={[styles.markerArrow, { borderTopColor: nearbyProject?.id === project.id ? colors.success : colors.primary }]} />
+            </View>
+          </Marker>
         ))}
       </MapView>
 
