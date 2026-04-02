@@ -1,307 +1,296 @@
-// components/AdvancedCameraUI.tsx
-import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
- import { Camera, useCameraDevice } from 'react-native-vision-camera';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, Dimensions, Platform, Image, Alert } from 'react-native';
+import { useRouter } from "expo-router";
+import { CameraView, CameraType, useCameraPermissions, FlashMode } from 'expo-camera';
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useColors } from "@/hooks/use-colors";
+import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
+import { BlurView } from 'expo-blur';
 
- const CameraScreen: React.FC = () => {
-  const [showSettings, setShowSettings] = useState(false);
-  const [aspectRatio, setAspectRatio] = useState<'4:3' | '16:9'>('4:3');
-  const [showGrid, setShowGrid] = useState(false);
-  const [showLevel, setShowLevel] = useState(false);
-  const [stampGPS, setStampGPS] = useState(false);
-  const [stampDateTime, setStampDateTime] = useState(false);
-  const [mode, setMode] = useState<'photo' | 'video' | 'scan'>('photo');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-   const device = useCameraDevice('back');
+const CameraScreen: React.FC = () => {
+  const router = useRouter();
+  const colors = useColors();
+  const [facing, setFacing] = useState<CameraType>('back');
+  const [flash, setFlash] = useState<FlashMode>('off');
+  const [permission, requestPermission] = useCameraPermissions();
+  const [lastPhoto, setLastPhoto] = useState<string | null>(null);
+  const cameraRef = useRef<CameraView>(null);
+  const [isReady, setIsReady] = useState(false);
+
+  if (!permission) {
+    return <View style={[styles.container, { backgroundColor: '#000' }]} />;
+  }
+
+  if (!permission.granted) {
+    return (
+      <View style={[styles.container, styles.center, { backgroundColor: colors.background, paddingHorizontal: 24 }]}>
+        <IconSymbol name="camera.fill" size={64} color={colors.muted} />
+        <Text style={[styles.permissionTitle, { color: colors.foreground }]}>
+          Permiso de Cámara Requerido
+        </Text>
+        <Text style={[styles.permissionText, { color: colors.muted }]}>
+          Necesitamos acceso a tu cámara para capturar fotos del proyecto con la mejor calidad.
+        </Text>
+        <TouchableOpacity
+          onPress={requestPermission}
+          style={[styles.permissionButton, { backgroundColor: colors.primary }]}
+        >
+          <Text style={styles.permissionButtonText}>Permitir Acceso</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const toggleCameraFacing = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setFacing(current => (current === 'back' ? 'front' : 'back'));
+  };
+
+  const toggleFlash = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setFlash(current => {
+      if (current === 'off') return 'on';
+      if (current === 'on') return 'auto';
+      return 'off';
+    });
+  };
+
+  const openGallery = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permiso Requerido', 'Necesitamos acceso a tu galería.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets && result.assets[0]) {
+      router.push({
+        pathname: "/image-editor",
+        params: { imageUri: result.assets[0].uri }
+      });
+    }
+  };
+
+  const takePicture = async () => {
+    if (cameraRef.current && isReady) {
+      try {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 1,
+          base64: false,
+          exif: true,
+        });
+        
+        if (photo) {
+          setLastPhoto(photo.uri);
+          router.push({
+            pathname: "/image-editor",
+            params: { imageUri: photo.uri }
+          });
+        }
+      } catch (error) {
+        Alert.alert("Error", "No se pudo capturar la foto. Inténtalo de nuevo.");
+      }
+    }
+  };
+
+  const renderFlashIcon = () => {
+    switch (flash) {
+      case 'on': return 'bolt.fill';
+      case 'auto': return 'bolt.badge.a.fill';
+      default: return 'bolt.slash.fill';
+    }
+  };
 
   return (
-      <View style={styles.container}>
-        <Camera
-            device={device!}
-            isActive={true}
-            style={StyleSheet.absoluteFill}
-            photo={mode === 'photo'}
-            video={mode === 'video'}
-        />
+    <View style={styles.container}>
+      <CameraView 
+        ref={cameraRef} 
+        style={styles.camera} 
+        facing={facing}
+        flash={flash}
+        onCameraReady={() => setIsReady(true)}
+      >
+        {/* Top Controls Overlay */}
+        <View style={styles.topControls}>
+          <View style={styles.topBlurContainer}>
+            <BlurView intensity={20} tint="dark" style={styles.blurWrapper}>
+              <TouchableOpacity onPress={toggleFlash} style={styles.iconButton}>
+                <IconSymbol name={renderFlashIcon()} size={22} color={flash !== 'off' ? '#FFD60A' : '#FFF'} />
+              </TouchableOpacity>
+            </BlurView>
+          </View>
+          
+          <View style={styles.topBlurContainer}>
+            <BlurView intensity={20} tint="dark" style={styles.blurWrapper}>
+              <TouchableOpacity onPress={toggleCameraFacing} style={styles.iconButton}>
+                <IconSymbol name="arrow.triangle.2.circlepath.camera" size={22} color="#FFF" />
+              </TouchableOpacity>
+            </BlurView>
+          </View>
+        </View>
 
-        {/* Settings Overlay */}
-        {showSettings && (
-            <View style={styles.settingsPanel}>
-              <View style={styles.settingsGrid}>
-                <SettingButton
-                    icon="4:3"
-                    label="Relación de aspecto"
-                    active={aspectRatio === '4:3'}
-                    onPress={() => setAspectRatio('4:3')}
-                />
-                <SettingButton
-                    icon="⊞"
-                    label="Mostrar Cuadrícula"
-                    active={showGrid}
-                    onPress={() => setShowGrid(!showGrid)}
-                />
-                <SettingButton
-                    icon="⚖"
-                    label="Mostrar Level"
-                    active={showLevel}
-                    onPress={() => setShowLevel(!showLevel)}
-                />
-                <SettingButton
-                    icon="✎"
-                    label="Modo de Edición"
-                    onPress={() => {}}
-                />
-                <SettingButton
-                    icon="📍"
-                    label="Sellar Lat/Long"
-                    active={stampGPS}
-                    onPress={() => setStampGPS(!stampGPS)}
-                />
-                <SettingButton
-                    icon="📅"
-                    label="Sellar Date/Time"
-                    active={stampDateTime}
-                    onPress={() => setStampDateTime(!stampDateTime)}
-                />
-              </View>
+        {/* Bottom Controls Overlay */}
+        <View style={styles.bottomContainer}>
+          <BlurView intensity={40} tint="dark" style={styles.bottomBlur}>
+            <View style={styles.controlsRow}>
+              {/* Gallery Preview */}
+              <TouchableOpacity 
+                onPress={openGallery}
+                style={styles.thumbnailButton}
+              >
+                {lastPhoto ? (
+                  <Image source={{ uri: lastPhoto }} style={styles.thumbnailImage} />
+                ) : (
+                  <IconSymbol name="photo.on.rectangle" size={24} color="#FFF" />
+                )}
+              </TouchableOpacity>
 
-              <TouchableOpacity style={styles.allSettings}>
-                <Text style={styles.allSettingsText}>
-                  Todos los ajustes de cámara ›
-                </Text>
+              {/* Capture Button */}
+              <TouchableOpacity onPress={takePicture} style={styles.captureOuter}>
+                <View style={styles.captureInner} />
+              </TouchableOpacity>
+
+              {/* Settings Placeholder - Consistent with app design */}
+              <TouchableOpacity style={styles.thumbnailButton} onPress={() => router.push('/settings')}>
+                <IconSymbol name="gear" size={24} color="#FFF" />
               </TouchableOpacity>
             </View>
-        )}
-
-        {/* Grid Overlay */}
-        {showGrid && <GridOverlay />}
-
-        {/* Top Controls */}
-        <View style={styles.topControls}>
-          <TouchableOpacity style={styles.topButton}>
-            <Text style={styles.topButtonIcon}>⚡</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.topButton}>
-            <Text style={styles.topButtonIcon}>🔄</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-              style={styles.topButton}
-              onPress={() => setShowSettings(!showSettings)}
-          >
-            <Text style={styles.topButtonIcon}>⚙</Text>
-          </TouchableOpacity>
+            
+            {/* Mode Selector */}
+            <View style={styles.modeSelector}>
+              <Text style={styles.modeTextActive}>FOTO</Text>
+            </View>
+          </BlurView>
         </View>
-
-        {/* Bottom Controls */}
-        <View style={styles.bottomControls}>
-          {/* Mode Selector */}
-          <View style={styles.modeSelector}>
-            {['ESCANEAR', 'NOTA DE AI', 'FOTO', 'VIDEO', 'VIDEO DUAL'].map((m) => (
-                <TouchableOpacity key={m} style={styles.modeButton}>
-                  <Text
-                      style={[
-                        styles.modeText,
-                        m === 'FOTO' && styles.modeTextActive
-                      ]}
-                  >
-                    {m}
-                  </Text>
-                </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Capture Controls */}
-          <View style={styles.captureRow}>
-            <TouchableOpacity style={styles.galleryButton}>
-              <Text style={styles.buttonIcon}>🖼️</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.captureButton}>
-              <View style={styles.captureButtonInner} />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.doneButton}>
-              <Text style={styles.doneButtonText}>Listo</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+      </CameraView>
+    </View>
   );
 };
-
-const SettingButton: React.FC<{
-  icon: string;
-  label: string;
-  active?: boolean;
-  onPress: () => void;
-}> = ({ icon, label, active, onPress }) => (
-    <TouchableOpacity
-        style={[styles.settingButton, active && styles.settingButtonActive]}
-        onPress={onPress}
-    >
-      <Text style={styles.settingIcon}>{icon}</Text>
-      <Text style={styles.settingLabel}>{label}</Text>
-    </TouchableOpacity>
-);
-
-const GridOverlay: React.FC = () => (
-    <View style={styles.gridOverlay} pointerEvents="none">
-      <View style={styles.gridLine} />
-      <View style={styles.gridLine} />
-      <View style={[styles.gridLine, styles.gridLineVertical]} />
-      <View style={[styles.gridLine, styles.gridLineVertical]} />
-    </View>
-);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: '#000',
+  },
+  center: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  camera: {
+    flex: 1,
   },
   topControls: {
-    position: 'absolute',
-    top: 50,
-    right: 16,
-    gap: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
   },
-  topButton: {
+  topBlurContainer: {
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  blurWrapper: {
+    padding: 2,
+  },
+  iconButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  topButtonIcon: {
-    fontSize: 20,
-  },
-  settingsPanel: {
-    position: 'absolute',
-    top: 100,
-    left: 20,
-    right: 20,
-    backgroundColor: 'rgba(28, 39, 60, 0.95)',
-    borderRadius: 16,
-    padding: 16,
-  },
-  settingsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 16,
-  },
-  settingButton: {
-    width: '30%',
-    aspectRatio: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 8,
-  },
-  settingButtonActive: {
-    backgroundColor: 'rgba(59, 130, 246, 0.3)',
-  },
-  settingIcon: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  settingLabel: {
-    color: 'white',
-    fontSize: 10,
-    textAlign: 'center',
-  },
-  allSettings: {
-    padding: 12,
-    alignItems: 'center',
-  },
-  allSettingsText: {
-    color: 'white',
-    fontSize: 14,
-  },
-  gridOverlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  gridLine: {
-    position: 'absolute',
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    height: 1,
-    width: '100%',
-  },
-  gridLineVertical: {
-    width: 1,
-    height: '100%',
-  },
-  bottomControls: {
+  bottomContainer: {
     position: 'absolute',
     bottom: 0,
-    left: 0,
-    right: 0,
-    paddingBottom: 40,
+    width: '100%',
+    overflow: 'hidden',
+  },
+  bottomBlur: {
+    paddingBottom: Platform.OS === 'ios' ? 50 : 30,
+    paddingTop: 20,
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  captureOuter: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 4,
+    borderColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  captureInner: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FFF',
+  },
+  thumbnailButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  thumbnailImage: {
+    width: '100%',
+    height: '100%',
   },
   modeSelector: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 24,
-    gap: 16,
-  },
-  modeButton: {
-    paddingVertical: 8,
-  },
-  modeText: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
-    fontWeight: '600',
+    alignItems: 'center',
   },
   modeTextActive: {
-    color: 'white',
+    color: '#FFD60A',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 1,
   },
-  captureRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingHorizontal: 20,
+  permissionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginTop: 24,
+    textAlign: 'center',
   },
-  galleryButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  permissionText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 32,
+    lineHeight: 22,
   },
-  buttonIcon: {
-    fontSize: 24,
-  },
-  captureButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 4,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  captureButtonInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'white',
-  },
-  doneButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(59, 130, 246, 0.8)',
-    justifyContent: 'center',
+  permissionButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 16,
+    width: '100%',
     alignItems: 'center',
   },
-  doneButtonText: {
-    color: 'white',
-    fontSize: 14,
+  permissionButtonText: {
+    color: '#FFF',
+    fontSize: 17,
     fontWeight: '600',
   },
 });
 
-export default CameraScreen
+export default CameraScreen;
