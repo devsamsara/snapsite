@@ -66,7 +66,7 @@ export default function ProjectsScreen() {
   });
 
   const handleProjectTap = (projectId: string) => {
-    // TODO: Navigate to project detail screen
+    router.push(`/project/${projectId}`);
   };
 
   const handleCreateProject = () => {
