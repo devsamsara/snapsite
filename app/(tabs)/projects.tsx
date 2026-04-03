@@ -4,6 +4,8 @@ import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { SearchInput } from "@/components/ui/search-input";
 import { useColors } from "@/hooks/use-colors";
+import { FabOptions } from "@/components/fab-options";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState } from "react";
 
 // Mock data for all projects
@@ -70,7 +72,7 @@ export default function ProjectsScreen() {
   };
 
   const handleCreateProject = () => {
-    // TODO: Navigate to create project screen
+    router.push("/create-project-location");
   };
 
   const renderProjectCard = ({ item }: { item: typeof ALL_PROJECTS[0] }) => (
@@ -149,9 +151,24 @@ export default function ProjectsScreen() {
       <View className="flex-1 bg-background">
         {/* Header */}
         <View className="px-6 pt-6 pb-4 border-b border-border">
-          <Text className="text-3xl font-bold text-foreground mb-6">
-            Projects
-          </Text>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <Text className="text-3xl font-bold text-foreground">
+              Projects
+            </Text>
+            <TouchableOpacity
+              onPress={handleCreateProject}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: colors.primary,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <MaterialIcons name="add" size={22} color="#FFF" />
+            </TouchableOpacity>
+          </View>
 
           {/* Search Bar */}
           <SearchInput 
@@ -218,6 +235,7 @@ export default function ProjectsScreen() {
             </View>
           }
         />
+        <FabOptions />
       </View>
     </ScreenContainer>
   );
