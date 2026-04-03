@@ -5,7 +5,7 @@ import {StatusBar} from "expo-status-bar";
 import {useCallback, useEffect, useMemo, useState} from "react";
 import {GestureHandlerRootView} from "react-native-gesture-handler";
 import "react-native-reanimated";
-import {Platform} from "react-native";
+import {Platform, useColorScheme} from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import {ThemeProvider} from "@/lib/theme-provider";
 import {AuthProvider} from "@/lib/auth-context";
@@ -65,7 +65,10 @@ export default function RootLayout() {
             }),
     );
     const [trpcClient] = useState(() => createTRPCClient());
-
+const colorScheme = useColorScheme();
+    // sheetBg opaco: evita ver la pantalla de atrás a través de los bordes
+    // redondeados del formSheet en iOS cuando backgroundColor es transparent
+    const sheetBg = colorScheme === "dark" ? "#1E293B" : "#F8FAFC";
     // Ensure minimum 8px padding for top and bottom on mobile
     const providerInitialMetrics = useMemo(() => {
         const metrics = initialWindowMetrics ?? {insets: initialInsets, frame: initialFrame};
@@ -125,7 +128,7 @@ export default function RootLayout() {
                                     presentation: "formSheet",
                                     sheetAllowedDetents: [0.70],
                                     headerShown: false,
-                                    contentStyle: {backgroundColor: "transparent"},
+                                    contentStyle: {backgroundColor: sheetBg},
                                 }}
                             />
                             <Stack.Screen
@@ -133,7 +136,7 @@ export default function RootLayout() {
                                 options={{
                                     presentation: "formSheet",
                                     headerShown: false,
-                                    contentStyle: {backgroundColor: "transparent"},
+                                    contentStyle: {backgroundColor: sheetBg},
                                 }}
                             />
                             <Stack.Screen
@@ -145,14 +148,13 @@ export default function RootLayout() {
                                     contentStyle: {backgroundColor: "#000"},
                                 }}
                             />
-                            <Stack.Screen
+                             <Stack.Screen
                                 name="modals/add-note"
                                 options={{
                                     presentation: "formSheet",
-                                    sheetAllowedDetents: [ 0.45],
+                                    sheetAllowedDetents: [0.45],
                                     headerShown: false,
-
-
+                                    contentStyle: {backgroundColor: sheetBg},
                                 }}
                             />
                         </Stack>
