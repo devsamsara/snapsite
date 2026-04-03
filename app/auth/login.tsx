@@ -1,9 +1,8 @@
 /**
- * app/auth/login.tsx
+ * app/auth/login.tsx — diseño minimalista
  *
- * Pantalla de inicio de sesión.
- * Adapta colores (dark/light) y estilo de card (flat/elevated)
- * usando useColors() y useCardStyle() del sistema de diseño.
+ * Un solo card centrado con los inputs y el botón.
+ * Logo pequeño arriba, enlace de registro abajo como texto simple.
  */
 import React, { useState } from 'react';
 import {
@@ -28,78 +27,80 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
 
-const loginSchema = z.object({
+const schema = z.object({
   username: z.string().min(1, 'El usuario es requerido'),
   password: z.string().min(1, 'La contraseña es requerida'),
 });
-
-type LoginFormValues = z.infer<typeof loginSchema>;
+type FormValues = z.infer<typeof schema>;
 
 export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const { signIn }            = useAuth();
   const colors                = useColors();
-  const cardElevation         = useCardStyle();
+  const card                  = useCardStyle();
   const router                = useRouter();
   const insets                = useSafeAreaInsets();
 
-  const { control, handleSubmit } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  const { control, handleSubmit } = useForm<FormValues>({
+    resolver: zodResolver(schema),
     defaultValues: { username: '', password: '' },
   });
 
-  const onLogin = async (data: LoginFormValues) => {
+  const onLogin = async (data: FormValues) => {
     setLoading(true);
-    const success = await signIn(data.username, data.password);
+    const ok = await signIn(data.username, data.password);
     setLoading(false);
-    if (!success) {
-      Alert.alert('Error', 'Usuario o contraseña incorrectos. Prueba con juan / juan');
-    }
+    if (!ok) Alert.alert('Error', 'Usuario o contraseña incorrectos.');
   };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[S.container, { backgroundColor: colors.background }]}
+      style={[S.root, { backgroundColor: colors.background }]}
     >
       <ScrollView
         contentContainerStyle={[
-          S.scrollContent,
-          { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 32 },
+          S.scroll,
+          { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 40 },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Brand */}
-        <View style={S.brand}>
-          <View style={[S.logoCircle, { backgroundColor: colors.primary + '18' }]}>
-            <IconSymbol name="camera.fill" size={40} color={colors.primary} />
+        {/* Logo pequeño */}
+        <View style={S.logoWrap}>
+          <View style={[S.logoBox, { backgroundColor: colors.primary + '15' }]}>
+            <IconSymbol name="camera.fill" size={32} color={colors.primary} />
           </View>
           <Text style={[S.appName, { color: colors.foreground }]}>SnapSite</Text>
-          <Text style={[S.tagline, { color: colors.muted }]}>Gestión visual de obras</Text>
         </View>
 
-        {/* Formulario */}
-        <View style={[S.card, cardElevation]}>
-          <Text style={[S.cardTitle, { color: colors.foreground }]}>Iniciar sesión</Text>
+        {/* Card único */}
+        <View style={[S.card, card]}>
+          <Text style={[S.cardTitle, { color: colors.foreground }]}>
+            Bienvenido de nuevo
+          </Text>
+          <Text style={[S.cardSub, { color: colors.muted }]}>
+            Inicia sesión para continuar
+          </Text>
 
-          <AppInput
-            label="Usuario"
-            name="username"
-            control={control}
-            placeholder="juan"
-            icon="person.fill"
-            autoCapitalize="none"
-          />
-
-          <AppInput
-            label="Contraseña"
-            name="password"
-            control={control}
-            placeholder="••••••••"
-            icon="lock.fill"
-            secureTextEntry
-          />
+          <View style={S.fields}>
+            <AppInput
+              label="Usuario"
+              name="username"
+              control={control}
+              placeholder="juan"
+              icon="person.fill"
+              autoCapitalize="none"
+            />
+            <AppInput
+              label="Contraseña"
+              name="password"
+              control={control}
+              placeholder="••••••••"
+              icon="lock.fill"
+              secureTextEntry
+            />
+          </View>
 
           <TouchableOpacity
             onPress={() => router.push('/auth/forgot-password')}
@@ -118,24 +119,16 @@ export default function LoginScreen() {
           />
         </View>
 
-        {/* Separador */}
-        <View style={S.divider}>
-          <View style={[S.dividerLine, { backgroundColor: colors.border }]} />
-          <Text style={[S.dividerText, { color: colors.muted }]}>o</Text>
-          <View style={[S.dividerLine, { backgroundColor: colors.border }]} />
-        </View>
-
-        {/* Registro */}
-        <View style={[S.registerCard, cardElevation]}>
-          <Text style={[S.registerHint, { color: colors.muted }]}>
-            ¿No tienes cuenta?
+        {/* Enlace de registro — texto simple, sin card */}
+        <View style={S.registerRow}>
+          <Text style={[S.registerText, { color: colors.muted }]}>
+            ¿No tienes cuenta?{'  '}
           </Text>
-          <Button
-            title="Crear cuenta gratis"
-            onPress={() => router.push('/auth/register')}
-            variant="secondary"
-            size="md"
-          />
+          <TouchableOpacity onPress={() => router.push('/auth/register')}>
+            <Text style={[S.registerLink, { color: colors.primary }]}>
+              Regístrate
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -143,23 +136,21 @@ export default function LoginScreen() {
 }
 
 const S = StyleSheet.create({
-  container:    { flex: 1 },
-  scrollContent: { paddingHorizontal: 24 },
-  // Brand
-  brand:        { alignItems: 'center', marginBottom: 28 },
-  logoCircle:   { width: 80, height: 80, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  appName:      { fontSize: 32, fontWeight: '800', letterSpacing: -0.5 },
-  tagline:      { fontSize: 15, marginTop: 4 },
+  root:         { flex: 1 },
+  scroll:       { paddingHorizontal: 24 },
+  // Logo
+  logoWrap:     { alignItems: 'center', marginBottom: 36, gap: 10 },
+  logoBox:      { width: 60, height: 60, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  appName:      { fontSize: 20, fontWeight: '700', letterSpacing: 0.2 },
   // Card
-  card:         { borderRadius: 20, padding: 24, marginBottom: 16 },
-  cardTitle:    { fontSize: 22, fontWeight: '700', marginBottom: 20 },
-  forgotRow:    { alignSelf: 'flex-end', marginTop: -4, marginBottom: 20 },
+  card:         { borderRadius: 20, padding: 24, marginBottom: 24 },
+  cardTitle:    { fontSize: 22, fontWeight: '700' },
+  cardSub:      { fontSize: 14, marginTop: 4, marginBottom: 20 },
+  fields:       { gap: 0 },
+  forgotRow:    { alignSelf: 'flex-end', marginBottom: 20, marginTop: -4 },
   forgotText:   { fontSize: 13, fontWeight: '600' },
-  // Divider
-  divider:      { flexDirection: 'row', alignItems: 'center', marginVertical: 8, gap: 12 },
-  dividerLine:  { flex: 1, height: 1 },
-  dividerText:  { fontSize: 13, fontWeight: '500' },
-  // Register card
-  registerCard: { borderRadius: 20, padding: 20, alignItems: 'center', gap: 12 },
-  registerHint: { fontSize: 14 },
+  // Registro
+  registerRow:  { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  registerText: { fontSize: 14 },
+  registerLink: { fontSize: 14, fontWeight: '700' },
 });
