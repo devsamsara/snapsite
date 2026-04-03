@@ -31,16 +31,19 @@ export function useCardStyle() {
     };
   }
 
-  // Diseño elevado: sombra multicapa
+  // Diseño elevado: sombra + borde sutil del mismo tono que la sombra
+  // El borde delimita el card sin ser obvio (mismo color que la sombra, bajo alpha)
+  const shadowColor = isDark ? "#000000" : "#1E293B";
+  const borderColor = isDark ? "rgba(0,0,0,0.32)" : "rgba(30,41,59,0.11)";
+
   if (Platform.OS === "ios") {
     return {
       backgroundColor: colors.surface,
-      borderWidth: isDark ? 1 : 0,
-      borderColor: isDark ? colors.border : "transparent",
-      // Sombra principal (umbra)
-      shadowColor: isDark ? "#000" : "#1E293B",
+      borderWidth: 1,
+      borderColor,
+      shadowColor,
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: isDark ? 0.45 : 0.10,
+      shadowOpacity: isDark ? 0.40 : 0.10,
       shadowRadius: 12,
     };
   }
@@ -48,8 +51,8 @@ export function useCardStyle() {
   // Android: elevation + borde sutil
   return {
     backgroundColor: colors.surface,
-    borderWidth: isDark ? 1 : 0,
-    borderColor: isDark ? colors.border : "transparent",
+    borderWidth: 1,
+    borderColor,
     elevation: isDark ? 4 : 6,
   };
 }
@@ -70,22 +73,25 @@ export function useCardStyleSm() {
     };
   }
 
+  const shadowColorSm = isDark ? "#000000" : "#1E293B";
+  const borderColorSm = isDark ? "rgba(0,0,0,0.28)" : "rgba(30,41,59,0.09)";
+
   if (Platform.OS === "ios") {
     return {
       backgroundColor: colors.surface,
-      borderWidth: isDark ? 1 : 0,
-      borderColor: isDark ? colors.border : "transparent",
-      shadowColor: isDark ? "#000" : "#1E293B",
+      borderWidth: 1,
+      borderColor: borderColorSm,
+      shadowColor: shadowColorSm,
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0.35 : 0.07,
+      shadowOpacity: isDark ? 0.30 : 0.07,
       shadowRadius: 6,
     };
   }
 
   return {
     backgroundColor: colors.surface,
-    borderWidth: isDark ? 1 : 0,
-    borderColor: isDark ? colors.border : "transparent",
+    borderWidth: 1,
+    borderColor: borderColorSm,
     elevation: isDark ? 2 : 3,
   };
 }

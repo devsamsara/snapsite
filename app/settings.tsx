@@ -7,6 +7,7 @@ import { useColors } from "@/hooks/use-colors";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useThemeContext } from "@/lib/theme-provider";
 import { useNotifications, scheduleTestNotification } from "@/hooks/use-notifications";
+import { useCardStyle } from "@/hooks/use-card-style";
 import * as Notifications from 'expo-notifications';
 
 export default function SettingsScreen() {
@@ -14,6 +15,7 @@ export default function SettingsScreen() {
   const colors = useColors();
   const colorScheme = useColorScheme();
   const { setColorScheme, cardStyle, setCardStyle } = useThemeContext();
+  const cardElevation = useCardStyle();
   const { expoPushToken } = useNotifications();
   
   // State for toggles
@@ -127,8 +129,7 @@ export default function SettingsScreen() {
               Profile
             </Text>
             <View
-              className="bg-surface rounded-2xl p-6 items-center border border-border mb-3"
-              style={{ borderColor: colors.border }}
+              style={[{ borderRadius: 20, padding: 24, alignItems: 'center', marginBottom: 12 }, cardElevation]}
             >
               {/* Avatar */}
               <View
@@ -164,11 +165,7 @@ export default function SettingsScreen() {
             <View className="gap-3">
               <TouchableOpacity
                 onPress={handleEditProfile}
-                className="flex-row items-center justify-between px-4 py-4 rounded-xl border border-border"
-                style={{
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                }}
+                style={[{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 16, borderRadius: 14 }, cardElevation]}
               >
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="person.fill" size={20} color={colors.primary} />
@@ -187,10 +184,7 @@ export default function SettingsScreen() {
               Notifications
             </Text>
             
-            <View
-              className="bg-surface rounded-2xl border border-border overflow-hidden"
-              style={{ borderColor: colors.border }}
-            >
+            <View style={[{ borderRadius: 20, overflow: 'hidden' }, cardElevation]}>
               {/* Push Notifications */}
               <View className="flex-row items-center justify-between px-4 py-4 border-b border-border">
                 <View className="flex-row items-center flex-1">
@@ -241,10 +235,7 @@ export default function SettingsScreen() {
               Appearance
             </Text>
             
-            <View
-              className="bg-surface rounded-2xl border border-border"
-              style={{ borderColor: colors.border }}
-            >
+            <View style={[{ borderRadius: 20, overflow: 'hidden' }, cardElevation]}>
               {/* Dark Mode */}
               <View className="flex-row items-center justify-between px-4 py-4 border-b border-border">
                 <View className="flex-row items-center flex-1">
@@ -311,10 +302,7 @@ export default function SettingsScreen() {
               General
             </Text>
             
-            <View
-              className="bg-surface rounded-2xl border border-border"
-              style={{ borderColor: colors.border }}
-            >
+            <View style={[{ borderRadius: 20, overflow: 'hidden' }, cardElevation]}>
               {/* Privacy */}
               <TouchableOpacity className="flex-row items-center justify-between px-4 py-4 border-b border-border">
                 <View className="flex-row items-center flex-1">
