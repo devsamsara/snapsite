@@ -62,6 +62,14 @@ export interface AddNoteResult {
   text: string;
 }
 
+export interface InviteMemberResult {
+  projectId: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 export const annotationTextStore    = createModalStore<AnnotationTextResult>();
 export const annotationMeasureStore = createModalStore<AnnotationMeasureResult>();
 export const addNoteStore           = createModalStore<AddNoteResult>();
+export const inviteMemberStore      = createModalStore<InviteMemberResult>();

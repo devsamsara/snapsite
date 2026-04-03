@@ -164,6 +164,16 @@ const colorScheme = useColorScheme();
                                     contentStyle: {backgroundColor: sheetBg},
                                 }}
                             />
+                            <Stack.Screen
+                                name="modals/invite-member"
+                                options={{
+                                    presentation: "formSheet",
+                                    sheetAllowedDetents: [1.0],
+                                    sheetGrabberVisible: true,
+                                    headerShown: false,
+                                    contentStyle: {backgroundColor: sheetBg},
+                                }}
+                            />
                         </Stack>
                         <StatusBar style="auto"/></AuthProvider>
                 </QueryClientProvider>
