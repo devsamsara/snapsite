@@ -11,7 +11,7 @@ import {
   Animated as RNAnimated,
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { addNoteStore } from "@/lib/modal-stores";
+import { addNoteStore, inviteMemberStore } from "@/lib/modal-stores";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useState, useRef, useCallback } from "react";
@@ -161,9 +161,9 @@ export default function ProjectDetailScreen() {
   const project: Project = MOCK_PROJECTS[id] ?? MOCK_PROJECTS["1"];
 
   const [activeTab, setActiveTab] = useState<TabId>("gallery");
-  // Lightbox y nota son ahora Stack.Screen modales
   const [notes, setNotes] = useState<Note[]>(project.notes);
   const [photos, setPhotos] = useState<Photo[]>(project.photos);
+  const [team, setTeam] = useState<TeamMember[]>(project.team);
   const [filterTag, setFilterTag] = useState<string | null>(null);
 
   const tabAnim = useRef(new RNAnimated.Value(0)).current;
@@ -176,6 +176,33 @@ export default function ProjectDetailScreen() {
   const handleAddPhoto = () => {
     router.push({ pathname: "/add-photo-modal", params: { projectId: project.id } });
   };
+
+  const openInviteModal = useCallback(() => {
+    const promise = inviteMemberStore.open();
+    router.push({ pathname: "/modals/invite-member", params: { projectId: project.id } });
+    promise.then((result) => {
+      if (!result) return;
+      // Generar iniciales y color aleatorio para el nuevo miembro
+      const initials = result.name
+        .split(" ")
+        .slice(0, 2)
+        .map((w) => w[0]?.toUpperCase() ?? "")
+        .join("");
+      const palette = ["#007AFF", "#FF2D55", "#FF9500", "#4CD964", "#5856D6", "#FF3B30", "#34C759"];
+      const color = palette[Math.floor(Math.random() * palette.length)];
+      const newMember: TeamMember = {
+        id: uid(),
+        name: result.name,
+        role: result.role,
+        initials,
+        color,
+        lastActivity: "Ahora",
+        online: false,
+      };
+      setTeam((p) => [...p, newMember]);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    });
+  }, [project.id, router]);
 
   const openNoteModal = useCallback(() => {
     const promise = addNoteStore.open();
@@ -364,8 +391,8 @@ export default function ProjectDetailScreen() {
       {/* Stats row */}
       <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
         {[
-          { label: "Miembros", value: project.team.length, icon: "group", color: colors.primary },
-          { label: "Activos hoy", value: project.team.filter((m) => m.online).length, icon: "fiber-manual-record", color: colors.success },
+          { label: "Miembros", value: team.length, icon: "group", color: colors.primary },
+          { label: "Activos hoy", value: team.filter((m) => m.online).length, icon: "fiber-manual-record", color: colors.success },
         ].map((stat) => (
           <View key={stat.label} style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border, flex: 1 }]}>
             <MaterialIcons name={stat.icon as any} size={22} color={stat.color} />
@@ -376,7 +403,7 @@ export default function ProjectDetailScreen() {
       </View>
 
       {/* Members list */}
-      {project.team.map((member) => (
+      {team.map((member) => (
         <View key={member.id} style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, marginBottom: 12, flexDirection: "row", alignItems: "center" }]}>
           {/* Avatar */}
           <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: member.color + "25", alignItems: "center", justifyContent: "center", marginRight: 14 }}>
@@ -405,7 +432,7 @@ export default function ProjectDetailScreen() {
 
       {/* Invite button */}
       <TouchableOpacity
-        onPress={() => Alert.alert("Invitar", "Funcionalidad de invitación próximamente")}
+        onPress={openInviteModal}
         style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 16 }]}
       >
         <MaterialIcons name="person-add" size={20} color={colors.primary} />
