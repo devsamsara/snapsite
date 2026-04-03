@@ -81,7 +81,7 @@ export function ModalHeader({
     // encima del ScrollView del ModalBody cuando el usuario hace scroll.
     <View style={[S.header, { backgroundColor: colors.surface }, style]}>
       {/* Drag pill — siempre visible, indica que el modal es deslizable */}
-      <View style={[S.pill, { backgroundColor: colors.border }]} />
+
 
       {/* Title row */}
       <View style={S.titleRow}>
@@ -243,6 +243,7 @@ const S = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
+    marginTop: 14
   },
   titleBlock: {
     flex: 1,

@@ -129,7 +129,7 @@ const colorScheme = useColorScheme();
                                     // 'large' = ocupa toda la altura disponible en iPhone
                                     // y garantiza ancho completo sin bordes laterales
                                     // [1.0] = altura completa disponible → sin bordes laterales en iPhone
-                                    sheetAllowedDetents: [1.0],
+                                    sheetAllowedDetents: [0.65],
                                     sheetGrabberVisible: true,
                                     headerShown: false,
                                     contentStyle: {backgroundColor: sheetBg},
@@ -158,7 +158,7 @@ const colorScheme = useColorScheme();
                                 name="modals/add-note"
                                 options={{
                                     presentation: "formSheet",
-                                    sheetAllowedDetents: "fitToContents",
+                                    sheetAllowedDetents: [0.45],
                                     sheetGrabberVisible: true,
                                     headerShown: false,
                                     contentStyle: {backgroundColor: sheetBg},
@@ -168,7 +168,7 @@ const colorScheme = useColorScheme();
                                 name="modals/invite-member"
                                 options={{
                                     presentation: "formSheet",
-                                    sheetAllowedDetents: [1.0],
+                                    sheetAllowedDetents: [0.70],
                                     sheetGrabberVisible: true,
                                     headerShown: false,
                                     contentStyle: {backgroundColor: sheetBg},
@@ -177,11 +177,10 @@ const colorScheme = useColorScheme();
                             <Stack.Screen
                                 name="modals/project-settings"
                                 options={{
-                                    presentation: "formSheet",
+                                    presentation: "modal",
                                     sheetAllowedDetents: [1.0],
                                     sheetGrabberVisible: true,
                                     headerShown: false,
-                                    contentStyle: {backgroundColor: sheetBg},
                                 }}
                             />
                         </Stack>

@@ -124,7 +124,7 @@ export default function InviteMemberModal() {
       />
 
       {/* Body */}
-      <ModalBody scrollable paddingH={20}>
+      <ModalBody row>
 
         {/* ── Nombre ── */}
         <Text style={[S.label, { color: colors.foreground }]}>

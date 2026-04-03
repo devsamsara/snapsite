@@ -151,68 +151,66 @@ export default function ProjectSettingsModal() {
         onClose={handleClose}
       />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      >
-        {/* ── Info del proyecto ── */}
-        <View style={[S.infoBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <View style={[S.infoIcon, { backgroundColor: colors.primary + "18" }]}>
-            <MaterialIcons name="folder" size={22} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[S.infoName, { color: colors.foreground }]} numberOfLines={1}>
-              {projectName ?? "Proyecto"}
-            </Text>
-            {!!projectLocation && (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
-                <MaterialIcons name="location-on" size={12} color={colors.muted} />
-                <Text style={[S.infoLoc, { color: colors.muted }]} numberOfLines={1}>
-                  {projectLocation}
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
+     <ModalBody>
+         <ScrollView
+             showsVerticalScrollIndicator={false}
+             contentContainerStyle={{ paddingBottom: 50 }}
+         >
+           <View style={[S.infoBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+             <View style={[S.infoIcon, { backgroundColor: colors.primary + "18" }]}>
+               <MaterialIcons name="folder" size={22} color={colors.primary} />
+             </View>
+             <View style={{ flex: 1 }}>
+               <Text style={[S.infoName, { color: colors.foreground }]} numberOfLines={1}>
+                 {projectName ?? "Proyecto"}
+               </Text>
+               {!!projectLocation && (
+                   <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                     <MaterialIcons name="location-on" size={12} color={colors.muted} />
+                     <Text style={[S.infoLoc, { color: colors.muted }]} numberOfLines={1}>
+                       {projectLocation}
+                     </Text>
+                   </View>
+               )}
+             </View>
+           </View>
 
-        {/* ── Acciones rápidas ── */}
-        <Text style={[S.sectionTitle, { color: colors.muted }]}>ACCIONES</Text>
-        <View style={[S.section, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <ActionItem icon="edit"       label="Editar proyecto"   description="Nombre, fechas y estado"  onPress={handleEdit}   />
-          <ActionItem icon="share"      label="Compartir"         description="Enviar enlace del proyecto" onPress={handleShare}  />
-          <ActionItem icon="picture-as-pdf" label="Exportar informe" description="PDF con fotos y notas" onPress={handleExport} showChevron={false} />
-        </View>
+           <Text style={[S.sectionTitle, { color: colors.muted }]}>ACCIONES</Text>
+           <View style={[S.section, { backgroundColor: colors.background, borderColor: colors.border }]}>
+             <ActionItem icon="edit"       label="Editar proyecto"   description="Nombre, fechas y estado"  onPress={handleEdit}   />
+             <ActionItem icon="share"      label="Compartir"         description="Enviar enlace del proyecto" onPress={handleShare}  />
+             <ActionItem icon="picture-as-pdf" label="Exportar informe" description="PDF con fotos y notas" onPress={handleExport} showChevron={false} />
+           </View>
 
-        {/* ── Gestión ── */}
-        <Text style={[S.sectionTitle, { color: colors.muted }]}>GESTIÓN</Text>
-        <View style={[S.section, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <ActionItem icon="contacts"      label="Contactos"      description="Clientes y proveedores"   onPress={handleContacts}      />
-          <ActionItem icon="label"         label="Etiquetas"      description="Categorías del proyecto"  onPress={handleTags}          />
-          <ActionItem icon="description"   label="Descripción"    description="Detalles del proyecto"    onPress={handleDescription}   />
-          <ActionItem icon="group-add"     label="Colaboradores"  description="Gestionar accesos"        onPress={handleCollaborators} showChevron={false} />
-        </View>
+           <Text style={[S.sectionTitle, { color: colors.muted }]}>GESTIÓN</Text>
+           <View style={[S.section, { backgroundColor: colors.background, borderColor: colors.border }]}>
+             <ActionItem icon="contacts"      label="Contactos"      description="Clientes y proveedores"   onPress={handleContacts}      />
+             <ActionItem icon="label"         label="Etiquetas"      description="Categorías del proyecto"  onPress={handleTags}          />
+             <ActionItem icon="description"   label="Descripción"    description="Detalles del proyecto"    onPress={handleDescription}   />
+             <ActionItem icon="group-add"     label="Colaboradores"  description="Gestionar accesos"        onPress={handleCollaborators} showChevron={false} />
+           </View>
 
-        {/* ── Zona de peligro ── */}
-        <Text style={[S.sectionTitle, { color: colors.muted }]}>ZONA DE PELIGRO</Text>
-        <View style={[S.section, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <ActionItem
-            icon="archive"
-            label="Archivar proyecto"
-            description="Mover al archivo sin eliminar"
-            onPress={handleArchive}
-            color={colors.warning}
-            showChevron={false}
-          />
-          <ActionItem
-            icon="delete-forever"
-            label="Eliminar proyecto"
-            description="Esta acción no se puede deshacer"
-            onPress={handleDelete}
-            color={colors.error}
-            showChevron={false}
-          />
-        </View>
-      </ScrollView>
+           <Text style={[S.sectionTitle, { color: colors.muted }]}>ZONA DE PELIGRO</Text>
+           <View style={[S.section, { backgroundColor: colors.background, borderColor: colors.border }]}>
+             <ActionItem
+                 icon="archive"
+                 label="Archivar proyecto"
+                 description="Mover al archivo sin eliminar"
+                 onPress={handleArchive}
+                 color={colors.warning}
+                 showChevron={false}
+             />
+             <ActionItem
+                 icon="delete-forever"
+                 label="Eliminar proyecto"
+                 description="Esta acción no se puede deshacer"
+                 onPress={handleDelete}
+                 color={colors.error}
+                 showChevron={false}
+             />
+           </View>
+         </ScrollView>
+     </ModalBody>
     </View>
   );
 }
@@ -226,7 +224,6 @@ const S = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 8,
     borderRadius: 14,
@@ -252,13 +249,11 @@ const S = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     letterSpacing: 0.5,
-    marginHorizontal: 16,
     marginTop: 20,
     marginBottom: 6,
   },
 
   section: {
-    marginHorizontal: 16,
     borderRadius: 14,
     borderWidth: 1,
     overflow: "hidden",
