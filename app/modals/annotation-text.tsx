@@ -1,58 +1,57 @@
 /**
  * modals/annotation-text.tsx
  *
- * Stack.Screen modal — agregar anotación de texto al editor de fotos.
- * Se abre desde image-editor con router.push y devuelve el resultado
- * vía router.back() + un callback almacenado en un store global ligero.
+ * Stack.Screen modal (formSheet) — agregar una anotación de texto al editor.
+ * Devuelve el resultado via annotationTextStore.
  *
- * Params recibidos:
- *   - color: string   (color actual del editor)
- *   - fontSize: string (tamaño de fuente actual)
- *   - x: string        (posición x donde se tocó)
- *   - y: string        (posición y donde se tocó)
+ * Fix: paleta de colores contenida correctamente (paddingVertical en
+ * contentContainerStyle para que el scale(1.2) del dot activo no quede recortado).
  */
 
+import React, { useState } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useState } from "react";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { annotationTextStore } from "@/lib/modal-stores";
+import { ModalHeader, ModalBody, ModalFooter, ModalRoot } from "@/components/ui/modal-layout";
+import { Button } from "@/components/ui/button";
+import { useColors } from "@/hooks/use-colors";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const PALETTE = [
-  "#FFFFFF","#000000","#FF3B30","#FF9500","#FFCC00",
-  "#34C759","#5AC8FA","#007AFF","#5856D6","#FF2D55",
+  "#FFFFFF", "#000000", "#FF3B30", "#FF9500", "#FFCC00",
+  "#34C759", "#00C7BE", "#007AFF", "#5856D6", "#FF2D55",
+  "#AF52DE", "#A2845E",
 ];
-const FONTSIZES = [14, 18, 22, 28, 36];
+const FONTSIZES = [14, 18, 22, 28, 36, 48];
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AnnotationTextModal() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{
-    color: string; fontSize: string; x: string; y: string;
+  const router  = useRouter();
+  const colors  = useColors();
+  const params  = useLocalSearchParams<{
+    color?: string; fontSize?: string; x?: string; y?: string;
   }>();
 
-  const [text, setText]       = useState("");
-  const [color, setColor]     = useState(params.color ?? "#FFFFFF");
+  const [text,     setText]     = useState("");
+  const [color,    setColor]    = useState(params.color ?? "#FFFFFF");
   const [fontSize, setFontSize] = useState(Number(params.fontSize ?? 22));
 
   const handleConfirm = () => {
     if (!text.trim()) { router.back(); return; }
     annotationTextStore.resolve({
-      text: text.trim(),
-      color,
-      fontSize,
-      x: Number(params.x ?? 0),
-      y: Number(params.y ?? 0),
+      text: text.trim(), color, fontSize,
+      x: Number(params.x ?? 0), y: Number(params.y ?? 0),
     });
     router.back();
   };
@@ -64,102 +63,142 @@ export default function AnnotationTextModal() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.root}
+      style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      {/* Drag indicator */}
-      <View style={styles.pill} />
+      <ModalRoot>
 
-      <Text style={styles.title}>Agregar Texto</Text>
-      <Text style={styles.sub}>Luego puedes arrastrarlo y escalarlo con dos dedos.</Text>
+        {/* ── Header ── */}
+        <ModalHeader
+          title="Agregar Texto"
+          subtitle="Luego puedes arrastrarlo y escalarlo con dos dedos."
+          onClose={handleCancel}
+        />
 
-      {/* Preview */}
-      <View style={styles.preview}>
-        <Text style={[styles.previewTxt, { color, fontSize }]}>
-          {text || "Vista previa…"}
-        </Text>
-      </View>
+        {/* ── Body ── */}
+        <ModalBody scrollable>
 
-      {/* Text input */}
-      <TextInput
-        value={text}
-        onChangeText={setText}
-        placeholder="Escribe aquí..."
-        placeholderTextColor="#666"
-        style={styles.input}
-        autoFocus
-        multiline
-        maxLength={200}
-      />
-      <Text style={styles.counter}>{text.length}/200</Text>
+          {/* Preview */}
+          <View style={[S.preview, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <Text style={[S.previewTxt, { color, fontSize }]} numberOfLines={3}>
+              {text || "Vista previa…"}
+            </Text>
+          </View>
 
-      {/* Color palette */}
-      <Text style={styles.sectionLabel}>Color</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.palette}>
-        {PALETTE.map((c) => (
-          <TouchableOpacity
-            key={c}
-            onPress={() => setColor(c)}
-            style={[styles.dot, { backgroundColor: c }, color === c && styles.dotActive]}
+          {/* Input */}
+          <TextInput
+            value={text}
+            onChangeText={setText}
+            placeholder="Escribe aquí..."
+            placeholderTextColor={colors.muted}
+            style={[S.input, {
+              color: colors.foreground,
+              backgroundColor: colors.background,
+              borderColor: colors.border,
+            }]}
+            autoFocus
+            multiline
+            maxLength={200}
           />
-        ))}
-      </ScrollView>
+          <Text style={[S.counter, { color: colors.muted }]}>{text.length}/200</Text>
 
-      {/* Font size */}
-      <Text style={styles.sectionLabel}>Tamaño</Text>
-      <View style={styles.sizeRow}>
-        {FONTSIZES.map((fs) => (
-          <TouchableOpacity
-            key={fs}
-            onPress={() => setFontSize(fs)}
-            style={[styles.sizeBtn, fontSize === fs && styles.sizeBtnActive]}
+          {/* ── Color palette ── */}
+          <Text style={[S.label, { color: colors.muted }]}>Color</Text>
+          {/*
+            FIX: paddingVertical: 6 en contentContainerStyle da espacio para que
+            el transform scale(1.2) del dot seleccionado no quede recortado por
+            el overflow del ScrollView.
+          */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={S.paletteScroll}
+            contentContainerStyle={S.paletteContent}
           >
-            <Text style={[styles.sizeTxt, fontSize === fs && styles.sizeTxtActive]}>{fs}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+            {PALETTE.map((c) => (
+              <TouchableOpacity
+                key={c}
+                onPress={() => setColor(c)}
+                style={[
+                  S.dot,
+                  { backgroundColor: c },
+                  c === "#FFFFFF" && { borderColor: "rgba(0,0,0,0.18)" },
+                  color === c && [S.dotActive, { borderColor: colors.primary }],
+                ]}
+              />
+            ))}
+          </ScrollView>
 
-      {/* Actions */}
-      <View style={[styles.actions, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
-        <TouchableOpacity onPress={handleCancel} style={[styles.btn, styles.btnGray]}>
-          <Text style={styles.btnGrayTxt}>Cancelar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleConfirm}
-          style={[styles.btn, styles.btnBlue, !text.trim() && styles.btnDisabled]}
-          disabled={!text.trim()}
-        >
-          <MaterialIcons name="check" size={18} color="#FFF" />
-          <Text style={styles.btnBlueTxt}>Agregar</Text>
-        </TouchableOpacity>
-      </View>
+          {/* ── Font size ── */}
+          <Text style={[S.label, { color: colors.muted }]}>Tamaño</Text>
+          <View style={S.sizeRow}>
+            {FONTSIZES.map((fs) => (
+              <TouchableOpacity
+                key={fs}
+                onPress={() => setFontSize(fs)}
+                style={[
+                  S.sizeBtn,
+                  { backgroundColor: colors.background, borderColor: colors.border },
+                  fontSize === fs && { backgroundColor: colors.primary, borderColor: colors.primary },
+                ]}
+              >
+                <Text style={[
+                  S.sizeTxt,
+                  { color: colors.muted },
+                  fontSize === fs && { color: "#FFF" },
+                ]}>
+                  {fs}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+        </ModalBody>
+
+        {/* ── Footer ── */}
+        <ModalFooter row>
+          <Button title="Cancelar" onPress={handleCancel} variant="secondary" size="md" />
+          <Button
+            title="Agregar"
+            onPress={handleConfirm}
+            variant="primary"
+            size="md"
+            leftIcon="check"
+            disabled={!text.trim()}
+          />
+        </ModalFooter>
+
+      </ModalRoot>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#1C1C1E", paddingHorizontal: 20, paddingTop: 12 },
-  pill: { width: 36, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.25)", alignSelf: "center", marginBottom: 20 },
-  title: { color: "#FFF", fontSize: 20, fontWeight: "700", marginBottom: 4 },
-  sub: { color: "#999", fontSize: 13, marginBottom: 16 },
-  preview: { backgroundColor: "#2C2C2E", borderRadius: 12, minHeight: 60, justifyContent: "center", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, marginBottom: 14 },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const S = StyleSheet.create({
+  preview: {
+    borderRadius: 12, borderWidth: 1,
+    minHeight: 64, justifyContent: "center", alignItems: "center",
+    paddingHorizontal: 16, paddingVertical: 14, marginBottom: 16,
+  },
   previewTxt: { fontWeight: "700", textAlign: "center" },
-  input: { backgroundColor: "#2C2C2E", borderRadius: 10, padding: 14, fontSize: 16, color: "#FFF", minHeight: 80, textAlignVertical: "top" },
-  counter: { color: "#555", fontSize: 11, textAlign: "right", marginTop: 4, marginBottom: 16 },
-  sectionLabel: { color: "#999", fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
-  palette: { gap: 12, paddingBottom: 4, marginBottom: 16 },
-  dot: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: "transparent" },
-  dotActive: { borderColor: "#FFF", transform: [{ scale: 1.2 }] },
-  sizeRow: { flexDirection: "row", gap: 8, marginBottom: 24 },
-  sizeBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: "center", backgroundColor: "#2C2C2E" },
-  sizeBtnActive: { backgroundColor: "#007AFF" },
-  sizeTxt: { color: "#999", fontSize: 14, fontWeight: "600" },
-  sizeTxtActive: { color: "#FFF" },
-  actions: { flexDirection: "row", gap: 12, marginTop: "auto" as any },
-  btn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 6 },
-  btnGray: { backgroundColor: "#2C2C2E" },
-  btnGrayTxt: { color: "#FFF", fontWeight: "500", fontSize: 15 },
-  btnBlue: { backgroundColor: "#007AFF" },
-  btnBlueTxt: { color: "#FFF", fontWeight: "700", fontSize: 15 },
-  btnDisabled: { opacity: 0.4 },
+  input: {
+    borderRadius: 12, borderWidth: 1,
+    padding: 14, fontSize: 16, minHeight: 88, textAlignVertical: "top",
+  },
+  counter: { fontSize: 11, textAlign: "right", marginTop: 6, marginBottom: 20 },
+  label: {
+    fontSize: 12, fontWeight: "600",
+    textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12,
+  },
+  paletteScroll: { marginBottom: 20 },
+  paletteContent: { gap: 12, paddingHorizontal: 2, paddingVertical: 6, alignItems: "center" },
+  dot: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: "transparent" },
+  dotActive: { transform: [{ scale: 1.2 }] },
+  sizeRow: { flexDirection: "row", gap: 8, marginBottom: 24, flexWrap: "wrap" },
+  sizeBtn: {
+    flex: 1, minWidth: 44, paddingVertical: 10,
+    borderRadius: 10, borderWidth: 1, alignItems: "center",
+  },
+  sizeTxt: { fontSize: 14, fontWeight: "600" },
 });
