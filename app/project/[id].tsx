@@ -387,7 +387,8 @@ export default function ProjectDetailScreen() {
   // ─── Tab: Team ────────────────────────────────────────────────────────────
 
   const renderTeam = () => (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, paddingTop: 8 }}>
+    <View style={{ flex: 1 }}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 }}>
       {/* Stats row */}
       <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
         {[
@@ -430,15 +431,15 @@ export default function ProjectDetailScreen() {
         </View>
       ))}
 
-      {/* Invite button */}
+    </ScrollView>
+      {/* FAB */}
       <TouchableOpacity
         onPress={openInviteModal}
-        style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 16 }]}
+        style={[styles.fab, { backgroundColor: colors.primary }]}
       >
-        <MaterialIcons name="person-add" size={20} color={colors.primary} />
-        <Text style={{ color: colors.primary, fontSize: 15, fontWeight: "700" }}>Invitar miembro</Text>
+        <MaterialIcons name="person-add" size={26} color="#FFF" />
       </TouchableOpacity>
-    </ScrollView>
+    </View>
   );
 
   // ─── Tab: Notes ───────────────────────────────────────────────────────────
