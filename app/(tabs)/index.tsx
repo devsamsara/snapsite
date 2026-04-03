@@ -162,6 +162,12 @@ export default function HomeScreen() {
   const handleLocationTap = (locationId: string) => {
     // TODO: Navigate to location detail screen
   };
+  const handleInviteTap = () => {
+    router.push('/modals/invite-global');
+  };
+  const handleAvatarsTap = () => {
+    router.push('/modals/team-members');
+  };
 
   const renderProjectCard = ({ item }: { item: typeof RECENT_PROJECTS[0] }) => (
     <TouchableOpacity
@@ -349,7 +355,10 @@ export default function HomeScreen() {
               </Text>
               {/* Team Avatars */}
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <View style={{ flexDirection: 'row', marginRight: 12 }}>
+                <TouchableOpacity
+                  onPress={handleAvatarsTap}
+                  style={{ flexDirection: 'row', marginRight: 12 }}
+                >
                   {[1, 2, 3, 4, 5].map((i) => (
                     <View
                       key={i}
@@ -387,18 +396,20 @@ export default function HomeScreen() {
                       +7
                     </Text>
                   </View>
-                </View>
+                </TouchableOpacity>
                 <TouchableOpacity
+                  onPress={handleInviteTap}
                   style={{
                     paddingHorizontal: 12,
                     paddingVertical: 6,
                     borderRadius: 8,
-                    backgroundColor: colors.surface,
-                    borderWidth: 1,
-                    borderColor: colors.border,
+                    backgroundColor: colors.primary,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
                   }}
                 >
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.foreground }}>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>
                     Invite
                   </Text>
                 </TouchableOpacity>
