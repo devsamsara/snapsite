@@ -1,5 +1,7 @@
 import { ScrollView, Text, View, TouchableOpacity, Switch, Alert, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
+import i18n, { changeLanguage } from "@/lib/i18n";
 import { useState, useEffect } from "react";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -11,6 +13,7 @@ import { useCardStyle } from "@/hooks/use-card-style";
 import * as Notifications from 'expo-notifications';
 
 export default function SettingsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
   const colorScheme = useColorScheme();
@@ -22,6 +25,12 @@ export default function SettingsScreen() {
   const [pushNotifications, setPushNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(colorScheme === "dark");
+  const [currentLang, setCurrentLang] = useState<'es' | 'en'>(i18n.language === 'en' ? 'en' : 'es');
+
+  const handleLanguageToggle = (lang: 'es' | 'en') => {
+    setCurrentLang(lang);
+    changeLanguage(lang);
+  };
 
   // Update dark mode state when color scheme changes
   useEffect(() => {
@@ -46,9 +55,9 @@ export default function SettingsScreen() {
       
       if (finalStatus !== 'granted') {
         Alert.alert(
-          'Permission Required',
-          'Please enable notifications in your device settings to receive push notifications.',
-          [{ text: 'OK' }]
+          t('settings.notifications.permissionRequired'),
+          t('settings.notifications.permissionMessage'),
+          [{ text: t('common.ok') }]
         );
         return;
       }
@@ -57,11 +66,11 @@ export default function SettingsScreen() {
       
       // Send a test notification
       Alert.alert(
-        'Notifications Enabled',
-        'You will now receive push notifications. A test notification will be sent in 2 seconds.',
+        t('settings.notifications.enabledTitle'),
+        t('settings.notifications.enabledMessage'),
         [
           {
-            text: 'OK',
+            text: t('common.ok'),
             onPress: () => scheduleTestNotification(),
           },
         ]
@@ -69,9 +78,9 @@ export default function SettingsScreen() {
     } else {
       setPushNotifications(false);
       Alert.alert(
-        'Notifications Disabled',
-        'You will no longer receive push notifications.',
-        [{ text: 'OK' }]
+        t('settings.notifications.disabledTitle'),
+        t('settings.notifications.disabledMessage'),
+        [{ text: t('common.ok') }]
       );
     }
   };
@@ -80,11 +89,11 @@ export default function SettingsScreen() {
     setEmailNotifications(value);
     // TODO: Save to backend/preferences
     Alert.alert(
-      value ? 'Email Notifications Enabled' : 'Email Notifications Disabled',
+      value ? t('settings.notifications.emailEnabledTitle') : t('settings.notifications.emailDisabledTitle'),
       value
-        ? 'You will receive email updates about your projects.'
-        : 'You will no longer receive email notifications.',
-      [{ text: 'OK' }]
+        ? t('settings.notifications.emailEnabledMessage')
+        : t('settings.notifications.emailDisabledMessage'),
+      [{ text: t('common.ok') }]
     );
   };
 
@@ -114,7 +123,7 @@ export default function SettingsScreen() {
             >
               <IconSymbol name="chevron.left" size={20} color={colors.foreground} />
             </TouchableOpacity>
-            <Text className="text-3xl font-bold text-foreground">Settings</Text>
+            <Text className="text-3xl font-bold text-foreground">{t('settings.title')}</Text>
           </View>
         </View>
 
@@ -126,7 +135,7 @@ export default function SettingsScreen() {
           {/* Profile Section */}
           <View className="mb-6">
             <Text className="text-sm font-semibold text-muted mb-3 uppercase">
-              Profile
+              {t('settings.sections.profile')}
             </Text>
             <View
               style={[{ borderRadius: 20, padding: 24, alignItems: 'center', marginBottom: 12 }, cardElevation]}
@@ -148,15 +157,15 @@ export default function SettingsScreen() {
               <View className="flex-row gap-6 mt-6 pt-6 border-t border-border w-full">
                 <View className="flex-1 items-center">
                   <Text className="text-2xl font-bold text-primary">12</Text>
-                  <Text className="text-xs text-muted mt-1">Projects</Text>
+                  <Text className="text-xs text-muted mt-1">{t('settings.profile.projects')}</Text>
                 </View>
                 <View className="flex-1 items-center">
                   <Text className="text-2xl font-bold text-primary">245</Text>
-                  <Text className="text-xs text-muted mt-1">Photos</Text>
+                  <Text className="text-xs text-muted mt-1">{t('settings.profile.photos')}</Text>
                 </View>
                 <View className="flex-1 items-center">
                   <Text className="text-2xl font-bold text-primary">8</Text>
-                  <Text className="text-xs text-muted mt-1">Team Members</Text>
+                  <Text className="text-xs text-muted mt-1">{t('settings.profile.teamMembers')}</Text>
                 </View>
               </View>
             </View>
@@ -170,7 +179,7 @@ export default function SettingsScreen() {
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="person.fill" size={20} color={colors.primary} />
                   <Text className="font-semibold text-foreground" style={{ marginLeft: 16 }}>
-                    Edit Profile
+                    {t('settings.profile.editProfile')}
                   </Text>
                 </View>
                 <IconSymbol name="chevron.right" size={16} color={colors.muted} />
@@ -181,7 +190,7 @@ export default function SettingsScreen() {
           {/* Notifications Section */}
           <View className="mb-6">
             <Text className="text-sm font-semibold text-muted mb-3 uppercase">
-              Notifications
+              {t('settings.sections.notifications')}
             </Text>
             
             <View style={[{ borderRadius: 20, overflow: 'hidden' }, cardElevation]}>
@@ -191,10 +200,10 @@ export default function SettingsScreen() {
                   <IconSymbol name="bell.fill" size={20} color={colors.primary} />
                   <View className="flex-1" style={{ marginLeft: 16 }}>
                     <Text className="font-semibold text-foreground">
-                      Push Notifications
+                      {t('settings.notifications.push')}
                     </Text>
                     <Text className="text-xs text-muted mt-1">
-                      Receive notifications about project updates
+                      {t('settings.notifications.pushDesc')}
                     </Text>
                   </View>
                 </View>
@@ -212,10 +221,10 @@ export default function SettingsScreen() {
                   <IconSymbol name="envelope.fill" size={20} color={colors.primary} />
                   <View className="flex-1" style={{ marginLeft: 16 }}>
                     <Text className="font-semibold text-foreground">
-                      Email Notifications
+                      {t('settings.notifications.email')}
                     </Text>
                     <Text className="text-xs text-muted mt-1">
-                      Get email updates about your projects
+                      {t('settings.notifications.emailDesc')}
                     </Text>
                   </View>
                 </View>
@@ -232,7 +241,7 @@ export default function SettingsScreen() {
           {/* Appearance Section */}
           <View className="mb-6">
             <Text className="text-sm font-semibold text-muted mb-3 uppercase">
-              Appearance
+              {t('settings.sections.appearance')}
             </Text>
             
             <View style={[{ borderRadius: 20, overflow: 'hidden' }, cardElevation]}>
@@ -242,10 +251,10 @@ export default function SettingsScreen() {
                   <IconSymbol name="moon.fill" size={20} color={colors.primary} />
                   <View className="flex-1" style={{ marginLeft: 16 }}>
                     <Text className="font-semibold text-foreground">
-                      Dark Mode
+                      {t('settings.appearance.darkMode')}
                     </Text>
                     <Text className="text-xs text-muted mt-1">
-                      Switch to dark theme
+                      {t('settings.appearance.darkModeDesc')}
                     </Text>
                   </View>
                 </View>
@@ -263,10 +272,10 @@ export default function SettingsScreen() {
                   <IconSymbol name="square.stack.3d.up.fill" size={20} color={colors.primary} />
                   <View className="flex-1" style={{ marginLeft: 16 }}>
                     <Text className="font-semibold text-foreground">
-                      Card Style
+                      {t('settings.appearance.cardStyle')}
                     </Text>
                     <Text className="text-xs text-muted mt-1">
-                      {cardStyle === "elevated" ? "Modern — cards with depth and shadow" : "Flat — minimal borders, no shadow"}
+                      {cardStyle === "elevated" ? t('settings.appearance.cardStyleModern') : t('settings.appearance.cardStyleFlat')}
                     </Text>
                   </View>
                 </View>
@@ -287,7 +296,7 @@ export default function SettingsScreen() {
                       }}
                     >
                       <Text style={{ fontSize: 13, fontWeight: "700", color: cardStyle === mode ? "#FFF" : colors.muted }}>
-                        {mode === "flat" ? "Flat" : "Modern"}
+                        {mode === "flat" ? t('settings.appearance.flat') : t('settings.appearance.modern')}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -299,7 +308,7 @@ export default function SettingsScreen() {
           {/* General Section */}
           <View className="mb-6">
             <Text className="text-sm font-semibold text-muted mb-3 uppercase">
-              General
+              {t('settings.sections.general')}
             </Text>
             
             <View style={[{ borderRadius: 20, overflow: 'hidden' }, cardElevation]}>
@@ -308,7 +317,7 @@ export default function SettingsScreen() {
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="lock.fill" size={20} color={colors.primary} />
                   <Text className="font-semibold text-foreground" style={{ marginLeft: 16 }}>
-                    Privacy
+                    {t('settings.general.privacy')}
                   </Text>
                 </View>
                 <IconSymbol name="chevron.right" size={16} color={colors.muted} />
@@ -319,11 +328,11 @@ export default function SettingsScreen() {
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="internaldrive.fill" size={20} color={colors.primary} />
                   <Text className="font-semibold text-foreground" style={{ marginLeft: 16 }}>
-                    Storage
+                    {t('settings.general.storage')}
                   </Text>
                 </View>
                 <View className="flex-row items-center gap-2">
-                  <Text className="text-sm text-muted">2.4 GB used</Text>
+                  <Text className="text-sm text-muted">{t('settings.general.storageUsed', { amount: '2.4 GB' })}</Text>
                   <IconSymbol name="chevron.right" size={16} color={colors.muted} />
                 </View>
               </TouchableOpacity>
@@ -333,18 +342,51 @@ export default function SettingsScreen() {
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="questionmark.circle.fill" size={20} color={colors.primary} />
                   <Text className="font-semibold text-foreground" style={{ marginLeft: 16 }}>
-                    Help & Support
+                    {t('settings.general.helpSupport')}
                   </Text>
                 </View>
                 <IconSymbol name="chevron.right" size={16} color={colors.muted} />
               </TouchableOpacity>
 
+              {/* Language */}
+              <TouchableOpacity
+                style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
+                onPress={() => handleLanguageToggle(currentLang === 'es' ? 'en' : 'es')}
+              >
+                <View className="flex-row items-center flex-1">
+                  <IconSymbol name="globe" size={20} color={colors.primary} />
+                  <View style={{ marginLeft: 16 }}>
+                    <Text className="font-semibold text-foreground">{t('settings.language')}</Text>
+                    <Text className="text-xs text-muted" style={{ marginTop: 1 }}>{t('settings.languageDesc')}</Text>
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 4, backgroundColor: colors.border + '60', borderRadius: 12, padding: 3 }}>
+                  <TouchableOpacity
+                    onPress={() => handleLanguageToggle('es')}
+                    style={[
+                      { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 9 },
+                      currentLang === 'es' && { backgroundColor: colors.primary }
+                    ]}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: currentLang === 'es' ? '#fff' : colors.muted }}>ES</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleLanguageToggle('en')}
+                    style={[
+                      { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 9 },
+                      currentLang === 'en' && { backgroundColor: colors.primary }
+                    ]}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: currentLang === 'en' ? '#fff' : colors.muted }}>EN</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
               {/* About */}
               <TouchableOpacity style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:16 }}>
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
                   <Text className="font-semibold text-foreground" style={{ marginLeft: 16 }}>
-                    About
+                    {t('settings.general.about')}
                   </Text>
                 </View>
                 <View className="flex-row items-center gap-2">
@@ -362,7 +404,7 @@ export default function SettingsScreen() {
             style={{ backgroundColor: colors.error + "15" }}
           >
             <Text className="font-semibold" style={{ color: colors.error }}>
-              Log Out
+              {t('settings.logout')}
             </Text>
           </TouchableOpacity>
 
@@ -370,7 +412,7 @@ export default function SettingsScreen() {
           <View className="items-center pb-8">
             <Text className="text-xs text-muted">FieldCam v1.0.0</Text>
             <Text className="text-xs text-muted mt-1">
-              © 2024 FieldCam. All rights reserved.
+              {t('settings.footer')}
             </Text>
           </View>
         </ScrollView>

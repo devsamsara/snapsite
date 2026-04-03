@@ -20,6 +20,7 @@
 import React, {useRef, useState} from "react";
 import {KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View,} from "react-native";
 import {useLocalSearchParams, useRouter} from "expo-router";
+import { useTranslation } from "react-i18next";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import {ModalBody, ModalFooter, ModalHeader, ModalRoot} from "@/components/ui/modal-layout";
 import {Button} from "@/components/ui/button";
@@ -41,16 +42,10 @@ const ROLES = [
 ] as const;
 
 type Role = (typeof ROLES)[number];
-
-const schema = z.object({
-    name: z.string().min(1, 'El nombre es requerido'),
-    email: z.string().trim().toLowerCase().email({
-        message: "El formato del correo electrónico no es válido"
-    }),
-});
-type FormValues = z.infer<typeof schema>;
+type FormValues = { name: string; email: string };
 
 export default function InviteMemberModal() {
+    const { t }  = useTranslation();
     const router = useRouter();
     const colors = useColors();
     const params = useLocalSearchParams<{ projectId: string }>();
@@ -60,6 +55,11 @@ export default function InviteMemberModal() {
     const [role, setRole] = useState<Role>("Jefe de Obra");
     const [nameError, setNameError] = useState("");
     const [emailError, setEmailError] = useState("");
+
+    const schema = z.object({
+        name: z.string().min(1, t('validation.nameRequired')),
+        email: z.string().trim().toLowerCase().email({ message: t('validation.emailInvalid') }),
+    });
 
     const {control, handleSubmit} = useForm<FormValues>({
         resolver: zodResolver(schema),
@@ -76,16 +76,16 @@ export default function InviteMemberModal() {
     const validate = () => {
         let valid = true;
         if (!name.trim()) {
-            setNameError("El nombre es obligatorio.");
+            setNameError(t('validation.nameRequired'));
             valid = false;
         } else {
             setNameError("");
         }
         if (!email.trim()) {
-            setEmailError("El email es obligatorio.");
+            setEmailError(t('validation.required'));
             valid = false;
         } else if (!validateEmail(email)) {
-            setEmailError("Introduce un email válido.");
+            setEmailError(t('validation.emailInvalid'));
             valid = false;
         } else {
             setEmailError("");
@@ -121,28 +121,28 @@ export default function InviteMemberModal() {
         >
             <ModalRoot>
                 <ModalHeader
-                    title="Invitar miembro"
-                    subtitle="El miembro recibirá una invitación al proyecto"
+                    title={t('modals.inviteMember.title')}
+                    subtitle={t('modals.inviteMember.subtitle')}
                     onClose={handleCancel}
                 />
                 <ModalBody>
 
                     <AppInput
-                        label="Nombre Completo"
+                        label={t('modals.inviteMember.name')}
                         name="name"
                         control={control}
-                        placeholder="Ej: María García"
+                        placeholder={t('modals.inviteMember.namePlaceholder')}
                         icon="person.fill"
                         autoCapitalize="words"
                         autoCorrect={false}
                     />
                     <AppInput
-                        label="Correo electrónico"
+                        label={t('modals.inviteMember.email')}
                         name="email"
                         control={control}
-                        placeholder="Ej: María García"
+                        placeholder={t('modals.inviteMember.emailPlaceholder')}
                         icon="email"
-                        autoCapitalize="words"
+                        autoCapitalize="none"
                         autoCorrect={false}
                     />
                     <View style={S.rolesGrid}>
@@ -181,21 +181,21 @@ export default function InviteMemberModal() {
                     }]}>
                         <MaterialIcons name="info-outline" size={16} color={colors.primary}/>
                         <Text style={[S.infoText, {color: colors.primary}]}>
-                            Se enviará un email de invitación a la dirección indicada.
+                            {t('modals.inviteMember.infoText')}
                         </Text>
                     </View>
 
                 </ModalBody>
                 <ModalFooter row>
                     <Button
-                        title="Cancelar"
+                        title={t('common.cancel')}
                         onPress={handleCancel}
                         variant="ghost"
                         size="md"
                         style={{flex: 1}}
                     />
                     <Button
-                        title="Invitar"
+                        title={t('modals.inviteMember.invite')}
                         onPress={handleSubmit(handleInvite)}
                         variant="primary"
                         size="md"

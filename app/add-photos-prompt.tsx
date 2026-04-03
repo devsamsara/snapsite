@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColors } from '@/hooks/use-colors';
 
 export default function AddPhotosPromptScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
   const params = useLocalSearchParams<{ projectId: string, projectName: string }>();
@@ -32,11 +34,11 @@ export default function AddPhotosPromptScreen() {
         </View>
 
         <Text style={[styles.title, { color: colors.foreground }]}>
-          ¡Proyecto Creado!
+          {t('addPhotosPrompt.title')}
         </Text>
         
         <Text style={[styles.subtitle, { color: colors.muted }]}>
-          ¿Deseas añadir las primeras fotos a "{params.projectName || 'tu proyecto'}" ahora mismo?
+          {t('addPhotosPrompt.subtitle', { name: params.projectName || t('addPhotosPrompt.yourProject') })}
         </Text>
 
         <View style={styles.buttonContainer}>
@@ -45,7 +47,7 @@ export default function AddPhotosPromptScreen() {
             onPress={handleAddPhotos}
           >
             <IconSymbol name="camera.fill" size={20} color="#FFF" />
-            <Text style={styles.buttonText}>Añadir Fotos Ahora</Text>
+            <Text style={styles.buttonText}>{t('addPhotosPrompt.addNow')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -53,7 +55,7 @@ export default function AddPhotosPromptScreen() {
             onPress={handleSkip}
           >
             <Text style={[styles.secondaryButtonText, { color: colors.muted }]}>
-              Ver Detalles del Proyecto
+              {t('addPhotosPrompt.viewDetails')}
             </Text>
           </TouchableOpacity>
         </View>

@@ -15,6 +15,7 @@ import {
   TextInput, Platform, KeyboardAvoidingView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle } from '@/hooks/use-card-style';
 import {ModalHeader, ModalBody, ModalRoot} from '@/components/ui/modal-layout';
@@ -41,6 +42,7 @@ type Member = typeof MOCK_MEMBERS[0];
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function TeamMembersModal() {
+  const { t } = useTranslation();
   const router  = useRouter();
   const colors  = useColors();
   const card    = useCardStyle();
@@ -94,7 +96,7 @@ export default function TeamMembersModal() {
           S.statusText,
           { color: item.online ? colors.success : colors.muted },
         ]}>
-          {item.online ? 'Online' : 'Offline'}
+          {item.online ? t('team.online') : t('team.offline')}
         </Text>
       </View>
     </View>
@@ -107,8 +109,8 @@ export default function TeamMembersModal() {
       >
         <ModalRoot>
           <ModalHeader
-              title="Equipo"
-              subtitle={`${onlineCount} online · ${totalCount} miembros en total`}
+              title={t('team.title')}
+              subtitle={`${onlineCount} ${t('team.online')} · ${totalCount} ${t('team.membersTotal')}`}
               onClose={() => router.back()}
           />
 
@@ -116,22 +118,22 @@ export default function TeamMembersModal() {
           <View style={[S.statsRow, { paddingHorizontal: 20, paddingBottom: 12 }]}>
             <View style={[S.statChip, { backgroundColor: colors.success + '15' }]}>
               <View style={[S.statDot, { backgroundColor: colors.success }]} />
-              <Text style={[S.statText, { color: colors.success }]}>{onlineCount} online</Text>
+              <Text style={[S.statText, { color: colors.success }]}>{onlineCount} {t('team.online')}</Text>
             </View>
             <View style={[S.statChip, { backgroundColor: colors.border + '60' }]}>
               <MaterialIcons name="people-outline" size={13} color={colors.muted} />
-              <Text style={[S.statText, { color: colors.muted }]}>{totalCount} total</Text>
+              <Text style={[S.statText, { color: colors.muted }]}>{totalCount} {t('team.total')}</Text>
             </View>
             <View style={[S.statChip, { backgroundColor: colors.primary + '15' }]}>
               <MaterialIcons name="folder-open" size={13} color={colors.primary} />
-              <Text style={[S.statText, { color: colors.primary }]}>5 proyectos</Text>
+              <Text style={[S.statText, { color: colors.primary }]}>5 {t('team.projects')}</Text>
             </View>
           </View>
 
           {/* Buscador */}
           <View style={[{  marginHorizontal: 20, marginBottom: 12 }]}>
             <SearchInput
-                placeholder="Buscar por nombre, rol o proyecto..."
+                placeholder={t('team.searchPlaceholder')}
                 value={search}
                 onChangeText={setSearch}
                 style={{ marginBottom: 16 }}
@@ -149,7 +151,7 @@ export default function TeamMembersModal() {
                   <View style={S.emptyWrap}>
                     <MaterialIcons name="people-outline" size={40} color={colors.muted} />
                     <Text style={[S.emptyText, { color: colors.muted }]}>
-                      No se encontraron miembros
+                      {t('team.noMembers')}
                     </Text>
                   </View>
                 }

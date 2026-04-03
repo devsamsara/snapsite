@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -26,39 +27,22 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { useCardStyle } from "@/hooks/use-card-style";
 
-// ─── Schema ───────────────────────────────────────────────────────────────────
-const schema = z.object({
-  name: z
-    .string()
-    .min(2, "El nombre debe tener al menos 2 caracteres")
-    .max(60, "Máximo 60 caracteres"),
-  email: z
-    .string()
-    .min(1, "El email es obligatorio")
-    .email("Introduce un email válido"),
-  phone: z
-    .string()
-    .max(20, "Máximo 20 caracteres")
-    .optional()
-    .or(z.literal("")),
-  role: z
-    .string()
-    .max(50, "Máximo 50 caracteres")
-    .optional()
-    .or(z.literal("")),
-  company: z
-    .string()
-    .max(80, "Máximo 80 caracteres")
-    .optional()
-    .or(z.literal("")),
-});
-type FormValues = z.infer<typeof schema>;
+type FormValues = { name: string; email: string; phone?: string; role?: string; company?: string };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function EditProfileScreen() {
+  const { t }     = useTranslation();
   const router    = useRouter();
   const colors    = useColors();
   const cardStyle = useCardStyle();
+
+  const schema = z.object({
+    name: z.string().min(2, t('validation.minLength', { min: 2 })).max(60, t('validation.maxLength', { max: 60 })),
+    email: z.string().min(1, t('validation.required')).email(t('validation.emailInvalid')),
+    phone: z.string().max(20, t('validation.maxLength', { max: 20 })).optional().or(z.literal('')),
+    role: z.string().max(50, t('validation.maxLength', { max: 50 })).optional().or(z.literal('')),
+    company: z.string().max(80, t('validation.maxLength', { max: 80 })).optional().or(z.literal('')),
+  });
 
   const {
     control,
@@ -79,13 +63,13 @@ export default function EditProfileScreen() {
   const onSave = async (data: FormValues) => {
     // TODO: llamar a la API (tRPC) para guardar los cambios
     console.log("Saving profile:", data);
-    Alert.alert("Éxito", "Perfil actualizado correctamente", [
-      { text: "OK", onPress: () => router.back() },
+    Alert.alert(t('editProfile.successTitle'), t('editProfile.successMessage'), [
+      { text: t('common.ok'), onPress: () => router.back() },
     ]);
   };
 
   const handleChangePhoto = () => {
-    Alert.alert("Cambiar Foto", "El selector de fotos se implementará aquí");
+    Alert.alert(t('editProfile.changePhoto'), t('editProfile.changePhotoDesc'));
   };
 
   return (
@@ -102,12 +86,12 @@ export default function EditProfileScreen() {
               <IconSymbol name="chevron.left" size={20} color={colors.foreground} />
             </TouchableOpacity>
             <Text style={[S.headerTitle, { color: colors.foreground }]}>
-              Editar Perfil
+              {t('editProfile.title')}
             </Text>
           </View>
 
           <Button
-            title="Guardar"
+            title={t('common.save')}
             onPress={handleSubmit(onSave)}
             variant="primary"
             size="sm"
@@ -130,21 +114,21 @@ export default function EditProfileScreen() {
             </View>
             <TouchableOpacity onPress={handleChangePhoto} style={S.changePhotoBtn}>
               <Text style={[S.changePhotoTxt, { color: colors.primary }]}>
-                Cambiar Foto
+                {t('editProfile.changePhoto')}
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* Sección: Información personal */}
           <Text style={[S.sectionLabel, { color: colors.muted }]}>
-            Información Personal
+            {t('editProfile.personalInfo')}
           </Text>
           <View style={[S.card, cardStyle]}>
             <AppInput
               name="name"
               control={control}
-              label="Nombre completo"
-              placeholder="Tu nombre"
+              label={t('editProfile.name')}
+              placeholder={t('editProfile.namePlaceholder')}
               icon="person"
               autoCapitalize="words"
               returnKeyType="next"
@@ -152,8 +136,8 @@ export default function EditProfileScreen() {
             <AppInput
               name="email"
               control={control}
-              label="Email"
-              placeholder="tu@email.com"
+              label={t('editProfile.email')}
+              placeholder={t('editProfile.emailPlaceholder')}
               icon="mail"
               keyboardType="email-address"
               autoCapitalize="none"
@@ -162,8 +146,8 @@ export default function EditProfileScreen() {
             <AppInput
               name="phone"
               control={control}
-              label="Teléfono"
-              placeholder="+34 600 000 000"
+              label={t('editProfile.phone')}
+              placeholder={t('editProfile.phonePlaceholder')}
               icon="phone"
               keyboardType="phone-pad"
               returnKeyType="next"
@@ -172,22 +156,22 @@ export default function EditProfileScreen() {
 
           {/* Sección: Información profesional */}
           <Text style={[S.sectionLabel, { color: colors.muted }]}>
-            Información Profesional
+            {t('editProfile.professionalInfo')}
           </Text>
           <View style={[S.card, cardStyle]}>
             <AppInput
               name="role"
               control={control}
-              label="Cargo"
-              placeholder="Ej: Project Manager"
+              label={t('editProfile.role')}
+              placeholder={t('editProfile.rolePlaceholder')}
               icon="briefcase"
               returnKeyType="next"
             />
             <AppInput
               name="company"
               control={control}
-              label="Empresa"
-              placeholder="Nombre de tu empresa"
+              label={t('editProfile.company')}
+              placeholder={t('editProfile.companyPlaceholder')}
               icon="building"
               returnKeyType="done"
               onSubmitEditing={handleSubmit(onSave)}
@@ -196,7 +180,7 @@ export default function EditProfileScreen() {
 
           {/* Sección: Opciones adicionales */}
           <Text style={[S.sectionLabel, { color: colors.muted }]}>
-            Opciones Adicionales
+            {t('editProfile.additionalOptions')}
           </Text>
           <View style={[S.card, cardStyle, S.optionsCard]}>
             {/* Cambiar contraseña */}
@@ -207,7 +191,7 @@ export default function EditProfileScreen() {
               <View style={S.optionLeft}>
                 <IconSymbol name="lock.fill" size={20} color={colors.primary} />
                 <Text style={[S.optionTxt, { color: colors.foreground }]}>
-                  Cambiar Contraseña
+                  {t('editProfile.changePassword')}
                 </Text>
               </View>
               <IconSymbol name="chevron.right" size={16} color={colors.muted} />
@@ -218,7 +202,7 @@ export default function EditProfileScreen() {
               <View style={S.optionLeft}>
                 <IconSymbol name="trash.fill" size={20} color={colors.error} />
                 <Text style={[S.optionTxt, { color: colors.error }]}>
-                  Eliminar Cuenta
+                  {t('editProfile.deleteAccount')}
                 </Text>
               </View>
               <IconSymbol name="chevron.right" size={16} color={colors.muted} />

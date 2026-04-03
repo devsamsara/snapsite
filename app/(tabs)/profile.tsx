@@ -1,24 +1,32 @@
 import { ScrollView, Text, View, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 
 export default function ProfileScreen() {
+  const { t }  = useTranslation();
   const colors = useColors();
+  const router = useRouter();
 
   const menuItems = [
-    { icon: "person.fill", label: "Edit Profile", action: "edit" },
-    { icon: "bubble.left.and.bubble.right.fill", label: "Messages", action: "messages" },
-    { icon: "gear", label: "Settings", action: "settings" },
-    { icon: "trash.fill", label: "Logout", action: "logout", color: "error" },
+    { icon: "person.fill",                          label: t('profile.editProfile'), action: "edit",     route: "/edit-profile" },
+    { icon: "bubble.left.and.bubble.right.fill",    label: t('profile.messages'),    action: "messages", route: null },
+    { icon: "gear",                                 label: t('profile.settings'),    action: "settings", route: "/settings" },
+    { icon: "trash.fill",                           label: t('profile.logout'),      action: "logout",   route: null, color: "error" },
   ];
+
+  const handlePress = (item: typeof menuItems[0]) => {
+    if (item.route) router.push(item.route as any);
+  };
 
   return (
     <ScreenContainer className="p-0">
       <ScrollView className="flex-1 bg-background" contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Header */}
         <View className="px-6 pt-6 pb-6 border-b border-border">
-          <Text className="text-3xl font-bold text-foreground mb-6">Profile</Text>
+          <Text className="text-3xl font-bold text-foreground mb-6">{t('profile.title')}</Text>
 
           {/* Profile Card */}
           <View
@@ -42,15 +50,15 @@ export default function ProfileScreen() {
             <View className="flex-row gap-6 mt-6 pt-6 border-t border-border w-full">
               <View className="flex-1 items-center">
                 <Text className="text-2xl font-bold text-primary">12</Text>
-                <Text className="text-xs text-muted mt-1">Projects</Text>
+                <Text className="text-xs text-muted mt-1">{t('profile.projects')}</Text>
               </View>
               <View className="flex-1 items-center">
                 <Text className="text-2xl font-bold text-primary">245</Text>
-                <Text className="text-xs text-muted mt-1">Photos</Text>
+                <Text className="text-xs text-muted mt-1">{t('profile.photos')}</Text>
               </View>
               <View className="flex-1 items-center">
                 <Text className="text-2xl font-bold text-primary">8</Text>
-                <Text className="text-xs text-muted mt-1">Team Members</Text>
+                <Text className="text-xs text-muted mt-1">{t('profile.teamMembers')}</Text>
               </View>
             </View>
           </View>
@@ -61,6 +69,7 @@ export default function ProfileScreen() {
           {menuItems.map((item, index) => (
             <TouchableOpacity
               key={index}
+              onPress={() => handlePress(item)}
               className="flex-row items-center justify-between px-4 py-4 rounded-xl border border-border"
               style={{
                 backgroundColor: colors.surface,
@@ -71,37 +80,26 @@ export default function ProfileScreen() {
                 <IconSymbol
                   name={item.icon as any}
                   size={20}
-                  color={
-                    item.color === "error"
-                      ? colors.error
-                      : colors.primary
-                  }
+                  color={item.color === "error" ? colors.error : colors.primary}
                 />
                 <Text
                   className="font-semibold"
                   style={{
-                    color:
-                      item.color === "error"
-                        ? colors.error
-                        : colors.foreground,
-                    marginLeft: 16
+                    color: item.color === "error" ? colors.error : colors.foreground,
+                    marginLeft: 16,
                   }}
                 >
                   {item.label}
                 </Text>
               </View>
-              <IconSymbol
-                name="chevron.right"
-                size={16}
-                color={colors.muted}
-              />
+              <IconSymbol name="chevron.right" size={16} color={colors.muted} />
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Version Info */}
         <View className="px-6 py-6 items-center">
-          <Text className="text-xs text-muted">SnapSite v1.0.0</Text>
+          <Text className="text-xs text-muted">{t('profile.version')}</Text>
         </View>
       </ScrollView>
     </ScreenContainer>

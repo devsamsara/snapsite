@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -25,14 +26,7 @@ import { Button } from "@/components/ui/button";
 import { AppInput } from "@/components/ui/app-input";
 import { useColors } from "@/hooks/use-colors";
 
-// ─── Schema ───────────────────────────────────────────────────────────────────
-const schema = z.object({
-  label: z
-    .string()
-    .min(1, "La etiqueta no puede estar vacía")
-    .max(30, "Máximo 30 caracteres"),
-});
-type FormValues = z.infer<typeof schema>;
+type FormValues = { label: string };
 
 // ─── Presets ──────────────────────────────────────────────────────────────────
 const PRESETS = [
@@ -42,9 +36,17 @@ const PRESETS = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function AnnotationMeasureModal() {
+  const { t }   = useTranslation();
   const router  = useRouter();
   const colors  = useColors();
   const params  = useLocalSearchParams<{ label?: string; color?: string }>();
+
+  const schema = z.object({
+    label: z
+      .string()
+      .min(1, t('validation.required'))
+      .max(30, t('validation.maxLength', { max: 30 })),
+  });
 
   const { control, handleSubmit, setValue, watch, formState: { isValid } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -72,8 +74,8 @@ export default function AnnotationMeasureModal() {
       <ModalRoot>
         {/* ── Header ── */}
         <ModalHeader
-          title="Etiqueta de Medida"
-          subtitle='Personaliza la etiqueta (ej: "2.5 m", "120 cm")'
+          title={t('annotation.measure.title')}
+          subtitle={t('annotation.measure.subtitle')}
           onClose={handleCancel}
         />
 
@@ -83,8 +85,8 @@ export default function AnnotationMeasureModal() {
           <AppInput
             name="label"
             control={control}
-            label="Medida"
-            placeholder="Ej: 2.5 m"
+            label={t('annotation.measure.label')}
+            placeholder={t('annotation.measure.placeholder')}
             icon="ruler"
             autoFocus
             selectTextOnFocus
@@ -94,7 +96,7 @@ export default function AnnotationMeasureModal() {
           />
 
           {/* Presets */}
-          <Text style={[S.sectionLabel, { color: colors.muted }]}>Valores rápidos</Text>
+          <Text style={[S.sectionLabel, { color: colors.muted }]}>{t('annotation.measure.presets')}</Text>
           <View style={S.presets}>
             {PRESETS.map((p) => (
               <TouchableOpacity
@@ -120,9 +122,9 @@ export default function AnnotationMeasureModal() {
 
         {/* ── Footer ── */}
         <ModalFooter row>
-          <Button title="Cancelar"  onPress={handleCancel}              variant="secondary" size="md" />
+          <Button title={t('common.cancel')}  onPress={handleCancel}              variant="secondary" size="md" />
           <Button
-            title="Confirmar"
+            title={t('common.confirm')}
             onPress={handleSubmit(onConfirm)}
             variant="primary"
             size="md"

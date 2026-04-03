@@ -19,6 +19,7 @@ import {
   Alert, ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -30,20 +31,9 @@ import { AppInput } from '@/components/ui/app-input';
 import { SearchInput } from '@/components/ui/search-input';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 
-// ─── Schema Zod ──────────────────────────────────────────────────────────────
-const inviteSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'El nombre es obligatorio')
-    .min(2, 'El nombre debe tener al menos 2 caracteres'),
-  email: z
-    .string()
-    .min(1, 'El correo es obligatorio')
-    .email('Introduce un correo electrónico válido'),
-});
-type InviteForm = z.infer<typeof inviteSchema>;
+type InviteForm = { name: string; email: string };
 
-// ─── Mocks ────────────────────────────────────────────────────────────────────
+// ─── Mocks ───────────────────────────────────────────────────────────────────
 const MOCK_PROJECTS = [
   { id: '1', name: 'Reforma Oficinas BCN',       location: 'Barcelona',         color: '#3B82F6', progress: 65 },
   { id: '2', name: 'Residencial Las Palmas',      location: 'Las Palmas de GC',  color: '#10B981', progress: 30 },
@@ -64,6 +54,7 @@ const ROLES = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function InviteGlobalModal() {
+  const { t }          = useTranslation();
   const router         = useRouter();
   const colors         = useColors();
   const cardElevation  = useCardStyle();
@@ -74,6 +65,11 @@ export default function InviteGlobalModal() {
   const [selectedRole,      setSelectedRole]      = useState('');
   const [roleError,         setRoleError]         = useState('');
   const [loading,           setLoading]           = useState(false);
+
+  const inviteSchema = z.object({
+    name: z.string().min(2, t('validation.nameRequired')),
+    email: z.string().min(1, t('validation.required')).email(t('validation.emailInvalid')),
+  });
 
   const {
     control,
@@ -97,17 +93,17 @@ export default function InviteGlobalModal() {
 
   const onSubmit = async (data: InviteForm) => {
     let valid = true;
-    if (!selectedProjectId) { setProjectError('Selecciona un proyecto'); valid = false; }
-    if (!selectedRole)       { setRoleError('Selecciona un rol');         valid = false; }
+    if (!selectedProjectId) { setProjectError(t('modals.inviteGlobal.selectProject')); valid = false; }
+    if (!selectedRole)       { setRoleError(t('modals.inviteGlobal.selectRole'));         valid = false; }
     if (!valid) return;
 
     setLoading(true);
     await new Promise((r) => setTimeout(r, 900));
     setLoading(false);
     Alert.alert(
-      'Invitación enviada',
-      `Se ha enviado un correo a ${data.email} para unirse a "${selectedProject?.name}".`,
-      [{ text: 'OK', onPress: () => router.back() }],
+      t('modals.inviteGlobal.successTitle'),
+      t('modals.inviteGlobal.successMessage', { email: data.email, project: selectedProject?.name }),
+      [{ text: t('common.ok'), onPress: () => router.back() }],
     );
   };
 
@@ -119,18 +115,18 @@ export default function InviteGlobalModal() {
     >
       <ModalRoot>
         <ModalHeader
-          title="Invitar al equipo"
-          subtitle="Selecciona un proyecto y completa los datos"
+          title={t('modals.inviteGlobal.title')}
+          subtitle={t('modals.inviteGlobal.subtitle')}
           onClose={() => router.back()}
         />
 
         <ModalBody>
 
           {/* ── Selector de proyecto ── */}
-          <Text style={[S.sectionLabel, { color: colors.foreground }]}>Proyecto</Text>
+          <Text style={[S.sectionLabel, { color: colors.foreground }]}>{t('modals.inviteGlobal.project')}</Text>
 
           <SearchInput
-            placeholder="Buscar proyecto..."
+            placeholder={t('modals.inviteGlobal.searchProject')}
             value={projectSearch}
             onChangeText={setProjectSearch}
           />
@@ -141,7 +137,7 @@ export default function InviteGlobalModal() {
           >
           <View style={[S.projectList, cardElevation, { marginTop: 10 }]}>
             {filteredProjects.length === 0 ? (
-              <Text style={[S.emptyText, { color: colors.muted }]}>Sin resultados</Text>
+              <Text style={[S.emptyText, { color: colors.muted }]}>{t('common.noResults')}</Text>
             ) : (
               filteredProjects.map((p, idx) => {
                 const isSelected = selectedProjectId === p.id;
@@ -190,32 +186,32 @@ export default function InviteGlobalModal() {
 
           {/* ── Datos del invitado ── */}
           <Text style={[S.sectionLabel, { color: colors.foreground, marginTop: 24 }]}>
-            Datos del invitado
+            {t('modals.inviteGlobal.guestData')}
           </Text>
 
           <AppInput
-            label="Nombre completo"
+            label={t('modals.inviteMember.name')}
             name="name"
             control={control}
             icon="person.fill"
-            placeholder="Ej: Ana García"
+            placeholder={t('modals.inviteMember.namePlaceholder')}
             returnKeyType="next"
             autoCapitalize="words"
           />
 
           <AppInput
-            label="Correo electrónico"
+            label={t('modals.inviteMember.email')}
             name="email"
             control={control}
             icon="envelope.fill"
-            placeholder="correo@empresa.com"
+            placeholder={t('modals.inviteMember.emailPlaceholder')}
             keyboardType="email-address"
             autoCapitalize="none"
             returnKeyType="done"
           />
 
           {/* ── Rol ── */}
-          <Text style={[S.sectionLabel, { color: colors.foreground }]}>Rol</Text>
+          <Text style={[S.sectionLabel, { color: colors.foreground }]}>{t('modals.inviteGlobal.role')}</Text>
           <View style={S.roles}>
             {ROLES.map((r) => {
               const active = selectedRole === r;
@@ -252,8 +248,7 @@ export default function InviteGlobalModal() {
             >
               <IconSymbol name="info.circle.fill" size={16} color={colors.primary} />
               <Text style={[S.infoText, { color: colors.primary }]}>
-                Se enviará un correo de invitación al proyecto{' '}
-                <Text style={{ fontWeight: '700' }}>{selectedProject.name}</Text>.
+                {t('modals.inviteGlobal.infoText', { project: selectedProject.name })}
               </Text>
             </View>
           )}
@@ -262,14 +257,14 @@ export default function InviteGlobalModal() {
 
         <ModalFooter row>
           <Button
-            title="Cancelar"
+            title={t('common.cancel')}
             variant="ghost"
             onPress={() => router.back()}
             fullWidth={false}
             style={S.btn}
           />
           <Button
-            title="Enviar invitación"
+            title={t('modals.inviteGlobal.send')}
             variant="primary"
             onPress={handleSubmit(onSubmit)}
             isLoading={loading}

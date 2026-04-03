@@ -16,6 +16,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/lib/auth-context';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle } from '@/hooks/use-card-style';
@@ -27,19 +28,21 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
 
-const schema = z.object({
-  username: z.string().min(1, 'El usuario es requerido'),
-  password: z.string().min(1, 'La contraseña es requerida'),
-});
-type FormValues = z.infer<typeof schema>;
+type FormValues = { username: string; password: string };
 
 export default function LoginScreen() {
+  const { t }                 = useTranslation();
   const [loading, setLoading] = useState(false);
   const { signIn }            = useAuth();
   const colors                = useColors();
   const card                  = useCardStyle();
   const router                = useRouter();
   const insets                = useSafeAreaInsets();
+
+  const schema = z.object({
+    username: z.string().min(1, t('validation.usernameRequired')),
+    password: z.string().min(1, t('validation.passwordRequired')),
+  });
 
   const { control, handleSubmit } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -50,7 +53,7 @@ export default function LoginScreen() {
     setLoading(true);
     const ok = await signIn(data.username, data.password);
     setLoading(false);
-    if (!ok) Alert.alert('Error', 'Usuario o contraseña incorrectos.');
+    if (!ok) Alert.alert(t('auth.login.errorTitle'), t('auth.login.errorMessage'));
   };
 
   return (
@@ -77,26 +80,26 @@ export default function LoginScreen() {
         {/* Card único */}
         <View style={[S.card, card]}>
           <Text style={[S.cardTitle, { color: colors.foreground }]}>
-            Bienvenido de nuevo
+            {t('auth.login.title')}
           </Text>
           <Text style={[S.cardSub, { color: colors.muted }]}>
-            Inicia sesión para continuar
+            {t('auth.login.subtitle')}
           </Text>
 
           <View style={S.fields}>
             <AppInput
-              label="Usuario"
+              label={t('auth.login.username')}
               name="username"
               control={control}
-              placeholder="juan"
+              placeholder={t('auth.login.usernamePlaceholder')}
               icon="person.fill"
               autoCapitalize="none"
             />
             <AppInput
-              label="Contraseña"
+              label={t('auth.login.password')}
               name="password"
               control={control}
-              placeholder="••••••••"
+              placeholder={t('auth.login.passwordPlaceholder')}
               icon="lock.fill"
               secureTextEntry
             />
@@ -107,12 +110,12 @@ export default function LoginScreen() {
             style={S.forgotRow}
           >
             <Text style={[S.forgotText, { color: colors.primary }]}>
-              ¿Olvidaste tu contraseña?
+              {t('auth.login.forgotPassword')}
             </Text>
           </TouchableOpacity>
 
           <Button
-            title="Iniciar sesión"
+            title={t('auth.login.submit')}
             onPress={handleSubmit(onLogin)}
             isLoading={loading}
             size="lg"
@@ -122,11 +125,11 @@ export default function LoginScreen() {
         {/* Enlace de registro — texto simple, sin card */}
         <View style={S.registerRow}>
           <Text style={[S.registerText, { color: colors.muted }]}>
-            ¿No tienes cuenta?{'  '}
+            {t('auth.login.noAccount')}{'  '}
           </Text>
           <TouchableOpacity onPress={() => router.push('/auth/register')}>
             <Text style={[S.registerLink, { color: colors.primary }]}>
-              Regístrate
+              {t('auth.login.register')}
             </Text>
           </TouchableOpacity>
         </View>

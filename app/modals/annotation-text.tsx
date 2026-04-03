@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -26,14 +27,7 @@ import { Button } from "@/components/ui/button";
 import { AppInput } from "@/components/ui/app-input";
 import { useColors } from "@/hooks/use-colors";
 
-// ─── Schema ───────────────────────────────────────────────────────────────────
-const schema = z.object({
-  text: z
-    .string()
-    .min(1, "El texto no puede estar vacío")
-    .max(200, "Máximo 200 caracteres"),
-});
-type FormValues = z.infer<typeof schema>;
+type FormValues = { text: string };
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 const PALETTE = [
@@ -45,6 +39,7 @@ const FONTSIZES = [14, 18, 22, 28, 36, 48];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function AnnotationTextModal() {
+  const { t }   = useTranslation();
   const router  = useRouter();
   const colors  = useColors();
   const params  = useLocalSearchParams<{
@@ -53,6 +48,13 @@ export default function AnnotationTextModal() {
 
   const [color,    setColor]    = useState(params.color ?? "#FFFFFF");
   const [fontSize, setFontSize] = useState(Number(params.fontSize ?? 22));
+
+  const schema = z.object({
+    text: z
+      .string()
+      .min(1, t('validation.required'))
+      .max(200, t('validation.maxLength', { max: 200 })),
+  });
 
   const { control, handleSubmit, watch, formState: { isValid } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -84,8 +86,8 @@ export default function AnnotationTextModal() {
       <ModalRoot>
         {/* ── Header ── */}
         <ModalHeader
-          title="Agregar Texto"
-          subtitle="Luego puedes arrastrarlo y escalarlo con dos dedos."
+          title={t('annotation.text.title')}
+          subtitle={t('annotation.text.subtitle')}
           onClose={handleCancel}
         />
 
@@ -100,7 +102,7 @@ export default function AnnotationTextModal() {
             {/* Vista previa */}
             <View style={[S.preview, { backgroundColor: colors.background, borderColor: colors.border }]}>
               <Text style={[S.previewTxt, { color, fontSize }]} numberOfLines={3}>
-                {textValue?.trim() || "Vista previa…"}
+                {textValue?.trim() || t('annotation.text.preview')}
               </Text>
             </View>
 
@@ -108,8 +110,8 @@ export default function AnnotationTextModal() {
             <AppInput
               name="text"
               control={control}
-              label="Texto"
-              placeholder="Escribe aquí..."
+              label={t('annotation.text.label')}
+              placeholder={t('annotation.text.placeholder')}
               autoFocus
               multiline
               maxLength={200}
@@ -119,7 +121,7 @@ export default function AnnotationTextModal() {
             />
 
             {/* Paleta de color */}
-            <Text style={[S.label, { color: colors.muted }]}>Color</Text>
+            <Text style={[S.label, { color: colors.muted }]}>{t('annotation.text.color')}</Text>
             <View style={S.paletteWrapper}>
               <ScrollView
                 horizontal
@@ -142,7 +144,7 @@ export default function AnnotationTextModal() {
             </View>
 
             {/* Selector de tamaño */}
-            <Text style={[S.label, { color: colors.muted }]}>Tamaño</Text>
+            <Text style={[S.label, { color: colors.muted }]}>{t('annotation.text.size')}</Text>
             <View style={S.sizeRow}>
               {FONTSIZES.map((fs) => (
                 <TouchableOpacity
@@ -170,11 +172,11 @@ export default function AnnotationTextModal() {
         {/* ── Footer ── */}
         <ModalFooter row>
           <View style={{ flex: 1 }}>
-            <Button title="Cancelar" onPress={handleCancel} variant="secondary" size="md" />
+            <Button title={t('common.cancel')} onPress={handleCancel} variant="secondary" size="md" />
           </View>
           <View style={{ flex: 1 }}>
             <Button
-              title="Agregar"
+              title={t('common.add')}
               onPress={handleSubmit(onConfirm)}
               variant="primary"
               size="md"

@@ -1,9 +1,11 @@
 import { Text, View, TouchableOpacity, Modal } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 
 export default function AddPhotoModal() {
+  const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
 
@@ -33,7 +35,7 @@ export default function AddPhotoModal() {
         }}
       >
         <Text style={{ fontSize: 20, fontWeight: '700', color: colors.foreground }}>
-          Agregar Foto
+          {t('addPhoto.title')}
         </Text>
         <TouchableOpacity
           onPress={handleClose}
@@ -81,10 +83,10 @@ export default function AddPhotoModal() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 17, fontWeight: '600', color: colors.foreground, marginBottom: 4 }}>
-              Tomar Foto
+              {t('addPhoto.takePhoto')}
             </Text>
             <Text style={{ fontSize: 14, color: colors.muted }}>
-              Usa la cámara para capturar una nueva foto
+              {t('addPhoto.takePhotoDesc')}
             </Text>
           </View>
           <IconSymbol name="chevron.right" size={20} color={colors.muted} />
@@ -118,10 +120,10 @@ export default function AddPhotoModal() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 17, fontWeight: '600', color: colors.foreground, marginBottom: 4 }}>
-              Seleccionar de Galería
+              {t('addPhoto.selectGallery')}
             </Text>
             <Text style={{ fontSize: 14, color: colors.muted }}>
-              Elige una foto de tu biblioteca
+              {t('addPhoto.selectGalleryDesc')}
             </Text>
           </View>
           <IconSymbol name="chevron.right" size={20} color={colors.muted} />

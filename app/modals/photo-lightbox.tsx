@@ -35,6 +35,7 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Button } from "@/components/ui/button";
 import { useColors } from "@/hooks/use-colors";
@@ -42,6 +43,7 @@ import { useColors } from "@/hooks/use-colors";
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PhotoLightboxModal() {
+  const { t } = useTranslation();
   const router  = useRouter();
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
@@ -164,7 +166,7 @@ export default function PhotoLightboxModal() {
         ]}
       >
         <Button
-          title="Anotar Foto"
+          title={t('lightbox.annotate')}
           onPress={handleAnnotate}
           variant="primary"
           size="lg"

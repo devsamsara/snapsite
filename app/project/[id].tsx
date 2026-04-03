@@ -11,6 +11,7 @@ import {
   Animated as RNAnimated,
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { addNoteStore, inviteMemberStore } from "@/lib/modal-stores";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
@@ -121,11 +122,11 @@ interface Project {
 
 type TabId = "gallery" | "timeline" | "team" | "notes";
 
-const TABS: { id: TabId; icon: string; label: string }[] = [
-  { id: "gallery",  icon: "photo-library",  label: "Galería"   },
-  { id: "timeline", icon: "timeline",        label: "Historial" },
-  { id: "team",     icon: "group",           label: "Equipo"    },
-  { id: "notes",    icon: "notes",           label: "Notas"     },
+const TABS: { id: TabId; icon: string; labelKey: string }[] = [
+  { id: "gallery",  icon: "photo-library",  labelKey: "project.tabs.gallery"  },
+  { id: "timeline", icon: "timeline",        labelKey: "project.tabs.timeline" },
+  { id: "team",     icon: "group",           labelKey: "project.tabs.team"     },
+  { id: "notes",    icon: "notes",           labelKey: "project.tabs.notes"    },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -155,6 +156,7 @@ function timelineColor(type: TimelineEvent["type"], colors: any) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ProjectDetailScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
   const cardElevation = useCardStyle();
@@ -245,9 +247,9 @@ export default function ProjectDetailScreen() {
   };
 
   const deleteNote = (noteId: string) => {
-    Alert.alert("Eliminar nota", "¿Estás seguro?", [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Eliminar", style: "destructive", onPress: () => setNotes((p) => p.filter((n) => n.id !== noteId)) },
+    Alert.alert(t('project.deleteNoteTitle'), t('project.deleteNoteConfirm'), [
+      { text: t('common.cancel'), style: "cancel" },
+      { text: t('common.delete'), style: "destructive", onPress: () => setNotes((p) => p.filter((n) => n.id !== noteId)) },
     ]);
   };
 
@@ -294,14 +296,14 @@ export default function ProjectDetailScreen() {
       {/* Photo count */}
       <View style={{ paddingHorizontal: 16, marginBottom: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
         <Text style={{ color: colors.muted, fontSize: 13 }}>
-          {filteredPhotos.length} {filteredPhotos.length === 1 ? "foto" : "fotos"}
+          {filteredPhotos.length} {filteredPhotos.length === 1 ? t('project.photo') : t('project.photos')}
         </Text>
         <TouchableOpacity
           onPress={handleAddPhoto}
           style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.primary + "20", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}
         >
           <MaterialIcons name="add-a-photo" size={16} color={colors.primary} />
-          <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "700" }}>Agregar</Text>
+          <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "700" }}>{t('project.add')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -337,7 +339,7 @@ export default function ProjectDetailScreen() {
         {filteredPhotos.length === 0 && (
           <View style={{ alignItems: "center", paddingVertical: 48 }}>
             <MaterialIcons name="photo-library" size={48} color={colors.border} />
-            <Text style={{ color: colors.muted, marginTop: 12, fontSize: 15 }}>No hay fotos{filterTag ? ` con #${filterTag}` : ""}</Text>
+            <Text style={{ color: colors.muted, marginTop: 12, fontSize: 15 }}>{t('project.noPhotos')}{filterTag ? ` #${filterTag}` : ""}</Text>
           </View>
         )}
       </View>
@@ -395,8 +397,8 @@ export default function ProjectDetailScreen() {
       {/* Stats row */}
       <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
         {[
-          { label: "Miembros", value: team.length, icon: "group", color: colors.primary },
-          { label: "Activos hoy", value: team.filter((m) => m.online).length, icon: "fiber-manual-record", color: colors.success },
+          { label: t('project.members'), value: team.length, icon: "group", color: colors.primary },
+          { label: t('project.activeToday'), value: team.filter((m) => m.online).length, icon: "fiber-manual-record", color: colors.success },
         ].map((stat) => (
           <View key={stat.label} style={[styles.statCard, cardSmElevation, { flex: 1 }]}>
             <MaterialIcons name={stat.icon as any} size={22} color={stat.color} />
@@ -422,11 +424,11 @@ export default function ProjectDetailScreen() {
               )}
             </View>
             <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600", marginTop: 2 }}>{member.role}</Text>
-            <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>Activo: {member.lastActivity}</Text>
+            <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>{t('project.active')}: {member.lastActivity}</Text>
           </View>
           {/* Actions */}
           <TouchableOpacity
-            onPress={() => Alert.alert("Mensaje", `Enviar mensaje a ${member.name}`)}
+            onPress={() => Alert.alert(t('project.messageTitle'), t('project.messageTo', { name: member.name }))}
             style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary + "15", alignItems: "center", justifyContent: "center" }}
           >
             <MaterialIcons name="chat" size={18} color={colors.primary} />
@@ -455,7 +457,7 @@ export default function ProjectDetailScreen() {
         {sortedNotes.length === 0 && (
           <View style={{ alignItems: "center", paddingVertical: 48 }}>
             <MaterialIcons name="notes" size={48} color={colors.border} />
-            <Text style={{ color: colors.muted, marginTop: 12, fontSize: 15 }}>No hay notas todavía</Text>
+            <Text style={{ color: colors.muted, marginTop: 12, fontSize: 15 }}>{t('project.noNotes')}</Text>
           </View>
         )}
         {sortedNotes.map((note) => (
@@ -474,7 +476,7 @@ export default function ProjectDetailScreen() {
             {note.pinned && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 8 }}>
                 <MaterialIcons name="push-pin" size={12} color={colors.warning} />
-                <Text style={{ color: colors.warning, fontSize: 11, fontWeight: "700" }}>FIJADA</Text>
+                <Text style={{ color: colors.warning, fontSize: 11, fontWeight: "700" }}>{t('project.pinned')}</Text>
               </View>
             )}
             {/* Author row */}
@@ -483,9 +485,7 @@ export default function ProjectDetailScreen() {
                 <Text style={{ color: note.authorColor, fontSize: 12, fontWeight: "800" }}>{note.initials}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "700" }}>{note.author}</Text>
-                <Text style={{ color: colors.muted, fontSize: 11 }}>{note.date}</Text>
-              </View>
+                <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "700" }}>{note.author}</Tex          <Text style={{ color: colors.muted, fontSize: 12 }}>{t('project.end')}: {project.endDate}</Text>             </View>
               {/* Actions */}
               <TouchableOpacity onPress={() => togglePin(note.id)} style={{ padding: 6 }}>
                 <MaterialIcons name={note.pinned ? "push-pin" : "push-pin"} size={18} color={note.pinned ? colors.warning : colors.muted} />
@@ -554,7 +554,7 @@ export default function ProjectDetailScreen() {
             <View style={{ padding: 14 }}>
               {/* Progress */}
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>Progreso del proyecto</Text>
+               <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>{t('project.projectProgress')}</Text>')}</Text>
                 <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "800" }}>{project.progress}%</Text>
               </View>
               <View style={{ height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: "hidden" }}>
@@ -564,11 +564,11 @@ export default function ProjectDetailScreen() {
               <View style={{ flexDirection: "row", gap: 16, marginTop: 10 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                   <MaterialIcons name="event" size={13} color={colors.muted} />
-                  <Text style={{ color: colors.muted, fontSize: 12 }}>Inicio: {project.startDate}</Text>
+                 <Text style={{ color: colors.muted, fontSize: 12 }}>{t('project.start')}: {project.startDate}</Text>rtDate}</Text>artDate}</Text>
                 </View>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                   <MaterialIcons name="event-available" size={13} color={colors.muted} />
-                  <Text style={{ color: colors.muted, fontSize: 12 }}>Fin: {project.endDate}</Text>
+                  <Text style={{ color: colors.muted, fontSize: 12 }}>{t('project.end')}: {project.endDate}</Text>endDate}</Text>
                 </View>
               </View>
             </View>
@@ -587,7 +587,7 @@ export default function ProjectDetailScreen() {
               >
                 <MaterialIcons name={tab.icon as any} size={20} color={active ? colors.primary : colors.muted} />
                 <Text style={{ color: active ? colors.primary : colors.muted, fontSize: 12, fontWeight: active ? "700" : "500", marginTop: 2 }}>
-                  {tab.label}
+                  {t(tab.labelKey)}
                 </Text>
               </TouchableOpacity>
             );

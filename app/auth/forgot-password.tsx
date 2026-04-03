@@ -15,6 +15,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle } from '@/hooks/use-card-style';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -25,19 +26,20 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
 
-const schema = z.object({
-  email: z.string().email('Correo inválido'),
-});
-
-type FormValues = z.infer<typeof schema>;
+type FormValues = { email: string };
 
 export default function ForgotPasswordScreen() {
+  const { t }                 = useTranslation();
   const [loading, setLoading] = useState(false);
   const [sent, setSent]       = useState(false);
   const colors                = useColors();
   const cardElevation         = useCardStyle();
   const router                = useRouter();
   const insets                = useSafeAreaInsets();
+
+  const schema = z.object({
+    email: z.string().email(t('validation.emailInvalid')),
+  });
 
   const { control, handleSubmit, getValues } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -82,12 +84,12 @@ export default function ForgotPasswordScreen() {
             />
           </View>
           <Text style={[S.title, { color: colors.foreground }]}>
-            {sent ? '¡Correo enviado!' : 'Recuperar contraseña'}
+            {sent ? t('auth.forgotPassword.titleSent') : t('auth.forgotPassword.title')}
           </Text>
           <Text style={[S.subtitle, { color: colors.muted }]}>
             {sent
-              ? `Hemos enviado un enlace de recuperación a ${getValues('email')}.`
-              : 'Introduce tu correo y te enviaremos un enlace para restablecer tu contraseña.'}
+              ? t('auth.forgotPassword.subtitleSent', { email: getValues('email') })
+              : t('auth.forgotPassword.subtitle')}
           </Text>
         </View>
 
@@ -95,16 +97,16 @@ export default function ForgotPasswordScreen() {
         {!sent ? (
           <View style={[S.card, cardElevation]}>
             <AppInput
-              label="Correo electrónico"
+              label={t('auth.forgotPassword.email')}
               name="email"
               control={control}
-              placeholder="tu@empresa.com"
+              placeholder={t('auth.forgotPassword.emailPlaceholder')}
               icon="envelope.fill"
               keyboardType="email-address"
               autoCapitalize="none"
             />
             <Button
-              title="Enviar enlace"
+              title={t('auth.forgotPassword.submit')}
               onPress={handleSubmit(onSubmit)}
               isLoading={loading}
               size="lg"
@@ -113,12 +115,12 @@ export default function ForgotPasswordScreen() {
         ) : (
           <View style={[S.card, cardElevation]}>
             <Button
-              title="Volver al inicio de sesión"
+              title={t('auth.forgotPassword.backToLogin')}
               onPress={() => router.push('/auth/login')}
               size="lg"
             />
             <Button
-              title="Reenviar correo"
+              title={t('auth.forgotPassword.resend')}
               onPress={handleSubmit(onSubmit)}
               variant="ghost"
               size="md"

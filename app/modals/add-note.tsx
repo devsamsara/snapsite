@@ -8,6 +8,7 @@
 import React, {useState} from "react";
 import {KeyboardAvoidingView, Platform, StyleSheet, Text, View,} from "react-native";
 import {useLocalSearchParams, useRouter} from "expo-router";
+import { useTranslation } from "react-i18next";
 import {addNoteStore} from "@/lib/modal-stores";
 import {ModalBody, ModalFooter, ModalHeader, ModalRoot} from "@/components/ui/modal-layout";
 import {Button} from "@/components/ui/button";
@@ -17,17 +18,19 @@ import * as z from 'zod';
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 
-const schema = z.object({
-    note: z.string().min(1, 'El usuario es requerido'),
-});
-type FormValues = z.infer<typeof schema>;
+type FormValues = { note: string };
 
 export default function AddNoteModal() {
+    const { t }  = useTranslation();
     const router = useRouter();
     const colors = useColors();
     const {projectId} = useLocalSearchParams<{ projectId?: string }>();
 
     const [text, setText] = useState("");
+
+    const schema = z.object({
+        note: z.string().min(1, t('validation.required')),
+    });
 
     const {control, handleSubmit} = useForm<FormValues>({
         resolver: zodResolver(schema),
@@ -55,8 +58,8 @@ export default function AddNoteModal() {
 
                 {/* ── Header ── */}
                 <ModalHeader
-                    title="Nueva Nota"
-                    subtitle="La nota será visible para todos los miembros del proyecto."
+                    title={t('modals.addNote.title')}
+                    subtitle={t('modals.addNote.subtitle')}
                     onClose={handleCancel}
                 />
 
@@ -65,8 +68,8 @@ export default function AddNoteModal() {
                     <AppInput
                         name="note"
                         control={control}
-                        label="Nota"
-                        placeholder="Escribe una nota para el equipo..."
+                        label={t('modals.addNote.label')}
+                        placeholder={t('modals.addNote.placeholder')}
                         autoCapitalize="none"
                         multiline
                         autoFocus
@@ -85,11 +88,11 @@ export default function AddNoteModal() {
                 {/* ── Footer ── */}
                 <ModalFooter row>
                     <View style={{flex: 1}}>
-                        <Button title="Cancelar" onPress={handleCancel} variant="secondary" size="md"/>
+                        <Button title={t('common.cancel')} onPress={handleCancel} variant="secondary" size="md"/>
                     </View>
                     <View style={{flex: 1}}>
                         <Button
-                            title="Guardar Nota"
+                            title={t('modals.addNote.save')}
                             onPress={handleSave}
                             variant="primary"
                             size="md"

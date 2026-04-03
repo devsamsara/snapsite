@@ -1,5 +1,6 @@
 import { Text, View, TouchableOpacity, ScrollView, FlatList, Image } from "react-native";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { SearchInput } from "@/components/ui/search-input";
@@ -102,10 +103,10 @@ const RECENT_IMAGES = [
 
 // Mock data for project statuses (Today)
 const PROJECT_STATUSES = [
-  { id: '1', name: 'Ongoing', count: 3, color: '#8B5CF6' },
-  { id: '2', name: 'Paused', count: 1, color: '#F59E0B' },
-  { id: '3', name: 'Complete', count: 5, color: '#10B981' },
-  { id: '4', name: 'Cancel', count: 2, color: '#EF4444' },
+  { id: '1', nameKey: 'home.statusOngoing',  count: 3, color: '#8B5CF6' },
+  { id: '2', nameKey: 'home.statusPaused',   count: 1, color: '#F59E0B' },
+  { id: '3', nameKey: 'home.statusComplete', count: 5, color: '#10B981' },
+  { id: '4', nameKey: 'home.statusCancel',   count: 2, color: '#EF4444' },
 ];
 
 // Mock data for recent locations
@@ -137,6 +138,7 @@ const RECENT_LOCATIONS = [
 ];
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
   const cardElevation = useCardStyle();
@@ -209,7 +211,7 @@ export default function HomeScreen() {
         {/* Progress Bar */}
         <View className="mb-3">
           <View className="flex-row justify-between mb-2">
-            <Text className="text-xs text-muted">Progress</Text>
+            <Text className="text-xs text-muted">{t('home.progress')}</Text>
             <Text className="text-xs font-semibold text-foreground">
               {item.progress}%
             </Text>
@@ -233,13 +235,13 @@ export default function HomeScreen() {
           <View className="flex-row items-center">
             <IconSymbol name="doc.fill" size={14} color={colors.muted} />
             <Text className="text-xs text-muted" style={{ marginLeft: 6 }}>
-              {item.documents} Documents
+              {item.documents} {t('home.documents')}
             </Text>
           </View>
           <View className="flex-row items-center">
             <IconSymbol name="bubble.left.fill" size={14} color={colors.muted} />
             <Text className="text-xs text-muted" style={{ marginLeft: 6 }}>
-              {item.comments} Comments
+              {item.comments} {t('home.comments')}
             </Text>
           </View>
         </View>
@@ -333,7 +335,7 @@ export default function HomeScreen() {
         <View className="flex-row items-center mt-2">
           <IconSymbol name="folder.fill" size={12} color={colors.muted} />
           <Text className="text-xs text-muted" style={{ marginLeft: 4 }}>
-            {item.projects} projects
+            {item.projects} {t('home.projects')}
           </Text>
         </View>
       </View>
@@ -348,10 +350,10 @@ export default function HomeScreen() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 13, color: colors.muted, marginBottom: 6 }}>
-                Workspace
+                {t('home.workspace')}
               </Text>
               <Text style={{ fontSize: 24, fontWeight: '700', color: colors.foreground, marginBottom: 12 }}>
-                Design and Marketing
+                {t('home.workspaceName')}
               </Text>
               {/* Team Avatars */}
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -410,7 +412,7 @@ export default function HomeScreen() {
                   }}
                 >
                   <Text style={{ fontSize: 13, fontWeight: '600', color: '#FFFFFF' }}>
-                    Invite
+                    {t('home.invite')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -432,8 +434,8 @@ export default function HomeScreen() {
           </View>
 
           {/* Search Bar */}
-          <SearchInput 
-            placeholder="Search projects, images..." 
+          <SearchInput
+            placeholder={t('home.searchPlaceholder')}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -448,7 +450,7 @@ export default function HomeScreen() {
           <View style={{ marginTop: 16 }}>
             <View style={{ paddingHorizontal: 24, marginBottom: 12 }}>
               <Text style={{ fontSize: 18, fontWeight: '600', color: colors.foreground }}>
-                Today
+                {t('home.today')}
               </Text>
             </View>
             <View style={{ paddingHorizontal: 24, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
@@ -465,7 +467,7 @@ export default function HomeScreen() {
                 >
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground }}>
-                      {status.name}
+                      {t((status as any).nameKey)}
                     </Text>
                     <View
                       style={{
@@ -492,11 +494,11 @@ export default function HomeScreen() {
           <View style={{ marginTop: 16 }}>
             <View style={{ paddingHorizontal: 24, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text className="text-lg font-semibold text-foreground">
-                Recent Projects
+                {t('home.recentProjects')}
               </Text>
               <TouchableOpacity>
                 <Text className="text-sm font-semibold" style={{ color: colors.primary }}>
-                  See All
+                  {t('home.seeAll')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -516,11 +518,11 @@ export default function HomeScreen() {
           <View style={{ marginTop: 16 }}>
             <View style={{ paddingHorizontal: 24, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text className="text-lg font-semibold text-foreground">
-                Recent Locations
+                {t('home.recentLocations')}
               </Text>
               <TouchableOpacity>
                 <Text className="text-sm font-semibold" style={{ color: colors.primary }}>
-                  See All
+                  {t('home.seeAll')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -540,11 +542,11 @@ export default function HomeScreen() {
           <View style={{ marginTop: 16 }}>
             <View style={{ paddingHorizontal: 24, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text className="text-lg font-semibold text-foreground">
-                Recent Images
+                {t('home.recentImages')}
               </Text>
               <TouchableOpacity>
                 <Text className="text-sm font-semibold" style={{ color: colors.primary }}>
-                  See All
+                  {t('home.seeAll')}
                 </Text>
               </TouchableOpacity>
             </View>

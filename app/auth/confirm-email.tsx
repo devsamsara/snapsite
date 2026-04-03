@@ -15,6 +15,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle } from '@/hooks/use-card-style';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -25,19 +26,20 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
 
-const schema = z.object({
-  code: z.string().length(4, 'El código debe tener 4 dígitos'),
-});
-
-type FormValues = z.infer<typeof schema>;
+type FormValues = { code: string };
 
 export default function ConfirmEmailScreen() {
+  const { t }                   = useTranslation();
   const [loading, setLoading]   = useState(false);
   const [resending, setResending] = useState(false);
   const colors                  = useColors();
   const cardElevation           = useCardStyle();
   const router                  = useRouter();
   const insets                  = useSafeAreaInsets();
+
+  const schema = z.object({
+    code: z.string().length(4, t('validation.required')),
+  });
 
   const { control, handleSubmit } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -48,8 +50,8 @@ export default function ConfirmEmailScreen() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      Alert.alert('¡Cuenta confirmada!', 'Tu correo ha sido verificado con éxito.', [
-        { text: 'Ir al login', onPress: () => router.push('/auth/login') },
+      Alert.alert(t('common.success'), t('auth.confirmEmail.submit'), [
+        { text: t('common.ok'), onPress: () => router.push('/auth/login') },
       ]);
     }, 1500);
   };
@@ -58,7 +60,7 @@ export default function ConfirmEmailScreen() {
     setResending(true);
     setTimeout(() => {
       setResending(false);
-      Alert.alert('Código reenviado', 'Revisa tu bandeja de entrada.');
+      Alert.alert(t('auth.confirmEmail.resend'), t('common.ok'));
     }, 1200);
   };
 
@@ -82,26 +84,26 @@ export default function ConfirmEmailScreen() {
           <View style={[S.iconCircle, { backgroundColor: colors.success + '18' }]}>
             <IconSymbol name="envelope.badge.fill" size={44} color={colors.success} />
           </View>
-          <Text style={[S.title, { color: colors.foreground }]}>Verifica tu correo</Text>
+          <Text style={[S.title, { color: colors.foreground }]}>{t('auth.confirmEmail.title')}</Text>
           <Text style={[S.subtitle, { color: colors.muted }]}>
-            Hemos enviado un código de 4 dígitos a tu correo electrónico. Introdúcelo a continuación.
+            {t('auth.confirmEmail.subtitle')}
           </Text>
         </View>
 
         {/* Card con el input */}
         <View style={[S.card, cardElevation]}>
           <AppInput
-            label="Código de verificación"
+            label={t('auth.confirmEmail.code')}
             name="code"
             control={control}
-            placeholder="1234"
+            placeholder={t('auth.confirmEmail.codePlaceholder')}
             keyboardType="number-pad"
             maxLength={4}
             icon="key.fill"
           />
 
           <Button
-            title="Confirmar código"
+            title={t('auth.confirmEmail.submit')}
             onPress={handleSubmit(onConfirm)}
             isLoading={loading}
             size="lg"
@@ -109,11 +111,11 @@ export default function ConfirmEmailScreen() {
 
           <View style={S.resendRow}>
             <Text style={[S.resendLabel, { color: colors.muted }]}>
-              ¿No recibiste el código?{' '}
+              {t('auth.confirmEmail.noCode')}{' '}
             </Text>
             <TouchableOpacity onPress={onResend} disabled={resending}>
               <Text style={[S.resendLink, { color: colors.primary, opacity: resending ? 0.5 : 1 }]}>
-                {resending ? 'Enviando…' : 'Reenviar'}
+                {resending ? t('auth.confirmEmail.resending') : t('auth.confirmEmail.resend')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -123,7 +125,7 @@ export default function ConfirmEmailScreen() {
         <View style={[S.infoBox, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}>
           <IconSymbol name="info.circle.fill" size={16} color={colors.primary} />
           <Text style={[S.infoText, { color: colors.primary }]}>
-            El código expira en 15 minutos. Si no lo encuentras, revisa tu carpeta de spam.
+            {t('auth.confirmEmail.infoText')}
           </Text>
         </View>
       </View>

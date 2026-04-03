@@ -13,6 +13,7 @@ import {
 import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColors } from '@/hooks/use-colors';
 import { BlurView } from 'expo-blur';
@@ -32,6 +33,7 @@ const NEARBY_PROJECTS = [
 ];
 
 export default function CreateProjectLocationScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
   const mapRef = useRef<MapView>(null);
@@ -48,7 +50,7 @@ export default function CreateProjectLocationScreen() {
     latitude: BASE_LAT,
     longitude: BASE_LNG,
   });
-  const [address, setAddress] = useState<string>('Buscando dirección...');
+  const [address, setAddress] = useState<string>('');
   const [city, setCity] = useState<string>('');
   const [postalCode, setPostalCode] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -78,7 +80,7 @@ export default function CreateProjectLocationScreen() {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permiso denegado', 'Necesitamos acceso a tu ubicación.');
+        Alert.alert(t('createProject.permissionDenied'), t('createProject.permissionMessage'));
         setLoading(false);
         return;
       }
@@ -115,12 +117,12 @@ export default function CreateProjectLocationScreen() {
       if (result.length > 0) {
         const addr = result[0];
         const fullAddress = `${addr.street || ''} ${addr.streetNumber || ''}`;
-        setAddress(fullAddress.trim() || 'Ubicación desconocida');
+        setAddress(fullAddress.trim() || t('createProject.unknownLocation'));
         setCity(addr.city || addr.subregion || '');
         setPostalCode(addr.postalCode || '');
       }
     } catch (e) {
-      setAddress('Dirección no encontrada');
+      setAddress(t('createProject.addressNotFound'));
     }
   };
 
@@ -151,7 +153,7 @@ export default function CreateProjectLocationScreen() {
     return (
       <View style={[styles.container, styles.center, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={{ color: colors.muted, marginTop: 16 }}>Cargando mapa...</Text>
+        <Text style={{ color: colors.muted, marginTop: 16 }}>{t('createProject.loadingMap')}</Text>
       </View>
     );
   }
@@ -195,7 +197,7 @@ export default function CreateProjectLocationScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <IconSymbol name="chevron.left" size={24} color="#FFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Ubicación del Proyecto</Text>
+          <Text style={styles.headerTitle}>{t('createProject.locationTitle')}</Text>
           <View style={{ width: 40 }} />
         </BlurView>
       </View>
@@ -206,7 +208,7 @@ export default function CreateProjectLocationScreen() {
           <View style={styles.statusRow}>
             <View style={[styles.statusIndicator, { backgroundColor: nearbyProject ? colors.success : colors.muted }]} />
             <Text style={styles.statusLabel}>
-              {nearbyProject ? `📍 En: ${nearbyProject.title}` : "Buscando proyecto cercano..."}
+              {nearbyProject ? t('createProject.nearProject', { name: nearbyProject.title }) : t('createProject.searchingNearby')}
             </Text>
           </View>
 
@@ -215,7 +217,7 @@ export default function CreateProjectLocationScreen() {
               <IconSymbol name="location.fill" size={20} color={colors.primary} />
             </View>
             <View style={styles.addressTextContainer}>
-              <Text style={styles.addressLabel}>Dirección Seleccionada</Text>
+              <Text style={styles.addressLabel}>{t('createProject.selectedAddress')}</Text>
               <Text style={styles.addressValue} numberOfLines={1}>{address}</Text>
             </View>
           </View>
@@ -225,7 +227,7 @@ export default function CreateProjectLocationScreen() {
               style={[styles.actionButton, styles.secondaryButton]}
               onPress={handleConfirmLocation}
             >
-              <Text style={styles.secondaryButtonText}>NUEVO PROYECTO</Text>
+              <Text style={styles.secondaryButtonText}>{t('createProject.newProject')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -234,12 +236,12 @@ export default function CreateProjectLocationScreen() {
                 if (nearbyProject) {
                   router.push('/camera-capture');
                 } else {
-                  Alert.alert("Aviso", "No estás cerca de ningún proyecto activo para tomar fotos vinculadas.");
+                  Alert.alert(t('common.error'), t('createProject.noNearbyProject'));
                 }
               }}
             >
               <IconSymbol name="camera.fill" size={20} color="#FFF" />
-              <Text style={styles.confirmButtonText}>TOMAR FOTO</Text>
+              <Text style={styles.confirmButtonText}>{t('createProject.takePhoto')}</Text>
             </TouchableOpacity>
           </View>
         </BlurView>

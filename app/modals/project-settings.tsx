@@ -27,6 +27,7 @@ import {
     View,
 } from "react-native";
 import {useLocalSearchParams, useRouter} from "expo-router";
+import { useTranslation } from "react-i18next";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import {ModalBody, ModalHeader, ModalRoot} from "@/components/ui/modal-layout";
 import {useColors} from "@/hooks/use-colors";
@@ -71,6 +72,7 @@ function ActionItem({icon, label, description, onPress, color, showChevron = tru
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function ProjectSettingsModal() {
+    const { t } = useTranslation();
     const router = useRouter();
     const colors = useColors();
     const {projectId, projectName, projectLocation} =
@@ -81,41 +83,41 @@ export default function ProjectSettingsModal() {
     const handleEdit = () => {
         router.back();
         // TODO: navegar a pantalla de edición del proyecto
-        Alert.alert("Editar proyecto", "Próximamente podrás editar los datos del proyecto.");
+        Alert.alert(t('projectSettings.editTitle'), t('projectSettings.editSoon'));
     };
 
     const handleShare = () => {
-        Alert.alert("Compartir", "Próximamente podrás compartir el proyecto.");
+        Alert.alert(t('projectSettings.shareTitle'), t('projectSettings.shareSoon'));
     };
 
     const handleExport = () => {
-        Alert.alert("Exportar", "Próximamente podrás exportar el informe del proyecto.");
+        Alert.alert(t('projectSettings.exportTitle'), t('projectSettings.exportSoon'));
     };
 
     const handleContacts = () => {
-        Alert.alert("Contactos", "Próximamente podrás gestionar los contactos del proyecto.");
+        Alert.alert(t('projectSettings.contactsTitle'), t('projectSettings.contactsSoon'));
     };
 
     const handleTags = () => {
-        Alert.alert("Etiquetas", "Próximamente podrás gestionar las etiquetas del proyecto.");
+        Alert.alert(t('projectSettings.tagsTitle'), t('projectSettings.tagsSoon'));
     };
 
     const handleDescription = () => {
-        Alert.alert("Descripción", "Próximamente podrás editar la descripción del proyecto.");
+        Alert.alert(t('projectSettings.descTitle'), t('projectSettings.descSoon'));
     };
 
     const handleCollaborators = () => {
-        Alert.alert("Colaboradores", "Próximamente podrás gestionar los colaboradores.");
+        Alert.alert(t('projectSettings.collabTitle'), t('projectSettings.collabSoon'));
     };
 
     const handleArchive = () => {
         Alert.alert(
-            "Archivar proyecto",
-            "El proyecto se moverá al archivo. Podrás restaurarlo en cualquier momento.",
+            t('projectSettings.archiveTitle'),
+            t('projectSettings.archiveMsg'),
             [
-                {text: "Cancelar", style: "cancel"},
+                {text: t('common.cancel'), style: "cancel"},
                 {
-                    text: "Archivar",
+                    text: t('projectSettings.archiveBtn'),
                     style: "default",
                     onPress: () => {
                         router.back();
@@ -128,12 +130,12 @@ export default function ProjectSettingsModal() {
 
     const handleDelete = () => {
         Alert.alert(
-            "Eliminar proyecto",
-            `¿Estás seguro de que quieres eliminar "${projectName}"? Esta acción no se puede deshacer.`,
+            t('projectSettings.deleteTitle'),
+            t('projectSettings.deleteMsg', { name: projectName }),
             [
-                {text: "Cancelar", style: "cancel"},
+                {text: t('common.cancel'), style: "cancel"},
                 {
-                    text: "Eliminar",
+                    text: t('common.delete'),
                     style: "destructive",
                     onPress: () => {
                         router.back();
@@ -153,8 +155,8 @@ export default function ProjectSettingsModal() {
         >
             <ModalRoot>
                 <ModalHeader
-                    title="Configuración"
-                    subtitle={projectName ?? "Proyecto"}
+                    title={t('projectSettings.title')}
+                    subtitle={projectName ?? t('projectSettings.defaultProject')}
                     onClose={handleClose}
                 />
 
@@ -169,7 +171,7 @@ export default function ProjectSettingsModal() {
                             </View>
                             <View style={{flex: 1}}>
                                 <Text style={[S.infoName, {color: colors.foreground}]} numberOfLines={1}>
-                                    {projectName ?? "Proyecto"}
+                                    {projectName ?? t('projectSettings.defaultProject')}
                                 </Text>
                                 {!!projectLocation && (
                                     <View style={{flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2}}>
@@ -182,42 +184,42 @@ export default function ProjectSettingsModal() {
                             </View>
                         </View>
 
-                        <Text style={[S.sectionTitle, {color: colors.muted}]}>ACCIONES</Text>
+                        <Text style={[S.sectionTitle, {color: colors.muted}]}>{t('projectSettings.sectionActions')}</Text>
                         <View style={[S.section, {backgroundColor: colors.surface, borderColor: colors.border}]}>
-                            <ActionItem icon="edit" label="Editar proyecto" description="Nombre, fechas y estado"
+                            <ActionItem icon="edit" label={t('projectSettings.editProject')} description={t('projectSettings.editProjectDesc')}
                                         onPress={handleEdit}/>
-                            <ActionItem icon="share" label="Compartir" description="Enviar enlace del proyecto"
+                            <ActionItem icon="share" label={t('projectSettings.share')} description={t('projectSettings.shareDesc')}
                                         onPress={handleShare}/>
-                            <ActionItem icon="picture-as-pdf" label="Exportar informe"
-                                        description="PDF con fotos y notas" onPress={handleExport} showChevron={false}/>
+                            <ActionItem icon="picture-as-pdf" label={t('projectSettings.export')}
+                                        description={t('projectSettings.exportDesc')} onPress={handleExport} showChevron={false}/>
                         </View>
 
-                        <Text style={[S.sectionTitle, {color: colors.muted}]}>GESTIÓN</Text>
+                        <Text style={[S.sectionTitle, {color: colors.muted}]}>{t('projectSettings.sectionManage')}</Text>
                         <View style={[S.section, {backgroundColor: colors.surface, borderColor: colors.border}]}>
-                            <ActionItem icon="contacts" label="Contactos" description="Clientes y proveedores"
+                            <ActionItem icon="contacts" label={t('projectSettings.contacts')} description={t('projectSettings.contactsDesc')}
                                         onPress={handleContacts}/>
-                            <ActionItem icon="label" label="Etiquetas" description="Categorías del proyecto"
+                            <ActionItem icon="label" label={t('projectSettings.tags')} description={t('projectSettings.tagsDesc')}
                                         onPress={handleTags}/>
-                            <ActionItem icon="description" label="Descripción" description="Detalles del proyecto"
+                            <ActionItem icon="description" label={t('projectSettings.description')} description={t('projectSettings.descriptionDesc')}
                                         onPress={handleDescription}/>
-                            <ActionItem icon="group-add" label="Colaboradores" description="Gestionar accesos"
+                            <ActionItem icon="group-add" label={t('projectSettings.collaborators')} description={t('projectSettings.collaboratorsDesc')}
                                         onPress={handleCollaborators} showChevron={false}/>
                         </View>
 
-                        <Text style={[S.sectionTitle, {color: colors.muted}]}>ZONA DE PELIGRO</Text>
+                        <Text style={[S.sectionTitle, {color: colors.muted}]}>{t('projectSettings.sectionDanger')}</Text>
                         <View style={[S.section, {backgroundColor: colors.surface, borderColor: colors.border}]}>
                             <ActionItem
                                 icon="archive"
-                                label="Archivar proyecto"
-                                description="Mover al archivo sin eliminar"
+                                label={t('projectSettings.archive')}
+                                description={t('projectSettings.archiveDesc')}
                                 onPress={handleArchive}
                                 color={colors.warning}
                                 showChevron={false}
                             />
                             <ActionItem
                                 icon="delete-forever"
-                                label="Eliminar proyecto"
-                                description="Esta acción no se puede deshacer"
+                                label={t('projectSettings.delete')}
+                                description={t('projectSettings.deleteDesc')}
                                 onPress={handleDelete}
                                 color={colors.error}
                                 showChevron={false}

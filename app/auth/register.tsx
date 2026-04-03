@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle } from '@/hooks/use-card-style';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -27,32 +28,33 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
 
-const step1Schema = z.object({
-  companyName: z.string().min(2, 'Nombre requerido'),
-  industry:    z.string().min(2, 'Industria requerida'),
-  companySize: z.string().min(1, 'Tamaño requerido'),
-});
-const step2Schema = z.object({
-  fullName: z.string().min(2, 'Nombre requerido'),
-  email:    z.string().email('Correo inválido'),
-  password: z.string()
-    .min(10, 'Mínimo 10 caracteres')
-    .regex(/[A-Z]/, 'Debe incluir una mayúscula')
-    .regex(/[a-z]/, 'Debe incluir una minúscula'),
-});
-
-type Step1Values = z.infer<typeof step1Schema>;
-type Step2Values = z.infer<typeof step2Schema>;
+type Step1Values = { companyName: string; industry: string; companySize: string };
+type Step2Values = { fullName: string; email: string; password: string };
 
 const TOTAL_STEPS = 2;
 
 export default function RegisterScreen() {
+  const { t }                 = useTranslation();
   const [step, setStep]       = useState(1);
   const [loading, setLoading] = useState(false);
   const colors                = useColors();
   const card                  = useCardStyle();
   const router                = useRouter();
   const insets                = useSafeAreaInsets();
+
+  const step1Schema = z.object({
+    companyName: z.string().min(2, t('validation.companyRequired')),
+    industry:    z.string().min(2, t('validation.industryRequired')),
+    companySize: z.string().min(1, t('validation.sizeRequired')),
+  });
+  const step2Schema = z.object({
+    fullName: z.string().min(2, t('validation.nameRequired')),
+    email:    z.string().email(t('validation.emailInvalid')),
+    password: z.string()
+      .min(10, t('validation.passwordMin', { min: 10 }))
+      .regex(/[A-Z]/, t('validation.passwordUppercase'))
+      .regex(/[a-z]/, t('validation.passwordLowercase')),
+  });
 
   const step1 = useForm<Step1Values>({
     resolver: zodResolver(step1Schema),
@@ -68,16 +70,16 @@ export default function RegisterScreen() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      Alert.alert('¡Cuenta creada!', 'Verifica tu correo para activar la cuenta.', [
-        { text: 'OK', onPress: () => router.push('/auth/confirm-email') },
+      Alert.alert(t('auth.register.successTitle'), t('auth.register.successMessage'), [
+        { text: t('common.ok'), onPress: () => router.push('/auth/confirm-email') },
       ]);
     }, 1500);
   });
 
-  const stepTitles    = ['Tu empresa', 'Tu cuenta'];
+  const stepTitles    = [t('auth.register.step1Title'), t('auth.register.step2Title')];
   const stepSubtitles = [
-    'Cuéntanos sobre tu negocio.',
-    'Completa tus datos personales.',
+    t('auth.register.step1Subtitle'),
+    t('auth.register.step2Subtitle'),
   ];
 
   return (
@@ -123,7 +125,7 @@ export default function RegisterScreen() {
               ))}
             </View>
             <Text style={[S.stepLabel, { color: colors.muted }]}>
-              Paso {step} de {TOTAL_STEPS}
+              {t('auth.register.step', { current: step, total: TOTAL_STEPS })}
             </Text>
           </View>
 
@@ -152,29 +154,29 @@ export default function RegisterScreen() {
           {step === 1 && (
             <Animated.View entering={FadeInRight} exiting={FadeOutLeft}>
               <AppInput
-                label="Nombre de la empresa"
+                label={t('auth.register.companyName')}
                 name="companyName"
                 control={step1.control}
-                placeholder="Ej: Constructora Sol"
+                placeholder={t('auth.register.companyNamePlaceholder')}
                 icon="building.2.fill"
               />
               <AppInput
-                label="Industria"
+                label={t('auth.register.industry')}
                 name="industry"
                 control={step1.control}
-                placeholder="Ej: Construcción, Techos, Pintura"
+                placeholder={t('auth.register.industryPlaceholder')}
                 icon="briefcase.fill"
               />
               <AppInput
-                label="Tamaño de la empresa"
+                label={t('auth.register.companySize')}
                 name="companySize"
                 control={step1.control}
-                placeholder="Ej: 1–10 empleados"
+                placeholder={t('auth.register.companySizePlaceholder')}
                 icon="person.3.fill"
                 keyboardType="numeric"
               />
               <Button
-                title="Siguiente"
+                title={t('auth.register.next')}
                 onPress={goNext}
                 size="lg"
                 rightIcon="arrow-forward"
@@ -186,34 +188,34 @@ export default function RegisterScreen() {
           {step === 2 && (
             <Animated.View entering={FadeInRight} exiting={FadeOutLeft}>
               <AppInput
-                label="Nombre completo"
+                label={t('auth.register.fullName')}
                 name="fullName"
                 control={step2.control}
-                placeholder="Juan Pérez"
+                placeholder={t('auth.register.fullNamePlaceholder')}
                 icon="person.fill"
               />
               <AppInput
-                label="Correo electrónico"
+                label={t('auth.register.email')}
                 name="email"
                 control={step2.control}
-                placeholder="juan@empresa.com"
+                placeholder={t('auth.register.emailPlaceholder')}
                 icon="envelope.fill"
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
               <AppInput
-                label="Contraseña"
+                label={t('auth.register.password')}
                 name="password"
                 control={step2.control}
-                placeholder="Mínimo 10 caracteres"
+                placeholder={t('auth.register.passwordPlaceholder')}
                 icon="lock.fill"
                 secureTextEntry
               />
               <Text style={[S.hint, { color: colors.muted }]}>
-                Mínimo 10 caracteres, una mayúscula y una minúscula.
+                {t('auth.register.passwordHint')}
               </Text>
               <Button
-                title="Crear cuenta"
+                title={t('auth.register.createAccount')}
                 onPress={onRegister}
                 isLoading={loading}
                 size="lg"
@@ -226,11 +228,11 @@ export default function RegisterScreen() {
         {step === 1 && (
           <View style={S.loginRow}>
             <Text style={[S.loginText, { color: colors.muted }]}>
-              ¿Ya tienes cuenta?{'  '}
+              {t('auth.register.hasAccount')}{'  '}
             </Text>
             <TouchableOpacity onPress={() => router.push('/auth/login')}>
               <Text style={[S.loginLink, { color: colors.primary }]}>
-                Inicia sesión
+                {t('auth.register.login')}
               </Text>
             </TouchableOpacity>
           </View>
