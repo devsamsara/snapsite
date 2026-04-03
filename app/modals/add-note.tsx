@@ -5,110 +5,114 @@
  * Devuelve el resultado via addNoteStore.
  */
 
-import React, { useState } from "react";
-import {
-    Text,
-    TextInput,
-    StyleSheet,
-    KeyboardAvoidingView,
-    Platform, View,
-} from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { addNoteStore } from "@/lib/modal-stores";
-import { ModalHeader, ModalBody, ModalFooter, ModalRoot } from "@/components/ui/modal-layout";
-import { Button } from "@/components/ui/button";
-import { useColors } from "@/hooks/use-colors";
+import React, {useState} from "react";
+import {KeyboardAvoidingView, Platform, StyleSheet, Text, View,} from "react-native";
+import {useLocalSearchParams, useRouter} from "expo-router";
+import {addNoteStore} from "@/lib/modal-stores";
+import {ModalBody, ModalFooter, ModalHeader, ModalRoot} from "@/components/ui/modal-layout";
+import {Button} from "@/components/ui/button";
+import {useColors} from "@/hooks/use-colors";
+import {AppInput} from "@/components/ui/app-input";
+import * as z from 'zod';
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
 
-// ─── Component ────────────────────────────────────────────────────────────────
+const schema = z.object({
+    note: z.string().min(1, 'El usuario es requerido'),
+});
+type FormValues = z.infer<typeof schema>;
 
 export default function AddNoteModal() {
-  const router  = useRouter();
-  const colors  = useColors();
-  const { projectId } = useLocalSearchParams<{ projectId?: string }>();
+    const router = useRouter();
+    const colors = useColors();
+    const {projectId} = useLocalSearchParams<{ projectId?: string }>();
 
-  const [text, setText] = useState("");
+    const [text, setText] = useState("");
 
-  const handleSave = () => {
-    if (!text.trim()) return;
-    addNoteStore.resolve({ projectId: projectId ?? "", text: text.trim() });
-    router.back();
-  };
+    const {control, handleSubmit} = useForm<FormValues>({
+        resolver: zodResolver(schema),
+        defaultValues: {note: ''},
+    });
 
-  const handleCancel = () => {
-    addNoteStore.cancel();
-    router.back();
-  };
 
-  return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ModalRoot>
+    const handleSave = () => {
+        if (!text.trim()) return;
+        addNoteStore.resolve({projectId: projectId ?? "", text: text.trim()});
+        router.back();
+    };
 
-        {/* ── Header ── */}
-        <ModalHeader
-          title="Nueva Nota"
-          subtitle="La nota será visible para todos los miembros del proyecto."
-          onClose={handleCancel}
-        />
+    const handleCancel = () => {
+        addNoteStore.cancel();
+        router.back();
+    };
 
-        {/* ── Body ── */}
-        <ModalBody>
+    return (
+        <KeyboardAvoidingView
+            style={{flex: 1}}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+            <ModalRoot>
 
-          <TextInput
-            value={text}
-            onChangeText={setText}
-            placeholder="Escribe una nota para el equipo..."
-            placeholderTextColor={colors.muted}
-            style={[S.input, {
-              color: colors.foreground,
-              backgroundColor: colors.background,
-              borderColor: colors.border,
-            }]}
-            multiline
-            autoFocus
-            maxLength={500}
-            textAlignVertical="top"
-          />
-          <Text style={[S.counter, { color: colors.muted }]}>{text.length}/500</Text>
-
-        </ModalBody>
-
-        {/* ── Footer ── */}
-        <ModalFooter row>
-            <View style={{flex: 1}}>
-                <Button title="Cancelar"    onPress={handleCancel} variant="secondary" size="md" />
-            </View>
-            <View style={{flex: 1}}>
-                <Button
-                    title="Guardar Nota"
-                    onPress={handleSave}
-                    variant="primary"
-                    size="md"
-                    leftIcon="check"
-                    disabled={!text.trim()}
+                {/* ── Header ── */}
+                <ModalHeader
+                    title="Nueva Nota"
+                    subtitle="La nota será visible para todos los miembros del proyecto."
+                    onClose={handleCancel}
                 />
-            </View>
+
+                {/* ── Body ── */}
+                <ModalBody style={{flex: 1, height:S.input.minHeight* 1.7}}>
+                    <AppInput
+                        name="note"
+                        control={control}
+                        label="Nota"
+                        placeholder="Escribe una nota para el equipo..."
+                        autoCapitalize="none"
+                        multiline
+                        autoFocus
+                        maxLength={450}
+                        value={text}
+                        onChangeText={setText}
+                        textAlignVertical="top"
+                        numberOfLines={6}
+                        style={S.input}
+                        showLength
+                    />
 
 
-        </ModalFooter>
+                </ModalBody>
 
-      </ModalRoot>
-    </KeyboardAvoidingView>
-  );
+                {/* ── Footer ── */}
+                <ModalFooter row>
+                    <View style={{flex: 1}}>
+                        <Button title="Cancelar" onPress={handleCancel} variant="secondary" size="md"/>
+                    </View>
+                    <View style={{flex: 1}}>
+                        <Button
+                            title="Guardar Nota"
+                            onPress={handleSave}
+                            variant="primary"
+                            size="md"
+                            leftIcon="check"
+                            disabled={!text.trim()}
+                        />
+                    </View>
+                </ModalFooter>
+            </ModalRoot>
+        </KeyboardAvoidingView>
+    );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const S = StyleSheet.create({
-  input: {
-    borderRadius: 12, borderWidth: 1,
-    padding: 14, fontSize: 15,
-    minHeight: 140, textAlignVertical: "top",
-  },
-  counter: {
-    fontSize: 11, textAlign: "right",
-    marginTop: 6,
-  },
+    input: {
+        borderRadius: 12,
+        padding: 14, fontSize: 15,
+        minHeight: 140, textAlignVertical: "top",
+    },
+    counter: {
+        fontSize: 11, textAlign: "right",
+        marginTop: 6,
+    },
 });

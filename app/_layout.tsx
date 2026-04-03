@@ -65,10 +65,10 @@ export default function RootLayout() {
             }),
     );
     const [trpcClient] = useState(() => createTRPCClient());
-const colorScheme = useColorScheme();
+    const colorScheme = useColorScheme();
     // sheetBg opaco: evita ver la pantalla de atrás a través de los bordes
     // redondeados del formSheet en iOS cuando backgroundColor es transparent
-    const sheetBg = colorScheme === "dark" ? "#1E293B" : "#F8FAFC";
+    const sheetBg = colorScheme === "dark" ? "#0F172A" : "#F8FAFC";
     // Ensure minimum 8px padding for top and bottom on mobile
     const providerInitialMetrics = useMemo(() => {
         const metrics = initialWindowMetrics ?? {insets: initialInsets, frame: initialFrame};
@@ -158,7 +158,7 @@ const colorScheme = useColorScheme();
                                 name="modals/add-note"
                                 options={{
                                     presentation: "formSheet",
-                                    sheetAllowedDetents: [0.45],
+                                    sheetAllowedDetents: [0.50],
                                     sheetGrabberVisible: true,
                                     headerShown: false,
                                     contentStyle: {backgroundColor: sheetBg},
@@ -186,9 +186,7 @@ const colorScheme = useColorScheme();
                             <Stack.Screen
                                 name="modals/invite-global"
                                 options={{
-                                    presentation: "formSheet",
-                                    sheetAllowedDetents: [1.0],
-                                    sheetGrabberVisible: true,
+                                    presentation: "modal",
                                     headerShown: false,
                                     contentStyle: {backgroundColor: sheetBg},
                                 }}

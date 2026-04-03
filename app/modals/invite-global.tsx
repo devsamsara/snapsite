@@ -16,7 +16,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  Alert,
+  Alert, ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm } from 'react-hook-form';
@@ -124,7 +124,7 @@ export default function InviteGlobalModal() {
           onClose={() => router.back()}
         />
 
-        <ModalBody scrollable>
+        <ModalBody>
 
           {/* ── Selector de proyecto ── */}
           <Text style={[S.sectionLabel, { color: colors.foreground }]}>Proyecto</Text>
@@ -135,6 +135,10 @@ export default function InviteGlobalModal() {
             onChangeText={setProjectSearch}
           />
 
+          <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{paddingBottom: 80}}
+          >
           <View style={[S.projectList, cardElevation, { marginTop: 10 }]}>
             {filteredProjects.length === 0 ? (
               <Text style={[S.emptyText, { color: colors.muted }]}>Sin resultados</Text>
@@ -253,7 +257,7 @@ export default function InviteGlobalModal() {
               </Text>
             </View>
           )}
-
+          </ScrollView>
         </ModalBody>
 
         <ModalFooter row>
@@ -273,6 +277,7 @@ export default function InviteGlobalModal() {
             style={S.btn}
           />
         </ModalFooter>
+
       </ModalRoot>
     </KeyboardAvoidingView>
   );

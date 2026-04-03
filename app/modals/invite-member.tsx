@@ -25,8 +25,10 @@ import {ModalBody, ModalFooter, ModalHeader, ModalRoot} from "@/components/ui/mo
 import {Button} from "@/components/ui/button";
 import {inviteMemberStore} from "@/lib/modal-stores";
 import {useColors} from "@/hooks/use-colors";
-
-// ─── Roles disponibles ────────────────────────────────────────────────────────
+import {AppInput} from "@/components/ui/app-input";
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import * as z from 'zod';
 
 const ROLES = [
     "Jefe de Obra",
@@ -40,7 +42,13 @@ const ROLES = [
 
 type Role = (typeof ROLES)[number];
 
-// ─── Component ────────────────────────────────────────────────────────────────
+const schema = z.object({
+    name: z.string().min(1, 'El nombre es requerido'),
+    email: z.string().trim().toLowerCase().email({
+        message: "El formato del correo electrónico no es válido"
+    }),
+});
+type FormValues = z.infer<typeof schema>;
 
 export default function InviteMemberModal() {
     const router = useRouter();
@@ -52,6 +60,11 @@ export default function InviteMemberModal() {
     const [role, setRole] = useState<Role>("Jefe de Obra");
     const [nameError, setNameError] = useState("");
     const [emailError, setEmailError] = useState("");
+
+    const {control, handleSubmit} = useForm<FormValues>({
+        resolver: zodResolver(schema),
+        defaultValues: {name: '', email: ''},
+    });
 
     const emailRef = useRef<TextInput>(null);
 
@@ -102,7 +115,7 @@ export default function InviteMemberModal() {
 
     return (
         <KeyboardAvoidingView
-            style={[S.root, {backgroundColor: colors.surface}]}
+            style={[S.root]}
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
         >
@@ -114,77 +127,24 @@ export default function InviteMemberModal() {
                 />
                 <ModalBody>
 
-                    {/* ── Nombre ── */}
-                    <Text style={[S.label, {color: colors.foreground}]}>
-                        Nombre completo <Text style={{color: colors.error}}>*</Text>
-                    </Text>
-                    <View
-                        style={[
-                            S.inputWrapper,
-                            {
-                                backgroundColor: colors.background,
-                                borderColor: nameError ? colors.error : colors.border,
-                            },
-                        ]}
-                    >
-                        <MaterialIcons name="person" size={18} color={colors.muted} style={S.inputIcon}/>
-                        <TextInput
-                            style={[S.input, {color: colors.foreground}]}
-                            placeholder="Ej: María García"
-                            placeholderTextColor={colors.muted}
-                            value={name}
-                            onChangeText={(v) => {
-                                setName(v);
-                                if (nameError) setNameError("");
-                            }}
-                            returnKeyType="next"
-                            onSubmitEditing={() => emailRef.current?.focus()}
-                            autoCapitalize="words"
-                            autoCorrect={false}
-                        />
-                    </View>
-                    {!!nameError && (
-                        <Text style={[S.errorText, {color: colors.error}]}>{nameError}</Text>
-                    )}
-
-                    {/* ── Email ── */}
-                    <Text style={[S.label, {color: colors.foreground, marginTop: 18}]}>
-                        Email <Text style={{color: colors.error}}>*</Text>
-                    </Text>
-                    <View
-                        style={[
-                            S.inputWrapper,
-                            {
-                                backgroundColor: colors.background,
-                                borderColor: emailError ? colors.error : colors.border,
-                            },
-                        ]}
-                    >
-                        <MaterialIcons name="email" size={18} color={colors.muted} style={S.inputIcon}/>
-                        <TextInput
-                            ref={emailRef}
-                            style={[S.input, {color: colors.foreground}]}
-                            placeholder="Ej: maria@empresa.com"
-                            placeholderTextColor={colors.muted}
-                            value={email}
-                            onChangeText={(v) => {
-                                setEmail(v);
-                                if (emailError) setEmailError("");
-                            }}
-                            returnKeyType="done"
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                        />
-                    </View>
-                    {!!emailError && (
-                        <Text style={[S.errorText, {color: colors.error}]}>{emailError}</Text>
-                    )}
-
-                    {/* ── Rol ── */}
-                    <Text style={[S.label, {color: colors.foreground, marginTop: 18}]}>
-                        Rol en el proyecto
-                    </Text>
+                    <AppInput
+                        label="Nombre Completo"
+                        name="name"
+                        control={control}
+                        placeholder="Ej: María García"
+                        icon="person.fill"
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                    />
+                    <AppInput
+                        label="Correo electrónico"
+                        name="email"
+                        control={control}
+                        placeholder="Ej: María García"
+                        icon="email"
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                    />
                     <View style={S.rolesGrid}>
                         {ROLES.map((r) => {
                             const selected = role === r;
@@ -236,7 +196,7 @@ export default function InviteMemberModal() {
                     />
                     <Button
                         title="Invitar"
-                        onPress={handleInvite}
+                        onPress={handleSubmit(handleInvite)}
                         variant="primary"
                         size="md"
                         leftIcon="person-add"

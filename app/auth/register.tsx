@@ -171,6 +171,7 @@ export default function RegisterScreen() {
                 control={step1.control}
                 placeholder="Ej: 1–10 empleados"
                 icon="person.3.fill"
+                keyboardType="numeric"
               />
               <Button
                 title="Siguiente"
