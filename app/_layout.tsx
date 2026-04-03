@@ -98,6 +98,18 @@ export default function RootLayout() {
                   animation: 'slide_from_bottom'
                 }} 
               />
+              <Stack.Screen
+                name="image-editor"
+                options={{
+                  headerShown: true,
+                  headerStyle: { backgroundColor: "#111" },
+                  headerTintColor: "#FFFFFF",
+                  headerTitleStyle: { fontWeight: "600", fontSize: 17, color: "#FFFFFF" },
+                  headerBackVisible: false,
+                  headerShadowVisible: false,
+                  contentStyle: { backgroundColor: "#000" },
+                }}
+              />
             </Stack>
             <StatusBar style="auto" />
           </AuthProvider>
