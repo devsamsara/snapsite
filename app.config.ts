@@ -26,7 +26,6 @@ const config: ExpoConfig = {
     ios: {
         supportsTablet: true,
         bundleIdentifier: env.iosBundleId,
-        deploymentTarget: "15.1", // RN 0.81 requiere mínimo 15.1
         infoPlist: {
             UIBackgroundModes: ["remote-notification"],
             NSCameraUsageDescription: "Necesitamos acceso a tu cámara",
