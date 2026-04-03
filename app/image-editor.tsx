@@ -36,12 +36,9 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  TextInput,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
-import { useRouter, useLocalSearchParams, Stack } from "expo-router";
+import { useRouter, useLocalSearchParams, Stack, useFocusEffect } from "expo-router";
+import { annotationTextStore, annotationMeasureStore } from "@/lib/modal-stores";
 import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Canvas, Path, Skia } from "@shopify/react-native-skia";
@@ -231,13 +228,9 @@ export default function ImageEditorScreen() {
   const [liveShape,   setLiveShape]   = useState<ShapeAnn | null>(null);
   const [liveMeasure, setLiveMeasure] = useState<MeasureAnn | null>(null);
 
-  // Modals
-  const [textModal,    setTextModal]    = useState(false);
-  const [textPos,      setTextPos]      = useState({ x: 0, y: 0 });
-  const [textVal,      setTextVal]      = useState("");
-  const [measureModal, setMeasureModal] = useState(false);
-  const [pendingM,     setPendingM]     = useState<MeasureAnn | null>(null);
-  const [mLabel,       setMLabel]       = useState("");
+  // Pending annotation positions (used when returning from modal)
+  const [textPos, setTextPos] = useState({ x: 0, y: 0 });
+  const pendingMRef = React.useRef<MeasureAnn | null>(null);
 
   // Crop shared values (always at top level — no conditional hooks)
   const cT = useSharedValue(0);
@@ -362,15 +355,40 @@ export default function ImageEditorScreen() {
     finally { setProc(false); }
   };
 
-  const confirmText = () => {
-    if (textVal.trim()) setTexts((p) => [...p, { id: uid(), text: textVal.trim(), x: textPos.x, y: textPos.y, color, fontSize }]);
-    setTextModal(false); setTextVal("");
-  };
+  // ── Open text annotation modal ────────────────────────────────────────────
+  const openTextModal = useCallback((x: number, y: number) => {
+    setTextPos({ x, y });
+    // Start listening before pushing so we don't miss the resolve
+    const promise = annotationTextStore.open();
+    router.push({
+      pathname: "/modals/annotation-text",
+      params: { color, fontSize: String(fontSize), x: String(x), y: String(y) },
+    });
+    promise.then((result) => {
+      if (result) {
+        setTexts((p) => [...p, { id: uid(), text: result.text, x: result.x, y: result.y, color: result.color, fontSize: result.fontSize }]);
+        setColor(result.color);
+        setFontSize(result.fontSize);
+      }
+    });
+  }, [color, fontSize, router]);
 
-  const confirmMeasure = () => {
-    if (pendingM) setMeasures((p) => [...p, { ...pendingM, label: mLabel || pendingM.label }]);
-    setMeasureModal(false); setPendingM(null); setMLabel("");
-  };
+  // ── Open measure label modal ─────────────────────────────────────────────
+  const openMeasureModal = useCallback((m: MeasureAnn) => {
+    pendingMRef.current = m;
+    const promise = annotationMeasureStore.open();
+    router.push({
+      pathname: "/modals/annotation-measure",
+      params: { label: m.label, color: m.color },
+    });
+    promise.then((result) => {
+      const pending = pendingMRef.current;
+      if (result && pending) {
+        setMeasures((p) => [...p, { ...pending, label: result.label }]);
+      }
+      pendingMRef.current = null;
+    });
+  }, [router]);
 
   const updateText = (id: string, patch: Partial<TextAnn>) =>
     setTexts((prev) => prev.map((t) => t.id === id ? { ...t, ...patch } : t));
@@ -397,11 +415,11 @@ export default function ImageEditorScreen() {
   const measureG = Gesture.Pan()
     .onStart((g) => { if (tool!=="measure") return; runOnJS(setLiveMeasure)({id:uid(),x1:g.x,y1:g.y,x2:g.x,y2:g.y,color,label:""}); })
     .onUpdate((g) => { if (tool!=="measure") return; runOnJS(setLiveMeasure)((p)=>p?{...p,x2:g.x,y2:g.y}:null); })
-    .onEnd(() => { if (tool!=="measure") return; runOnJS((m:MeasureAnn|null)=>{ if(m){ const auto=`${Math.round(pdist(m.x1,m.y1,m.x2,m.y2))}px`; setPendingM({...m,label:auto}); setMLabel(auto); setMeasureModal(true); setLiveMeasure(null); } })(liveMeasure); })
+    .onEnd(() => { if (tool!=="measure") return; runOnJS((m:MeasureAnn|null)=>{ if(m){ const auto=`${Math.round(pdist(m.x1,m.y1,m.x2,m.y2))}px`; setLiveMeasure(null); openMeasureModal({...m,label:auto}); } })(liveMeasure); })
     .runOnJS(true);
 
   const tapG = Gesture.Tap()
-    .onEnd((g) => { if (tool!=="text") return; runOnJS(setTextPos)({x:g.x,y:g.y}); runOnJS(setTextVal)(""); runOnJS(setTextModal)(true); })
+    .onEnd((g) => { if (tool!=="text") return; runOnJS(openTextModal)(g.x, g.y); })
     .runOnJS(true);
 
   const activeGesture =
@@ -597,44 +615,7 @@ export default function ImageEditorScreen() {
         </View>
       </SafeAreaView>
 
-      {/* ── Modals ── */}
-      <Modal visible={textModal} transparent animationType="slide" onRequestClose={() => setTextModal(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS==="ios"?"padding":"height"} style={S.overlay}>
-          <View style={[S.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
-            <View style={S.sheetPill} />
-            <Text style={S.sheetTitle}>Agregar Texto</Text>
-            <Text style={S.sheetSub}>Luego puedes arrastrarlo y escalarlo con dos dedos.</Text>
-            <TextInput value={textVal} onChangeText={setTextVal} placeholder="Escribe aquí..." placeholderTextColor="#666" style={S.sheetInput} autoFocus multiline />
-            <View style={S.sheetRow}>
-              <TouchableOpacity onPress={() => setTextModal(false)} style={[S.sheetBtn, S.sheetBtnGray]}>
-                <Text style={S.sheetBtnGrayTxt}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={confirmText} style={[S.sheetBtn, S.sheetBtnBlue]}>
-                <Text style={S.sheetBtnBlueTxt}>Agregar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      <Modal visible={measureModal} transparent animationType="slide" onRequestClose={() => setMeasureModal(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS==="ios"?"padding":"height"} style={S.overlay}>
-          <View style={[S.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
-            <View style={S.sheetPill} />
-            <Text style={S.sheetTitle}>Etiqueta de Medida</Text>
-            <Text style={S.sheetSub}>Personaliza la etiqueta (ej: "2.5 m", "120 cm")</Text>
-            <TextInput value={mLabel} onChangeText={setMLabel} placeholder="Ej: 2.5 m" placeholderTextColor="#666" style={S.sheetInput} autoFocus />
-            <View style={S.sheetRow}>
-              <TouchableOpacity onPress={() => setMeasureModal(false)} style={[S.sheetBtn, S.sheetBtnGray]}>
-                <Text style={S.sheetBtnGrayTxt}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={confirmMeasure} style={[S.sheetBtn, S.sheetBtnBlue]}>
-                <Text style={S.sheetBtnBlueTxt}>Confirmar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+      {/* Modals are now Stack.Screen routes — no inline Modal components */}
 
       {processing && (
         <View style={S.loader}>
@@ -709,15 +690,7 @@ const S = StyleSheet.create({
   applyBtn: { marginHorizontal: 16, marginTop: 4, marginBottom: 6, backgroundColor: "#007AFF", paddingVertical: 13, borderRadius: 12, alignItems: "center" },
   applyBtnTxt: { color: "#FFF", fontWeight: "700", fontSize: 15 },
 
-  // Modals
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: "#1C1C1E", borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 20, paddingTop: 12 },
-  sheetPill: { width: 36, height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.25)", alignSelf: "center", marginBottom: 16 },
-  sheetTitle: { color: "#FFF", fontSize: 17, fontWeight: "600", marginBottom: 4 },
-  sheetSub: { color: "#999", fontSize: 13, marginBottom: 14 },
-  sheetInput: { backgroundColor: "#2C2C2E", borderRadius: 10, padding: 14, fontSize: 16, color: "#FFF", minHeight: 52 },
-  sheetRow: { flexDirection: "row", gap: 10, marginTop: 14 },
-  sheetBtn: { flex: 1, paddingVertical: 13, borderRadius: 10, alignItems: "center" },
+  // (Modal styles removed — modals are now Stack.Screen routes)
   sheetBtnGray: { backgroundColor: "#2C2C2E" },
   sheetBtnGrayTxt: { color: "#FFF", fontWeight: "500", fontSize: 15 },
   sheetBtnBlue: { backgroundColor: "#007AFF" },
