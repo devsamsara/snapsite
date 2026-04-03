@@ -14,6 +14,7 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { addNoteStore, inviteMemberStore } from "@/lib/modal-stores";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
+import { useCardStyle, useCardStyleSm } from "@/hooks/use-card-style";
 import { useState, useRef, useCallback } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Haptics from "expo-haptics";
@@ -156,6 +157,8 @@ function timelineColor(type: TimelineEvent["type"], colors: any) {
 export default function ProjectDetailScreen() {
   const router = useRouter();
   const colors = useColors();
+  const cardElevation = useCardStyle();
+  const cardSmElevation = useCardStyleSm();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const project: Project = MOCK_PROJECTS[id] ?? MOCK_PROJECTS["1"];
@@ -362,7 +365,7 @@ export default function ProjectDetailScreen() {
             {/* Content */}
             <View style={{ flex: 1, paddingBottom: isLast ? 0 : 20 }}>
               <Text style={{ color: colors.muted, fontSize: 11, marginBottom: 4 }}>{event.date}</Text>
-              <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={[styles.cardBase, cardElevation]}>
                 <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "700", marginBottom: 4 }}>
                   {event.title}
                 </Text>
@@ -395,7 +398,7 @@ export default function ProjectDetailScreen() {
           { label: "Miembros", value: team.length, icon: "group", color: colors.primary },
           { label: "Activos hoy", value: team.filter((m) => m.online).length, icon: "fiber-manual-record", color: colors.success },
         ].map((stat) => (
-          <View key={stat.label} style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border, flex: 1 }]}>
+          <View key={stat.label} style={[styles.statCard, cardSmElevation, { flex: 1 }]}>
             <MaterialIcons name={stat.icon as any} size={22} color={stat.color} />
             <Text style={{ color: colors.foreground, fontSize: 22, fontWeight: "800", marginTop: 6 }}>{stat.value}</Text>
             <Text style={{ color: colors.muted, fontSize: 12 }}>{stat.label}</Text>
@@ -405,7 +408,7 @@ export default function ProjectDetailScreen() {
 
       {/* Members list */}
       {team.map((member) => (
-        <View key={member.id} style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, marginBottom: 12, flexDirection: "row", alignItems: "center" }]}>
+        <View key={member.id} style={[styles.cardBase, cardElevation, { marginBottom: 12, flexDirection: "row", alignItems: "center" }]}>
           {/* Avatar */}
           <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: member.color + "25", alignItems: "center", justifyContent: "center", marginRight: 14 }}>
             <Text style={{ color: member.color, fontSize: 16, fontWeight: "800" }}>{member.initials}</Text>
@@ -459,11 +462,11 @@ export default function ProjectDetailScreen() {
           <View
             key={note.id}
             style={[
-              styles.card,
+              styles.cardBase,
+              cardElevation,
               {
-                backgroundColor: colors.surface,
-                borderColor: note.pinned ? colors.warning : colors.border,
-                borderWidth: note.pinned ? 1.5 : 1,
+                borderColor: note.pinned ? colors.warning : (cardElevation as any).borderColor,
+                borderWidth: note.pinned ? 1.5 : (cardElevation as any).borderWidth ?? 0,
                 marginBottom: 12,
               },
             ]}
@@ -546,7 +549,7 @@ export default function ProjectDetailScreen() {
 
         {/* ── Hero card ── */}
         <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 }}>
-          <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.heroCard, cardElevation]}>
             <Image source={{ uri: project.thumbnail }} style={styles.heroImg} resizeMode="cover" />
             <View style={{ padding: 14 }}>
               {/* Progress */}
@@ -632,11 +635,11 @@ const styles = StyleSheet.create({
     flex: 1, alignItems: "center", paddingVertical: 10,
     borderBottomWidth: 2, borderBottomColor: "transparent",
   },
-  card: {
-    borderRadius: 16, borderWidth: 1, padding: 14,
+  cardBase: {
+    borderRadius: 16, padding: 14,
   },
   statCard: {
-    borderRadius: 16, borderWidth: 1, padding: 14,
+    borderRadius: 16, padding: 14,
     alignItems: "center",
   },
   tag: {

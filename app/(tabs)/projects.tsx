@@ -4,6 +4,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { SearchInput } from "@/components/ui/search-input";
 import { useColors } from "@/hooks/use-colors";
+import { useCardStyle } from "@/hooks/use-card-style";
 import { FabOptions } from "@/components/fab-options";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState } from "react";
@@ -51,6 +52,7 @@ const ALL_PROJECTS = [
 export default function ProjectsScreen() {
   const router = useRouter();
   const colors = useColors();
+  const cardElevation = useCardStyle();
   const [searchText, setSearchText] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
 
@@ -81,8 +83,7 @@ export default function ProjectsScreen() {
       style={{ marginBottom: 12 }}
     >
       <View
-        className="bg-surface rounded-2xl p-4 border border-border"
-        style={{ borderColor: colors.border }}
+        style={[{ borderRadius: 16, padding: 16, marginBottom: 0 }, cardElevation]}
       >
         <View className="flex-row justify-between items-start mb-3">
           <View className="flex-1">

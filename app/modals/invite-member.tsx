@@ -124,7 +124,7 @@ export default function InviteMemberModal() {
       />
 
       {/* Body */}
-      <ModalBody row>
+      <ModalBody>
 
         {/* ── Nombre ── */}
         <Text style={[S.label, { color: colors.foreground }]}>

@@ -1,19 +1,41 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Appearance, View, useColorScheme as useSystemColorScheme } from "react-native";
 import { colorScheme as nativewindColorScheme, vars } from "nativewind";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { SchemeColors, type ColorScheme } from "@/constants/theme";
 
+// ─── Card style mode ──────────────────────────────────────────────────────────
+export type CardStyleMode = "flat" | "elevated";
+const CARD_STYLE_KEY = "@snapsite/cardStyle";
+
+// ─── Context ──────────────────────────────────────────────────────────────────
 type ThemeContextValue = {
   colorScheme: ColorScheme;
   setColorScheme: (scheme: ColorScheme) => void;
+  cardStyle: CardStyleMode;
+  setCardStyle: (mode: CardStyleMode) => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+// ─── Provider ─────────────────────────────────────────────────────────────────
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useSystemColorScheme() ?? "light";
   const [colorScheme, setColorSchemeState] = useState<ColorScheme>(systemScheme);
+  const [cardStyle, setCardStyleState] = useState<CardStyleMode>("elevated");
+
+  // Cargar preferencia de cardStyle desde AsyncStorage al montar
+  useEffect(() => {
+    AsyncStorage.getItem(CARD_STYLE_KEY).then((val) => {
+      if (val === "flat" || val === "elevated") setCardStyleState(val);
+    });
+  }, []);
+
+  const setCardStyle = useCallback((mode: CardStyleMode) => {
+    setCardStyleState(mode);
+    AsyncStorage.setItem(CARD_STYLE_KEY, mode);
+  }, []);
 
   const applyScheme = useCallback((scheme: ColorScheme) => {
     nativewindColorScheme.set(scheme);
@@ -58,10 +80,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     () => ({
       colorScheme,
       setColorScheme,
+      cardStyle,
+      setCardStyle,
     }),
-    [colorScheme, setColorScheme],
+    [colorScheme, setColorScheme, cardStyle, setCardStyle],
   );
-  console.log(value, themeVariables)
 
   return (
     <ThemeContext.Provider value={value}>
@@ -70,6 +93,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ─── Hooks ────────────────────────────────────────────────────────────────────
 export function useThemeContext(): ThemeContextValue {
   const ctx = useContext(ThemeContext);
   if (!ctx) {

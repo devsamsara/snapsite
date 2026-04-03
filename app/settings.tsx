@@ -13,7 +13,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const colors = useColors();
   const colorScheme = useColorScheme();
-  const { setColorScheme } = useThemeContext();
+  const { setColorScheme, cardStyle, setCardStyle } = useThemeContext();
   const { expoPushToken } = useNotifications();
   
   // State for toggles
@@ -245,7 +245,8 @@ export default function SettingsScreen() {
               className="bg-surface rounded-2xl border border-border"
               style={{ borderColor: colors.border }}
             >
-              <View className="flex-row items-center justify-between px-4 py-4">
+              {/* Dark Mode */}
+              <View className="flex-row items-center justify-between px-4 py-4 border-b border-border">
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="moon.fill" size={20} color={colors.primary} />
                   <View className="flex-1" style={{ marginLeft: 16 }}>
@@ -263,6 +264,43 @@ export default function SettingsScreen() {
                   trackColor={{ false: colors.border, true: colors.primary }}
                   thumbColor="#FFFFFF"
                 />
+              </View>
+
+              {/* Card Style */}
+              <View className="px-4 py-4">
+                <View className="flex-row items-center flex-1 mb-3">
+                  <IconSymbol name="square.stack.3d.up.fill" size={20} color={colors.primary} />
+                  <View className="flex-1" style={{ marginLeft: 16 }}>
+                    <Text className="font-semibold text-foreground">
+                      Card Style
+                    </Text>
+                    <Text className="text-xs text-muted mt-1">
+                      {cardStyle === "elevated" ? "Modern — cards with depth and shadow" : "Flat — minimal borders, no shadow"}
+                    </Text>
+                  </View>
+                </View>
+                {/* Segmented control */}
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  {(["flat", "elevated"] as const).map((mode) => (
+                    <TouchableOpacity
+                      key={mode}
+                      onPress={() => setCardStyle(mode)}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 10,
+                        borderRadius: 12,
+                        alignItems: "center",
+                        backgroundColor: cardStyle === mode ? colors.primary : colors.background,
+                        borderWidth: 1,
+                        borderColor: cardStyle === mode ? colors.primary : colors.border,
+                      }}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: "700", color: cardStyle === mode ? "#FFF" : colors.muted }}>
+                        {mode === "flat" ? "Flat" : "Modern"}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
             </View>
           </View>

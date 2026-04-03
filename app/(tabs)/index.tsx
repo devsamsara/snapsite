@@ -4,6 +4,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { SearchInput } from "@/components/ui/search-input";
 import { useColors } from "@/hooks/use-colors";
+import { useCardStyle, useCardStyleSm } from "@/hooks/use-card-style";
 import { FabOptions } from "@/components/fab-options";
 import { useState } from "react";
 
@@ -138,6 +139,8 @@ const RECENT_LOCATIONS = [
 export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
+  const cardElevation = useCardStyle();
+  const cardSmElevation = useCardStyleSm();
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleCreateProject = () => {
@@ -165,10 +168,7 @@ export default function HomeScreen() {
       onPress={() => handleProjectTap(item.id)}
       style={{ marginRight: 16, width: 300 }}
     >
-      <View
-        className="bg-surface rounded-2xl p-4 border border-border"
-        style={{ borderColor: colors.border }}
-      >
+      <View style={[{ borderRadius: 16, padding: 16 }, cardElevation]}>
         {/* Project Header */}
         <View className="flex-row justify-between items-start mb-3">
           <View className="flex-1">
@@ -309,10 +309,7 @@ export default function HomeScreen() {
       onPress={() => handleLocationTap(item.id)}
       style={{ marginRight: 16, width: 200 }}
     >
-      <View
-        className="bg-surface rounded-2xl p-4 border border-border"
-        style={{ borderColor: colors.border }}
-      >
+      <View style={[{ borderRadius: 16, padding: 16 }, cardElevation]}>
         <View className="flex-row items-center mb-2">
           <View
             className="w-10 h-10 rounded-full items-center justify-center"
@@ -447,16 +444,13 @@ export default function HomeScreen() {
               {PROJECT_STATUSES.map((status) => (
                 <TouchableOpacity
                   key={status.id}
-                  style={{
+                  style={[{
                     width: '48%',
                     aspectRatio: 1.5,
                     borderRadius: 16,
-                    backgroundColor: colors.surface,
-                    borderWidth: 1,
-                    borderColor: colors.border,
                     padding: 16,
                     justifyContent: 'space-between',
-                  }}
+                  }, cardSmElevation]}
                 >
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <Text style={{ fontSize: 16, fontWeight: '600', color: colors.foreground }}>
