@@ -186,7 +186,7 @@ export function ModalFooter({
           borderTopColor: colors.border,
           backgroundColor: colors.surface,
           flexDirection: row ? "row" : "column",
-          gap: row ? 12 : 10,
+          gap: row ? 8 : 10,
         },
         style,
       ]}

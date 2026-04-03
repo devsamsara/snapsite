@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   map: { width: width, height: height },
   header: {
     position: 'absolute',
-    top: 0,
+    top: 5,
     width: '100%',
     paddingTop: Platform.OS === 'ios' ? 50 : 20,
   },

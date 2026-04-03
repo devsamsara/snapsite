@@ -27,7 +27,7 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { annotationTextStore } from "@/lib/modal-stores";
-import { ModalHeader, ModalFooter, ModalRoot } from "@/components/ui/modal-layout";
+import {ModalHeader, ModalFooter, ModalRoot, ModalBody} from "@/components/ui/modal-layout";
 import { Button } from "@/components/ui/button";
 import { useColors } from "@/hooks/use-colors";
 
@@ -92,103 +92,110 @@ export default function AnnotationTextModal() {
           - contentContainerStyle con paddingBottom para que el último
             elemento no quede detrás del footer
         */}
-        <ScrollView
-          style={S.scroll}
-          contentContainerStyle={[S.scrollContent, { backgroundColor: colors.surface }]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-          overScrollMode="never"
-        >
-          {/* Preview */}
-          <View style={[S.preview, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <Text style={[S.previewTxt, { color, fontSize }]} numberOfLines={3}>
-              {text || "Vista previa…"}
-            </Text>
-          </View>
+       <ModalBody>
+         <ScrollView
+             style={S.scroll}
+             contentContainerStyle={[{ backgroundColor: colors.surface }]}
+             keyboardShouldPersistTaps="handled"
+             showsVerticalScrollIndicator={false}
+             bounces={false}
+             overScrollMode="never"
+         >
+           {/* Preview */}
+           <View style={[S.preview, { backgroundColor: colors.background, borderColor: colors.border }]}>
+             <Text style={[S.previewTxt, { color, fontSize }]} numberOfLines={3}>
+               {text || "Vista previa…"}
+             </Text>
+           </View>
 
-          {/* Input */}
-          <TextInput
-            value={text}
-            onChangeText={setText}
-            placeholder="Escribe aquí..."
-            placeholderTextColor={colors.muted}
-            style={[S.input, {
-              color: colors.foreground,
-              backgroundColor: colors.background,
-              borderColor: colors.border,
-            }]}
-            autoFocus
-            multiline
-            maxLength={200}
-          />
-          <Text style={[S.counter, { color: colors.muted }]}>{text.length}/200</Text>
+           {/* Input */}
+           <TextInput
+               value={text}
+               onChangeText={setText}
+               placeholder="Escribe aquí..."
+               placeholderTextColor={colors.muted}
+               style={[S.input, {
+                 color: colors.foreground,
+                 backgroundColor: colors.background,
+                 borderColor: colors.border,
+               }]}
+               autoFocus
+               multiline
+               maxLength={200}
+           />
+           <Text style={[S.counter, { color: colors.muted }]}>{text.length}/200</Text>
 
-          {/* ── Color palette ── */}
-          <Text style={[S.label, { color: colors.muted }]}>Color</Text>
-          {/*
+           {/* ── Color palette ── */}
+           <Text style={[S.label, { color: colors.muted }]}>Color</Text>
+           {/*
             Contenedor con overflow:hidden + paddingVertical:6 en
             contentContainerStyle para que el scale(1.2) del dot activo
             no quede recortado.
           */}
-          <View style={S.paletteWrapper}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={S.paletteContent}
-            >
-              {PALETTE.map((c) => (
-                <TouchableOpacity
-                  key={c}
-                  onPress={() => setColor(c)}
-                  style={[
-                    S.dot,
-                    { backgroundColor: c },
-                    c === "#FFFFFF" && { borderColor: "rgba(0,0,0,0.18)" },
-                    color === c && [S.dotActive, { borderColor: colors.primary }],
-                  ]}
-                />
-              ))}
-            </ScrollView>
-          </View>
+           <View style={S.paletteWrapper}>
+             <ScrollView
+                 horizontal
+                 showsHorizontalScrollIndicator={false}
+                 contentContainerStyle={S.paletteContent}
+             >
+               {PALETTE.map((c) => (
+                   <TouchableOpacity
+                       key={c}
+                       onPress={() => setColor(c)}
+                       style={[
+                         S.dot,
+                         { backgroundColor: c },
+                         c === "#FFFFFF" && { borderColor: "rgba(0,0,0,0.18)" },
+                         color === c && [S.dotActive, { borderColor: colors.primary }],
+                       ]}
+                   />
+               ))}
+             </ScrollView>
+           </View>
 
-          {/* ── Font size ── */}
-          <Text style={[S.label, { color: colors.muted }]}>Tamaño</Text>
-          <View style={S.sizeRow}>
-            {FONTSIZES.map((fs) => (
-              <TouchableOpacity
-                key={fs}
-                onPress={() => setFontSize(fs)}
-                style={[
-                  S.sizeBtn,
-                  { backgroundColor: colors.background, borderColor: colors.border },
-                  fontSize === fs && { backgroundColor: colors.primary, borderColor: colors.primary },
-                ]}
-              >
-                <Text style={[
-                  S.sizeTxt,
-                  { color: colors.muted },
-                  fontSize === fs && { color: "#FFF" },
-                ]}>
-                  {fs}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+           {/* ── Font size ── */}
+           <Text style={[S.label, { color: colors.muted }]}>Tamaño</Text>
+           <View style={S.sizeRow}>
+             {FONTSIZES.map((fs) => (
+                 <TouchableOpacity
+                     key={fs}
+                     onPress={() => setFontSize(fs)}
+                     style={[
+                       S.sizeBtn,
+                       { backgroundColor: colors.background, borderColor: colors.border },
+                       fontSize === fs && { backgroundColor: colors.primary, borderColor: colors.primary },
+                     ]}
+                 >
+                   <Text style={[
+                     S.sizeTxt,
+                     { color: colors.muted },
+                     fontSize === fs && { color: "#FFF" },
+                   ]}>
+                     {fs}
+                   </Text>
+                 </TouchableOpacity>
+             ))}
+           </View>
 
-        </ScrollView>
+         </ScrollView>
+       </ModalBody>
 
         {/* ── Footer fijo al fondo ── */}
         <ModalFooter row>
-          <Button title="Cancelar" onPress={handleCancel} variant="secondary" size="md" />
-          <Button
-            title="Agregar"
-            onPress={handleConfirm}
-            variant="primary"
-            size="md"
-            leftIcon="check"
-            disabled={!text.trim()}
-          />
+          <View style={{flex: 1}}>
+            <Button title="Cancelar" onPress={handleCancel} variant="secondary" size="md" />
+          </View>
+          <View style={{flex: 1}}>
+            <Button
+                title="Agregar"
+                onPress={handleConfirm}
+                variant="primary"
+                size="md"
+                leftIcon="check"
+                disabled={!text.trim()}
+            />
+          </View>
+
         </ModalFooter>
 
       </ModalRoot>

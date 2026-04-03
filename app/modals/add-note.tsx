@@ -7,11 +7,11 @@
 
 import React, { useState } from "react";
 import {
-  Text,
-  TextInput,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
+    Text,
+    TextInput,
+    StyleSheet,
+    KeyboardAvoidingView,
+    Platform, View,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { addNoteStore } from "@/lib/modal-stores";
@@ -77,15 +77,21 @@ export default function AddNoteModal() {
 
         {/* ── Footer ── */}
         <ModalFooter row>
-          <Button title="Cancelar"    onPress={handleCancel} variant="secondary" size="md" />
-          <Button
-            title="Guardar Nota"
-            onPress={handleSave}
-            variant="primary"
-            size="md"
-            leftIcon="check"
-            disabled={!text.trim()}
-          />
+            <View style={{flex: 1}}>
+                <Button title="Cancelar"    onPress={handleCancel} variant="secondary" size="md" />
+            </View>
+            <View style={{flex: 1}}>
+                <Button
+                    title="Guardar Nota"
+                    onPress={handleSave}
+                    variant="primary"
+                    size="md"
+                    leftIcon="check"
+                    disabled={!text.trim()}
+                />
+            </View>
+
+
         </ModalFooter>
 
       </ModalRoot>
