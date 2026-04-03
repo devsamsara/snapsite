@@ -126,7 +126,11 @@ export default function RootLayout() {
                                 name="modals/annotation-text"
                                 options={{
                                     presentation: "formSheet",
-                                    sheetAllowedDetents: [0.70],
+                                    // 'large' = ocupa toda la altura disponible en iPhone
+                                    // y garantiza ancho completo sin bordes laterales
+                                    // [1.0] = altura completa disponible → sin bordes laterales en iPhone
+                                    sheetAllowedDetents: [1.0],
+                                    sheetGrabberVisible: true,
                                     headerShown: false,
                                     contentStyle: {backgroundColor: sheetBg},
                                 }}
@@ -135,6 +139,8 @@ export default function RootLayout() {
                                 name="modals/annotation-measure"
                                 options={{
                                     presentation: "formSheet",
+                                    sheetAllowedDetents: "fitToContents",
+                                    sheetGrabberVisible: true,
                                     headerShown: false,
                                     contentStyle: {backgroundColor: sheetBg},
                                 }}
@@ -148,11 +154,12 @@ export default function RootLayout() {
                                     contentStyle: {backgroundColor: "#000"},
                                 }}
                             />
-                             <Stack.Screen
+                            <Stack.Screen
                                 name="modals/add-note"
                                 options={{
                                     presentation: "formSheet",
-                                    sheetAllowedDetents: [0.45],
+                                    sheetAllowedDetents: "fitToContents",
+                                    sheetGrabberVisible: true,
                                     headerShown: false,
                                     contentStyle: {backgroundColor: sheetBg},
                                 }}
