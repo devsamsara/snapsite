@@ -4,13 +4,12 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
-  FlatList,
   Dimensions,
   StyleSheet,
   Alert,
   Animated as RNAnimated,
 } from "react-native";
-import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { addNoteStore, inviteMemberStore } from "@/lib/modal-stores";
 import { ScreenContainer } from "@/components/screen-container";
@@ -52,15 +51,15 @@ const MOCK_PROJECTS: Record<string, Project> = {
       { id: "t6", date: "Hace 3 días, 09:00", title: "Proyecto iniciado", description: "SnapSite comenzó el seguimiento del proyecto.", type: "milestone" },
     ],
     team: [
-      { id: "u1", name: "Juan Pérez", role: "Jefe de Obra", initials: "JP", color: "#007AFF", lastActivity: "Hace 2 horas", online: true },
-      { id: "u2", name: "María García", role: "Arquitecta", initials: "MG", color: "#FF2D55", lastActivity: "Hace 1 día", online: false },
-      { id: "u3", name: "Carlos López", role: "Electricista", initials: "CL", color: "#FF9500", lastActivity: "Ayer", online: false },
-      { id: "u4", name: "Ana Martínez", role: "Pintora", initials: "AM", color: "#4CD964", lastActivity: "Hace 3 días", online: false },
+      { id: "u1", name: "Juan Pérez",    role: "Jefe de Obra", initials: "JP", color: "#007AFF", lastActivity: "Hace 2 horas", online: true  },
+      { id: "u2", name: "María García",  role: "Arquitecta",   initials: "MG", color: "#FF2D55", lastActivity: "Hace 1 día",   online: false },
+      { id: "u3", name: "Carlos López",  role: "Electricista", initials: "CL", color: "#FF9500", lastActivity: "Ayer",          online: false },
+      { id: "u4", name: "Ana Martínez",  role: "Pintora",      initials: "AM", color: "#4CD964", lastActivity: "Hace 3 días",   online: false },
     ],
     notes: [
-      { id: "n1", author: "Juan Pérez", initials: "JP", authorColor: "#007AFF", content: "Retraso en entrega de materiales de pintura. Proveedor confirma entrega para el lunes.", date: "Hoy, 09:15", pinned: true },
-      { id: "n2", author: "María García", initials: "MG", authorColor: "#FF2D55", content: "Revisar planos actualizados antes de continuar con la tabiquería del piso 3.", date: "Ayer, 14:30", pinned: false },
-      { id: "n3", author: "Carlos López", initials: "CL", authorColor: "#FF9500", content: "Instalación eléctrica del piso 2 completada. Pendiente inspección municipal.", date: "Ayer, 16:50", pinned: false },
+      { id: "n1", author: "Juan Pérez",   initials: "JP", authorColor: "#007AFF", content: "Retraso en entrega de materiales de pintura. Proveedor confirma entrega para el lunes.", date: "Hoy, 09:15",   pinned: true  },
+      { id: "n2", author: "María García", initials: "MG", authorColor: "#FF2D55", content: "Revisar planos actualizados antes de continuar con la tabiquería del piso 3.",           date: "Ayer, 14:30",  pinned: false },
+      { id: "n3", author: "Carlos López", initials: "CL", authorColor: "#FF9500", content: "Instalación eléctrica del piso 2 completada. Pendiente inspección municipal.",           date: "Ayer, 16:50",  pinned: false },
     ],
   },
 };
@@ -123,10 +122,10 @@ interface Project {
 type TabId = "gallery" | "timeline" | "team" | "notes";
 
 const TABS: { id: TabId; icon: string; labelKey: string }[] = [
-  { id: "gallery",  icon: "photo-library",  labelKey: "project.tabs.gallery"  },
-  { id: "timeline", icon: "timeline",        labelKey: "project.tabs.timeline" },
-  { id: "team",     icon: "group",           labelKey: "project.tabs.team"     },
-  { id: "notes",    icon: "notes",           labelKey: "project.tabs.notes"    },
+  { id: "gallery",  icon: "photo-library", labelKey: "project.tabs.gallery"  },
+  { id: "timeline", icon: "timeline",       labelKey: "project.tabs.timeline" },
+  { id: "team",     icon: "group",          labelKey: "project.tabs.team"     },
+  { id: "notes",    icon: "notes",          labelKey: "project.tabs.notes"    },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -187,7 +186,6 @@ export default function ProjectDetailScreen() {
     router.push({ pathname: "/modals/invite-member", params: { projectId: project.id } });
     promise.then((result) => {
       if (!result) return;
-      // Generar iniciales y color aleatorio para el nuevo miembro
       const initials = result.name
         .split(" ")
         .slice(0, 2)
@@ -247,14 +245,20 @@ export default function ProjectDetailScreen() {
   };
 
   const deleteNote = (noteId: string) => {
-    Alert.alert(t('project.deleteNoteTitle'), t('project.deleteNoteConfirm'), [
-      { text: t('common.cancel'), style: "cancel" },
-      { text: t('common.delete'), style: "destructive", onPress: () => setNotes((p) => p.filter((n) => n.id !== noteId)) },
+    Alert.alert(t("project.deleteNoteTitle"), t("project.deleteNoteConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("common.delete"),
+        style: "destructive",
+        onPress: () => setNotes((p) => p.filter((n) => n.id !== noteId)),
+      },
     ]);
   };
 
   const allTags = Array.from(new Set(photos.flatMap((p) => p.tags)));
-  const filteredPhotos = filterTag ? photos.filter((p) => p.tags.includes(filterTag)) : photos;
+  const filteredPhotos = filterTag
+    ? photos.filter((p) => p.tags.includes(filterTag))
+    : photos;
 
   // ─── Tab: Gallery ─────────────────────────────────────────────────────────
 
@@ -274,7 +278,7 @@ export default function ProjectDetailScreen() {
           ]}
         >
           <Text style={{ color: !filterTag ? "#FFF" : colors.muted, fontSize: 12, fontWeight: "600" }}>
-            Todas
+            {t("project.all")}
           </Text>
         </TouchableOpacity>
         {allTags.map((tag) => (
@@ -296,14 +300,14 @@ export default function ProjectDetailScreen() {
       {/* Photo count */}
       <View style={{ paddingHorizontal: 16, marginBottom: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
         <Text style={{ color: colors.muted, fontSize: 13 }}>
-          {filteredPhotos.length} {filteredPhotos.length === 1 ? t('project.photo') : t('project.photos')}
+          {filteredPhotos.length} {filteredPhotos.length === 1 ? t("project.photo") : t("project.photos")}
         </Text>
         <TouchableOpacity
           onPress={handleAddPhoto}
           style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.primary + "20", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}
         >
           <MaterialIcons name="add-a-photo" size={16} color={colors.primary} />
-          <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "700" }}>{t('project.add')}</Text>
+          <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "700" }}>{t("project.add")}</Text>
         </TouchableOpacity>
       </View>
 
@@ -339,7 +343,9 @@ export default function ProjectDetailScreen() {
         {filteredPhotos.length === 0 && (
           <View style={{ alignItems: "center", paddingVertical: 48 }}>
             <MaterialIcons name="photo-library" size={48} color={colors.border} />
-            <Text style={{ color: colors.muted, marginTop: 12, fontSize: 15 }}>{t('project.noPhotos')}{filterTag ? ` #${filterTag}` : ""}</Text>
+            <Text style={{ color: colors.muted, marginTop: 12, fontSize: 15 }}>
+              {t("project.noPhotos")}{filterTag ? ` #${filterTag}` : ""}
+            </Text>
           </View>
         )}
       </View>
@@ -393,50 +399,52 @@ export default function ProjectDetailScreen() {
 
   const renderTeam = () => (
     <View style={{ flex: 1 }}>
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 }}>
-      {/* Stats row */}
-      <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
-        {[
-          { label: t('project.members'), value: team.length, icon: "group", color: colors.primary },
-          { label: t('project.activeToday'), value: team.filter((m) => m.online).length, icon: "fiber-manual-record", color: colors.success },
-        ].map((stat) => (
-          <View key={stat.label} style={[styles.statCard, cardSmElevation, { flex: 1 }]}>
-            <MaterialIcons name={stat.icon as any} size={22} color={stat.color} />
-            <Text style={{ color: colors.foreground, fontSize: 22, fontWeight: "800", marginTop: 6 }}>{stat.value}</Text>
-            <Text style={{ color: colors.muted, fontSize: 12 }}>{stat.label}</Text>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 }}>
+        {/* Stats row */}
+        <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
+          {[
+            { label: t("project.members"),    value: team.length,                          icon: "group",               color: colors.primary },
+            { label: t("project.activeToday"), value: team.filter((m) => m.online).length, icon: "fiber-manual-record", color: colors.success },
+          ].map((stat) => (
+            <View key={stat.label} style={[styles.statCard, cardSmElevation, { flex: 1 }]}>
+              <MaterialIcons name={stat.icon as any} size={22} color={stat.color} />
+              <Text style={{ color: colors.foreground, fontSize: 22, fontWeight: "800", marginTop: 6 }}>{stat.value}</Text>
+              <Text style={{ color: colors.muted, fontSize: 12 }}>{stat.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Members list */}
+        {team.map((member) => (
+          <View key={member.id} style={[styles.cardBase, cardElevation, { marginBottom: 12, flexDirection: "row", alignItems: "center" }]}>
+            {/* Avatar */}
+            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: member.color + "25", alignItems: "center", justifyContent: "center", marginRight: 14 }}>
+              <Text style={{ color: member.color, fontSize: 16, fontWeight: "800" }}>{member.initials}</Text>
+            </View>
+            {/* Info */}
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: "700" }}>{member.name}</Text>
+                {member.online && (
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
+                )}
+              </View>
+              <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600", marginTop: 2 }}>{member.role}</Text>
+              <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>
+                {t("project.active")}: {member.lastActivity}
+              </Text>
+            </View>
+            {/* Actions */}
+            <TouchableOpacity
+              onPress={() => Alert.alert(t("project.messageTitle"), t("project.messageTo", { name: member.name }))}
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary + "15", alignItems: "center", justifyContent: "center" }}
+            >
+              <MaterialIcons name="chat" size={18} color={colors.primary} />
+            </TouchableOpacity>
           </View>
         ))}
-      </View>
+      </ScrollView>
 
-      {/* Members list */}
-      {team.map((member) => (
-        <View key={member.id} style={[styles.cardBase, cardElevation, { marginBottom: 12, flexDirection: "row", alignItems: "center" }]}>
-          {/* Avatar */}
-          <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: member.color + "25", alignItems: "center", justifyContent: "center", marginRight: 14 }}>
-            <Text style={{ color: member.color, fontSize: 16, fontWeight: "800" }}>{member.initials}</Text>
-          </View>
-          {/* Info */}
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: "700" }}>{member.name}</Text>
-              {member.online && (
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
-              )}
-            </View>
-            <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600", marginTop: 2 }}>{member.role}</Text>
-            <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>{t('project.active')}: {member.lastActivity}</Text>
-          </View>
-          {/* Actions */}
-          <TouchableOpacity
-            onPress={() => Alert.alert(t('project.messageTitle'), t('project.messageTo', { name: member.name }))}
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary + "15", alignItems: "center", justifyContent: "center" }}
-          >
-            <MaterialIcons name="chat" size={18} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-      ))}
-
-    </ScrollView>
       {/* FAB */}
       <TouchableOpacity
         onPress={openInviteModal}
@@ -457,7 +465,7 @@ export default function ProjectDetailScreen() {
         {sortedNotes.length === 0 && (
           <View style={{ alignItems: "center", paddingVertical: 48 }}>
             <MaterialIcons name="notes" size={48} color={colors.border} />
-            <Text style={{ color: colors.muted, marginTop: 12, fontSize: 15 }}>{t('project.noNotes')}</Text>
+            <Text style={{ color: colors.muted, marginTop: 12, fontSize: 15 }}>{t("project.noNotes")}</Text>
           </View>
         )}
         {sortedNotes.map((note) => (
@@ -476,7 +484,7 @@ export default function ProjectDetailScreen() {
             {note.pinned && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 8 }}>
                 <MaterialIcons name="push-pin" size={12} color={colors.warning} />
-                <Text style={{ color: colors.warning, fontSize: 11, fontWeight: "700" }}>{t('project.pinned')}</Text>
+                <Text style={{ color: colors.warning, fontSize: 11, fontWeight: "700" }}>{t("project.pinned")}</Text>
               </View>
             )}
             {/* Author row */}
@@ -485,10 +493,12 @@ export default function ProjectDetailScreen() {
                 <Text style={{ color: note.authorColor, fontSize: 12, fontWeight: "800" }}>{note.initials}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "700" }}>{note.author}</Tex          <Text style={{ color: colors.muted, fontSize: 12 }}>{t('project.end')}: {project.endDate}</Text>             </View>
+                <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "700" }}>{note.author}</Text>
+                <Text style={{ color: colors.muted, fontSize: 11 }}>{note.date}</Text>
+              </View>
               {/* Actions */}
               <TouchableOpacity onPress={() => togglePin(note.id)} style={{ padding: 6 }}>
-                <MaterialIcons name={note.pinned ? "push-pin" : "push-pin"} size={18} color={note.pinned ? colors.warning : colors.muted} />
+                <MaterialIcons name="push-pin" size={18} color={note.pinned ? colors.warning : colors.muted} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => deleteNote(note.id)} style={{ padding: 6 }}>
                 <MaterialIcons name="delete-outline" size={18} color={colors.error} />
@@ -508,8 +518,6 @@ export default function ProjectDetailScreen() {
       </TouchableOpacity>
     </View>
   );
-
-  // Lightbox y nota son Stack.Screen modales
 
   // ─── Main Render ──────────────────────────────────────────────────────────
 
@@ -539,7 +547,10 @@ export default function ProjectDetailScreen() {
               <MaterialIcons name="add-a-photo" size={18} color={colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => router.push({ pathname: "/modals/project-settings", params: { projectId: project.id, projectName: project.name, projectLocation: project.location } })}
+              onPress={() => router.push({
+                pathname: "/modals/project-settings",
+                params: { projectId: project.id, projectName: project.name, projectLocation: project.location },
+              })}
               style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}
             >
               <MaterialIcons name="more-vert" size={20} color={colors.foreground} />
@@ -554,7 +565,9 @@ export default function ProjectDetailScreen() {
             <View style={{ padding: 14 }}>
               {/* Progress */}
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-               <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>{t('project.projectProgress')}</Text>')}</Text>
+                <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>
+                  {t("project.projectProgress")}
+                </Text>
                 <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "800" }}>{project.progress}%</Text>
               </View>
               <View style={{ height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: "hidden" }}>
@@ -564,11 +577,15 @@ export default function ProjectDetailScreen() {
               <View style={{ flexDirection: "row", gap: 16, marginTop: 10 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                   <MaterialIcons name="event" size={13} color={colors.muted} />
-                 <Text style={{ color: colors.muted, fontSize: 12 }}>{t('project.start')}: {project.startDate}</Text>rtDate}</Text>artDate}</Text>
+                  <Text style={{ color: colors.muted, fontSize: 12 }}>
+                    {t("project.start")}: {project.startDate}
+                  </Text>
                 </View>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                   <MaterialIcons name="event-available" size={13} color={colors.muted} />
-                  <Text style={{ color: colors.muted, fontSize: 12 }}>{t('project.end')}: {project.endDate}</Text>endDate}</Text>
+                  <Text style={{ color: colors.muted, fontSize: 12 }}>
+                    {t("project.end")}: {project.endDate}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -601,9 +618,8 @@ export default function ProjectDetailScreen() {
           {activeTab === "team"     && renderTeam()}
           {activeTab === "notes"    && renderNotes()}
         </View>
-      </View>
 
-      {/* Lightbox y nota son Stack.Screen modales */}
+      </View>
     </ScreenContainer>
   );
 }
@@ -652,17 +668,5 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
     shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25, shadowRadius: 8, elevation: 8,
-  },
-  modalCard: {
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, paddingBottom: 40,
-  },
-  noteInput: {
-    borderWidth: 1, borderRadius: 14, padding: 14,
-    fontSize: 15, minHeight: 100, textAlignVertical: "top",
-  },
-  saveBtn: {
-    marginTop: 16, paddingVertical: 14,
-    borderRadius: 14, alignItems: "center",
   },
 });
