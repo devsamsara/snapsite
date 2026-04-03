@@ -21,6 +21,7 @@
 import React from "react";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   StyleProp,
   StyleSheet,
@@ -31,6 +32,7 @@ import {
 } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useColors } from "@/hooks/use-colors";
+import { useThemeContext } from "@/lib/theme-provider";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -86,9 +88,26 @@ export function Button({
   fullWidth = true,
 }: ButtonProps) {
   const colors = useColors();
+  const { cardStyle } = useThemeContext();
   const sz     = SIZE[size];
   const isLink = variant === "link";
   const isDisabled = disabled || isLoading;
+
+  // Elevación sutil solo en primary/danger cuando el modo es elevated
+  const buttonElevation = (): object => {
+    if (cardStyle !== "elevated" || isDisabled) return {};
+    if (variant !== "primary" && variant !== "danger") return {};
+    const shadowColor = variant === "danger" ? colors.error : colors.primary;
+    if (Platform.OS === "ios") {
+      return {
+        shadowColor,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.30,
+        shadowRadius: 6,
+      };
+    }
+    return { elevation: 4 };
+  };
 
   // ── Derived colors ──────────────────────────────────────────────────────────
   const bgColor = (): string => {
@@ -183,6 +202,7 @@ export function Button({
           width:            fullWidth ? "100%" : undefined,
           alignSelf:        fullWidth ? "stretch" : "flex-start",
         },
+        buttonElevation(),
         pressed && !isDisabled && S.pressed,
         isDisabled && S.disabled,
         style,

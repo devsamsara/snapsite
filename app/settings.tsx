@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, TouchableOpacity, Switch, Alert } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, Switch, Alert, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { ScreenContainer } from "@/components/screen-container";
@@ -186,7 +186,7 @@ export default function SettingsScreen() {
             
             <View style={[{ borderRadius: 20, overflow: 'hidden' }, cardElevation]}>
               {/* Push Notifications */}
-              <View className="flex-row items-center justify-between px-4 py-4 border-b border-border">
+              <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="bell.fill" size={20} color={colors.primary} />
                   <View className="flex-1" style={{ marginLeft: 16 }}>
@@ -207,7 +207,7 @@ export default function SettingsScreen() {
               </View>
 
               {/* Email Notifications */}
-              <View className="flex-row items-center justify-between px-4 py-4">
+              <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:16 }}>
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="envelope.fill" size={20} color={colors.primary} />
                   <View className="flex-1" style={{ marginLeft: 16 }}>
@@ -237,7 +237,7 @@ export default function SettingsScreen() {
             
             <View style={[{ borderRadius: 20, overflow: 'hidden' }, cardElevation]}>
               {/* Dark Mode */}
-              <View className="flex-row items-center justify-between px-4 py-4 border-b border-border">
+              <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="moon.fill" size={20} color={colors.primary} />
                   <View className="flex-1" style={{ marginLeft: 16 }}>
@@ -258,7 +258,7 @@ export default function SettingsScreen() {
               </View>
 
               {/* Card Style */}
-              <View className="px-4 py-4">
+              <View style={{ paddingHorizontal:16, paddingVertical:16 }}>
                 <View className="flex-row items-center flex-1 mb-3">
                   <IconSymbol name="square.stack.3d.up.fill" size={20} color={colors.primary} />
                   <View className="flex-1" style={{ marginLeft: 16 }}>
@@ -304,7 +304,7 @@ export default function SettingsScreen() {
             
             <View style={[{ borderRadius: 20, overflow: 'hidden' }, cardElevation]}>
               {/* Privacy */}
-              <TouchableOpacity className="flex-row items-center justify-between px-4 py-4 border-b border-border">
+              <TouchableOpacity style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="lock.fill" size={20} color={colors.primary} />
                   <Text className="font-semibold text-foreground" style={{ marginLeft: 16 }}>
@@ -315,7 +315,7 @@ export default function SettingsScreen() {
               </TouchableOpacity>
 
               {/* Storage */}
-              <TouchableOpacity className="flex-row items-center justify-between px-4 py-4 border-b border-border">
+              <TouchableOpacity style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="internaldrive.fill" size={20} color={colors.primary} />
                   <Text className="font-semibold text-foreground" style={{ marginLeft: 16 }}>
@@ -329,7 +329,7 @@ export default function SettingsScreen() {
               </TouchableOpacity>
 
               {/* Help & Support */}
-              <TouchableOpacity className="flex-row items-center justify-between px-4 py-4 border-b border-border">
+              <TouchableOpacity style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="questionmark.circle.fill" size={20} color={colors.primary} />
                   <Text className="font-semibold text-foreground" style={{ marginLeft: 16 }}>
@@ -340,7 +340,7 @@ export default function SettingsScreen() {
               </TouchableOpacity>
 
               {/* About */}
-              <TouchableOpacity className="flex-row items-center justify-between px-4 py-4">
+              <TouchableOpacity style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:16 }}>
                 <View className="flex-row items-center flex-1">
                   <IconSymbol name="info.circle.fill" size={20} color={colors.primary} />
                   <Text className="font-semibold text-foreground" style={{ marginLeft: 16 }}>

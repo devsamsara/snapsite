@@ -497,7 +497,7 @@ export default function HomeScreen() {
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 12 }}
+              contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 14 }}
             />
           </View>
 
@@ -521,7 +521,7 @@ export default function HomeScreen() {
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 12 }}
+              contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 14 }}
             />
           </View>
 
@@ -545,7 +545,7 @@ export default function HomeScreen() {
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 12 }}
+              contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 14 }}
             />
           </View>
 
