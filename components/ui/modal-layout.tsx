@@ -77,7 +77,9 @@ export function ModalHeader({
   const colors = useColors();
 
   return (
-    <View style={[S.header, style]}>
+    // zIndex + backgroundColor garantizan que el header siempre quede
+    // encima del ScrollView del ModalBody cuando el usuario hace scroll.
+    <View style={[S.header, { backgroundColor: colors.surface }, style]}>
       {/* Drag pill — siempre visible, indica que el modal es deslizable */}
       <View style={[S.pill, { backgroundColor: colors.border }]} />
 
@@ -131,10 +133,14 @@ export function ModalBody({
   if (scrollable) {
     return (
       <ScrollView
-        style={[S.body, { paddingHorizontal: paddingH }, style]}
-        contentContainerStyle={S.bodyContent}
+        style={[S.body, style]}
+        contentContainerStyle={[S.bodyContent, { paddingHorizontal: paddingH }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        // bounces:false evita que el rebote superior superponga el contenido
+        // sobre el ModalHeader en iOS
+        bounces={false}
+        overScrollMode="never"
       >
         {children}
       </ScrollView>
@@ -220,6 +226,11 @@ const S = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 16,
+    // zIndex asegura que el header quede siempre encima del ScrollView
+    zIndex: 10,
+    // Borde inferior sutil para separar visualmente el header del body
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'transparent', // se sobreescribe con colors.border en runtime si se desea
   },
   pill: {
     width: 36,
@@ -259,9 +270,13 @@ const S = StyleSheet.create({
   // ModalBody
   body: {
     flex: 1,
+    // overflow:hidden en el contenedor evita que el ScrollView
+    // pinte fuera de sus límites y tape el header
+    overflow: 'hidden',
   },
   bodyContent: {
     paddingBottom: 8,
+    flexGrow: 1,
   },
 
   // ModalFooter

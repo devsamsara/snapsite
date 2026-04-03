@@ -4,8 +4,14 @@
  * Stack.Screen modal (formSheet) — agregar una anotación de texto al editor.
  * Devuelve el resultado via annotationTextStore.
  *
- * Fix: paleta de colores contenida correctamente (paddingVertical en
- * contentContainerStyle para que el scale(1.2) del dot activo no quede recortado).
+ * Layout:
+ *   KeyboardAvoidingView
+ *     └── ModalRoot (flex:1)
+ *           ├── ModalHeader  (zIndex:10, fondo opaco → nunca tapado)
+ *           ├── ScrollView   (propio, NO usa ModalBody scrollable para
+ *           │                 tener control total del scroll y evitar
+ *           │                 que el contenido tape el header)
+ *           └── ModalFooter  (fijo al fondo)
  */
 
 import React, { useState } from "react";
@@ -21,7 +27,7 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { annotationTextStore } from "@/lib/modal-stores";
-import { ModalHeader, ModalBody, ModalFooter, ModalRoot } from "@/components/ui/modal-layout";
+import { ModalHeader, ModalFooter, ModalRoot } from "@/components/ui/modal-layout";
 import { Button } from "@/components/ui/button";
 import { useColors } from "@/hooks/use-colors";
 
@@ -65,19 +71,35 @@ export default function AnnotationTextModal() {
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
+      // keyboardVerticalOffset: altura aprox del ModalHeader (~90pt) para que
+      // el footer no quede tapado por el teclado
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
       <ModalRoot>
 
-        {/* ── Header ── */}
+        {/* ── Header fijo (zIndex:10 en ModalHeader garantiza que nunca sea tapado) ── */}
         <ModalHeader
           title="Agregar Texto"
           subtitle="Luego puedes arrastrarlo y escalarlo con dos dedos."
           onClose={handleCancel}
         />
 
-        {/* ── Body ── */}
-        <ModalBody scrollable>
-
+        {/*
+          ── ScrollView propio (NO ModalBody scrollable) ──
+          Usamos nuestro propio ScrollView para tener control total:
+          - bounces={false} → sin rebote que tape el header
+          - overScrollMode="never" → Android
+          - contentContainerStyle con paddingBottom para que el último
+            elemento no quede detrás del footer
+        */}
+        <ScrollView
+          style={S.scroll}
+          contentContainerStyle={[S.scrollContent, { backgroundColor: colors.surface }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          overScrollMode="never"
+        >
           {/* Preview */}
           <View style={[S.preview, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <Text style={[S.previewTxt, { color, fontSize }]} numberOfLines={3}>
@@ -105,29 +127,30 @@ export default function AnnotationTextModal() {
           {/* ── Color palette ── */}
           <Text style={[S.label, { color: colors.muted }]}>Color</Text>
           {/*
-            FIX: paddingVertical: 6 en contentContainerStyle da espacio para que
-            el transform scale(1.2) del dot seleccionado no quede recortado por
-            el overflow del ScrollView.
+            Contenedor con overflow:hidden + paddingVertical:6 en
+            contentContainerStyle para que el scale(1.2) del dot activo
+            no quede recortado.
           */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={S.paletteScroll}
-            contentContainerStyle={S.paletteContent}
-          >
-            {PALETTE.map((c) => (
-              <TouchableOpacity
-                key={c}
-                onPress={() => setColor(c)}
-                style={[
-                  S.dot,
-                  { backgroundColor: c },
-                  c === "#FFFFFF" && { borderColor: "rgba(0,0,0,0.18)" },
-                  color === c && [S.dotActive, { borderColor: colors.primary }],
-                ]}
-              />
-            ))}
-          </ScrollView>
+          <View style={S.paletteWrapper}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={S.paletteContent}
+            >
+              {PALETTE.map((c) => (
+                <TouchableOpacity
+                  key={c}
+                  onPress={() => setColor(c)}
+                  style={[
+                    S.dot,
+                    { backgroundColor: c },
+                    c === "#FFFFFF" && { borderColor: "rgba(0,0,0,0.18)" },
+                    color === c && [S.dotActive, { borderColor: colors.primary }],
+                  ]}
+                />
+              ))}
+            </ScrollView>
+          </View>
 
           {/* ── Font size ── */}
           <Text style={[S.label, { color: colors.muted }]}>Tamaño</Text>
@@ -153,9 +176,9 @@ export default function AnnotationTextModal() {
             ))}
           </View>
 
-        </ModalBody>
+        </ScrollView>
 
-        {/* ── Footer ── */}
+        {/* ── Footer fijo al fondo ── */}
         <ModalFooter row>
           <Button title="Cancelar" onPress={handleCancel} variant="secondary" size="md" />
           <Button
@@ -176,26 +199,54 @@ export default function AnnotationTextModal() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const S = StyleSheet.create({
+  // ScrollView propio — ocupa el espacio entre header y footer
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 4,
+    paddingBottom: 16,
+  },
+
   preview: {
     borderRadius: 12, borderWidth: 1,
     minHeight: 64, justifyContent: "center", alignItems: "center",
     paddingHorizontal: 16, paddingVertical: 14, marginBottom: 16,
   },
   previewTxt: { fontWeight: "700", textAlign: "center" },
+
   input: {
     borderRadius: 12, borderWidth: 1,
     padding: 14, fontSize: 16, minHeight: 88, textAlignVertical: "top",
   },
   counter: { fontSize: 11, textAlign: "right", marginTop: 6, marginBottom: 20 },
+
   label: {
     fontSize: 12, fontWeight: "600",
     textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12,
   },
-  paletteScroll: { marginBottom: 20 },
-  paletteContent: { gap: 12, paddingHorizontal: 2, paddingVertical: 6, alignItems: "center" },
-  dot: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: "transparent" },
+
+  // Wrapper del ScrollView horizontal de la paleta
+  // overflow:visible permite que el scale(1.2) del dot activo se vea completo
+  paletteWrapper: {
+    marginBottom: 20,
+    overflow: "visible",
+  },
+  paletteContent: {
+    gap: 12,
+    paddingHorizontal: 2,
+    // paddingVertical da espacio para el scale(1.2) sin recortes
+    paddingVertical: 6,
+    alignItems: "center",
+  },
+  dot: {
+    width: 32, height: 32, borderRadius: 16,
+    borderWidth: 2, borderColor: "transparent",
+  },
   dotActive: { transform: [{ scale: 1.2 }] },
-  sizeRow: { flexDirection: "row", gap: 8, marginBottom: 24, flexWrap: "wrap" },
+
+  sizeRow: { flexDirection: "row", gap: 8, marginBottom: 8, flexWrap: "wrap" },
   sizeBtn: {
     flex: 1, minWidth: 44, paddingVertical: 10,
     borderRadius: 10, borderWidth: 1, alignItems: "center",
