@@ -4,239 +4,274 @@
  * Modal para invitar a un miembro desde la vista principal.
  * A diferencia de invite-member (que recibe el projectId ya fijado),
  * este modal incluye un selector de proyecto.
+ *
+ * Validación: Zod + react-hook-form
+ * Componentes: AppInput, SearchInput (sistema de diseño)
  */
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle } from '@/hooks/use-card-style';
-import {ModalHeader, ModalBody, ModalFooter, ModalRoot} from '@/components/ui/modal-layout';
+import { ModalRoot, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal-layout';
 import { Button } from '@/components/ui/button';
+import { AppInput } from '@/components/ui/app-input';
+import { SearchInput } from '@/components/ui/search-input';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-// ── Mocks ────────────────────────────────────────────────────────────────────
+// ─── Schema Zod ──────────────────────────────────────────────────────────────
+const inviteSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'El nombre es obligatorio')
+    .min(2, 'El nombre debe tener al menos 2 caracteres'),
+  email: z
+    .string()
+    .min(1, 'El correo es obligatorio')
+    .email('Introduce un correo electrónico válido'),
+});
+type InviteForm = z.infer<typeof inviteSchema>;
+
+// ─── Mocks ────────────────────────────────────────────────────────────────────
 const MOCK_PROJECTS = [
-  { id: '1', name: 'Fintech App UI',       location: 'Downtown, NYC',  color: '#3B82F6' },
-  { id: '2', name: 'Edtech App Design',    location: 'Queens, NY',     color: '#10B981' },
-  { id: '3', name: 'Roof Installation',    location: 'Brooklyn, NY',   color: '#8B5CF6' },
-  { id: '4', name: 'Bridge Construction',  location: 'Manhattan, NY',  color: '#F59E0B' },
-  { id: '5', name: 'Office Renovation',    location: 'Bronx, NY',      color: '#EF4444' },
+  { id: '1', name: 'Reforma Oficinas BCN',       location: 'Barcelona',         color: '#3B82F6', progress: 65 },
+  { id: '2', name: 'Residencial Las Palmas',      location: 'Las Palmas de GC',  color: '#10B981', progress: 30 },
+  { id: '3', name: 'Centro Comercial Sur',        location: 'Sevilla',           color: '#F59E0B', progress: 80 },
+  { id: '4', name: 'Hotel Costa Brava',           location: 'Girona',            color: '#8B5CF6', progress: 15 },
+  { id: '5', name: 'Nave Industrial Zaragoza',    location: 'Zaragoza',          color: '#EF4444', progress: 50 },
 ];
 
-const ROLES = ['Jefe de Obra', 'Arquitecto/a', 'Electricista', 'Pintor/a', 'Fontanero/a', 'Inspector', 'Otro'];
+const ROLES = [
+  'Jefe de Obra',
+  'Arquitecto/a',
+  'Electricista',
+  'Pintor/a',
+  'Fontanero/a',
+  'Inspector',
+  'Otro',
+];
 
-// ─────────────────────────────────────────────────────────────────────────────
-
+// ─── Component ────────────────────────────────────────────────────────────────
 export default function InviteGlobalModal() {
-  const router  = useRouter();
-  const colors  = useColors();
-  const card    = useCardStyle();
+  const router         = useRouter();
+  const colors         = useColors();
+  const cardElevation  = useCardStyle();
 
-  const [name,              setName]              = useState('');
-  const [email,             setEmail]             = useState('');
-  const [selectedRole,      setSelectedRole]      = useState('');
-  const [selectedProjectId, setSelectedProjectId] = useState('');
   const [projectSearch,     setProjectSearch]     = useState('');
-  const [loading,           setLoading]           = useState(false);
-  const [nameError,         setNameError]         = useState('');
-  const [emailError,        setEmailError]        = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [projectError,      setProjectError]      = useState('');
+  const [selectedRole,      setSelectedRole]      = useState('');
+  const [roleError,         setRoleError]         = useState('');
+  const [loading,           setLoading]           = useState(false);
 
-  const filteredProjects = MOCK_PROJECTS.filter(p =>
-    p.name.toLowerCase().includes(projectSearch.toLowerCase()) ||
-    p.location.toLowerCase().includes(projectSearch.toLowerCase()),
+  const {
+    control,
+    handleSubmit,
+  } = useForm<InviteForm>({
+    resolver: zodResolver(inviteSchema),
+    defaultValues: { name: '', email: '' },
+  });
+
+  const filteredProjects = useMemo(
+    () =>
+      MOCK_PROJECTS.filter(
+        (p) =>
+          p.name.toLowerCase().includes(projectSearch.toLowerCase()) ||
+          p.location.toLowerCase().includes(projectSearch.toLowerCase()),
+      ),
+    [projectSearch],
   );
 
-  const selectedProject = MOCK_PROJECTS.find(p => p.id === selectedProjectId);
+  const selectedProject = MOCK_PROJECTS.find((p) => p.id === selectedProjectId);
 
-  const validate = () => {
-    let ok = true;
-    setNameError(''); setEmailError(''); setProjectError('');
-    if (!name.trim())                  { setNameError('El nombre es obligatorio');      ok = false; }
-    if (!email.trim())                 { setEmailError('El correo es obligatorio');     ok = false; }
-    else if (!/\S+@\S+\.\S+/.test(email)) { setEmailError('Correo no válido');         ok = false; }
-    if (!selectedProjectId)            { setProjectError('Selecciona un proyecto');     ok = false; }
-    return ok;
-  };
+  const onSubmit = async (data: InviteForm) => {
+    let valid = true;
+    if (!selectedProjectId) { setProjectError('Selecciona un proyecto'); valid = false; }
+    if (!selectedRole)       { setRoleError('Selecciona un rol');         valid = false; }
+    if (!valid) return;
 
-  const handleInvite = () => {
-    if (!validate()) return;
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      Alert.alert(
-        'Invitación enviada',
-        `Se ha enviado un correo a ${email} para unirse a "${selectedProject?.name}".`,
-        [{ text: 'OK', onPress: () => router.back() }],
-      );
-    }, 1200);
+    await new Promise((r) => setTimeout(r, 900));
+    setLoading(false);
+    Alert.alert(
+      'Invitación enviada',
+      `Se ha enviado un correo a ${data.email} para unirse a "${selectedProject?.name}".`,
+      [{ text: 'OK', onPress: () => router.back() }],
+    );
   };
 
   return (
     <KeyboardAvoidingView
+      style={S.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[S.root, { backgroundColor: colors.background }]}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
     >
       <ModalRoot>
         <ModalHeader
-            title="Invitar miembro"
-            subtitle="Selecciona un proyecto y completa los datos"
-            onClose={() => router.back()}
+          title="Invitar al equipo"
+          subtitle="Selecciona un proyecto y completa los datos"
+          onClose={() => router.back()}
         />
 
-        <ModalBody scrollable={false}>
-          <ScrollView
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={S.scrollContent}
-          >
+        <ModalBody scrollable>
 
-            {/* ── Selector de proyecto ── */}
-            <Text style={[S.sectionLabel, { color: colors.foreground }]}>Proyecto</Text>
+          {/* ── Selector de proyecto ── */}
+          <Text style={[S.sectionLabel, { color: colors.foreground }]}>Proyecto</Text>
 
-            {/* Buscador de proyecto */}
-            <View style={[S.searchWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <MaterialIcons name="search" size={18} color={colors.muted} />
-              <TextInput
-                  style={[S.searchInput, { color: colors.foreground }]}
-                  placeholder="Buscar proyecto..."
-                  placeholderTextColor={colors.muted}
-                  value={projectSearch}
-                  onChangeText={setProjectSearch}
-              />
-              {projectSearch.length > 0 && (
-                  <TouchableOpacity onPress={() => setProjectSearch('')}>
-                    <MaterialIcons name="close" size={16} color={colors.muted} />
-                  </TouchableOpacity>
-              )}
-            </View>
+          <SearchInput
+            placeholder="Buscar proyecto..."
+            value={projectSearch}
+            onChangeText={setProjectSearch}
+          />
 
-            {/* Lista de proyectos */}
-            <View style={[S.projectList, card]}>
-              {filteredProjects.length === 0 ? (
-                  <Text style={[S.emptyText, { color: colors.muted }]}>
-                    No se encontraron proyectos
-                  </Text>
-              ) : (
-                  filteredProjects.map((p, idx) => (
-                      <TouchableOpacity
-                          key={p.id}
-                          onPress={() => { setSelectedProjectId(p.id); setProjectError(''); }}
-                          style={[
-                            S.projectRow,
-                            idx < filteredProjects.length - 1 && {
-                              borderBottomWidth: StyleSheet.hairlineWidth,
-                              borderBottomColor: colors.border,
-                            },
-                            selectedProjectId === p.id && {
-                              backgroundColor: colors.primary + '10',
-                            },
-                          ]}
-                      >
-                        <View style={[S.projectDot, { backgroundColor: p.color }]} />
-                        <View style={S.projectInfo}>
-                          <Text style={[S.projectName, { color: colors.foreground }]}>{p.name}</Text>
-                          <Text style={[S.projectLoc,  { color: colors.muted }]}>{p.location}</Text>
-                        </View>
-                        {selectedProjectId === p.id && (
-                            <MaterialIcons name="check-circle" size={20} color={colors.primary} />
-                        )}
-                      </TouchableOpacity>
-                  ))
-              )}
-            </View>
-            {!!projectError && (
-                <Text style={[S.errorText, { color: colors.error }]}>{projectError}</Text>
-            )}
-
-            {/* ── Datos del invitado ── */}
-            <Text style={[S.sectionLabel, { color: colors.foreground, marginTop: 20 }]}>
-              Datos del invitado
-            </Text>
-
-            {/* Nombre */}
-            <View style={[S.inputWrap, { backgroundColor: colors.surface, borderColor: nameError ? colors.error : colors.border }]}>
-              <MaterialIcons name="person-outline" size={18} color={colors.muted} style={S.inputIcon} />
-              <TextInput
-                  style={[S.input, { color: colors.foreground }]}
-                  placeholder="Nombre completo"
-                  placeholderTextColor={colors.muted}
-                  value={name}
-                  onChangeText={t => { setName(t); setNameError(''); }}
-                  returnKeyType="next"
-              />
-            </View>
-            {!!nameError && <Text style={[S.errorText, { color: colors.error }]}>{nameError}</Text>}
-
-            {/* Email */}
-            <View style={[S.inputWrap, { backgroundColor: colors.surface, borderColor: emailError ? colors.error : colors.border, marginTop: 10 }]}>
-              <MaterialIcons name="email" size={18} color={colors.muted} style={S.inputIcon} />
-              <TextInput
-                  style={[S.input, { color: colors.foreground }]}
-                  placeholder="Correo electrónico"
-                  placeholderTextColor={colors.muted}
-                  value={email}
-                  onChangeText={t => { setEmail(t); setEmailError(''); }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  returnKeyType="done"
-              />
-            </View>
-            {!!emailError && <Text style={[S.errorText, { color: colors.error }]}>{emailError}</Text>}
-
-            {/* Rol */}
-            <Text style={[S.sectionLabel, { color: colors.foreground, marginTop: 20 }]}>Rol</Text>
-            <View style={S.roles}>
-              {ROLES.map(r => (
+          <View style={[S.projectList, cardElevation, { marginTop: 10 }]}>
+            {filteredProjects.length === 0 ? (
+              <Text style={[S.emptyText, { color: colors.muted }]}>Sin resultados</Text>
+            ) : (
+              filteredProjects.map((p, idx) => {
+                const isSelected = selectedProjectId === p.id;
+                const isLast     = idx === filteredProjects.length - 1;
+                return (
                   <TouchableOpacity
-                      key={r}
-                      onPress={() => setSelectedRole(r)}
-                      style={[
-                        S.roleChip,
-                        {
-                          backgroundColor: selectedRole === r ? colors.primary : colors.surface,
-                          borderColor:     selectedRole === r ? colors.primary : colors.border,
-                        },
-                      ]}
+                    key={p.id}
+                    onPress={() => { setSelectedProjectId(p.id); setProjectError(''); }}
+                    style={[
+                      S.projectRow,
+                      {
+                        backgroundColor: isSelected ? colors.primary + '12' : 'transparent',
+                        borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
+                        borderBottomColor: colors.border,
+                      },
+                    ]}
                   >
-                    <Text
-                        style={[
-                          S.roleText,
-                          { color: selectedRole === r ? '#FFF' : colors.foreground },
-                        ]}
-                    >
-                      {r}
-                    </Text>
+                    <View style={[S.projectDot, { backgroundColor: p.color }]} />
+                    <View style={S.projectInfo}>
+                      <Text style={[S.projectName, { color: colors.foreground }]}>{p.name}</Text>
+                      <Text style={[S.projectLoc,  { color: colors.muted }]}>{p.location}</Text>
+                    </View>
+                    {/* Progress bar */}
+                    <View style={S.progressWrap}>
+                      <View style={[S.progressBg, { backgroundColor: colors.border }]}>
+                        <View
+                          style={[
+                            S.progressFill,
+                            { width: `${p.progress}%` as any, backgroundColor: p.color },
+                          ]}
+                        />
+                      </View>
+                      <Text style={[S.progressPct, { color: colors.muted }]}>{p.progress}%</Text>
+                    </View>
+                    {isSelected && (
+                      <IconSymbol name="checkmark.circle.fill" size={20} color={colors.primary} />
+                    )}
                   </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Info */}
-            {selectedProject && (
-                <View style={[S.infoBox, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}>
-                  <MaterialIcons name="info-outline" size={15} color={colors.primary} />
-                  <Text style={[S.infoText, { color: colors.primary }]}>
-                    Se enviará un correo de invitación a <Text style={{ fontWeight: '700' }}>{selectedProject.name}</Text>.
-                  </Text>
-                </View>
+                );
+              })
             )}
-          </ScrollView>
+          </View>
+          {!!projectError && (
+            <Text style={[S.errorText, { color: colors.error }]}>{projectError}</Text>
+          )}
+
+          {/* ── Datos del invitado ── */}
+          <Text style={[S.sectionLabel, { color: colors.foreground, marginTop: 24 }]}>
+            Datos del invitado
+          </Text>
+
+          <AppInput
+            label="Nombre completo"
+            name="name"
+            control={control}
+            icon="person.fill"
+            placeholder="Ej: Ana García"
+            returnKeyType="next"
+            autoCapitalize="words"
+          />
+
+          <AppInput
+            label="Correo electrónico"
+            name="email"
+            control={control}
+            icon="envelope.fill"
+            placeholder="correo@empresa.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            returnKeyType="done"
+          />
+
+          {/* ── Rol ── */}
+          <Text style={[S.sectionLabel, { color: colors.foreground }]}>Rol</Text>
+          <View style={S.roles}>
+            {ROLES.map((r) => {
+              const active = selectedRole === r;
+              return (
+                <TouchableOpacity
+                  key={r}
+                  onPress={() => { setSelectedRole(r); setRoleError(''); }}
+                  style={[
+                    S.roleChip,
+                    {
+                      backgroundColor: active ? colors.primary : colors.surface,
+                      borderColor:     active ? colors.primary : colors.border,
+                    },
+                  ]}
+                >
+                  <Text style={[S.roleText, { color: active ? '#FFF' : colors.foreground }]}>
+                    {r}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          {!!roleError && (
+            <Text style={[S.errorText, { color: colors.error }]}>{roleError}</Text>
+          )}
+
+          {/* ── Info box ── */}
+          {selectedProject && (
+            <View
+              style={[
+                S.infoBox,
+                { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' },
+              ]}
+            >
+              <IconSymbol name="info.circle.fill" size={16} color={colors.primary} />
+              <Text style={[S.infoText, { color: colors.primary }]}>
+                Se enviará un correo de invitación al proyecto{' '}
+                <Text style={{ fontWeight: '700' }}>{selectedProject.name}</Text>.
+              </Text>
+            </View>
+          )}
+
         </ModalBody>
 
         <ModalFooter row>
-          <Button title="Cancelar" variant="ghost"   onPress={() => router.back()} fullWidth={false} style={S.btn} />
-          <Button title="Invitar"  variant="primary"  onPress={handleInvite} isLoading={loading} fullWidth={false} style={S.btn} />
+          <Button
+            title="Cancelar"
+            variant="ghost"
+            onPress={() => router.back()}
+            fullWidth={false}
+            style={S.btn}
+          />
+          <Button
+            title="Enviar invitación"
+            variant="primary"
+            onPress={handleSubmit(onSubmit)}
+            isLoading={loading}
+            fullWidth={false}
+            style={S.btn}
+          />
         </ModalFooter>
       </ModalRoot>
     </KeyboardAvoidingView>
@@ -244,32 +279,28 @@ export default function InviteGlobalModal() {
 }
 
 const S = StyleSheet.create({
-  root:         { flex: 1 },
-  scrollContent: { paddingBottom: 16 },
-  sectionLabel: { fontSize: 13, fontWeight: '700', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
-  // Buscador
-  searchWrap:   { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 10, gap: 8 },
-  searchInput:  { flex: 1, fontSize: 14 },
+  flex:          { flex: 1 },
+  sectionLabel:  { fontSize: 13, fontWeight: '700', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
   // Lista proyectos
-  projectList:  { borderRadius: 14, overflow: 'hidden', marginBottom: 4 },
-  projectRow:   { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, gap: 12 },
-  projectDot:   { width: 10, height: 10, borderRadius: 5 },
-  projectInfo:  { flex: 1 },
-  projectName:  { fontSize: 14, fontWeight: '600' },
-  projectLoc:   { fontSize: 12, marginTop: 1 },
-  emptyText:    { textAlign: 'center', paddingVertical: 20, fontSize: 14 },
-  // Inputs
-  inputWrap:    { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 12 },
-  inputIcon:    { marginRight: 8 },
-  input:        { flex: 1, fontSize: 14 },
-  errorText:    { fontSize: 12, marginTop: 4, marginLeft: 4 },
+  projectList:   { borderRadius: 14, overflow: 'hidden', marginBottom: 4 },
+  projectRow:    { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, gap: 12 },
+  projectDot:    { width: 10, height: 10, borderRadius: 5 },
+  projectInfo:   { flex: 1 },
+  projectName:   { fontSize: 14, fontWeight: '600' },
+  projectLoc:    { fontSize: 12, marginTop: 1 },
+  progressWrap:  { alignItems: 'flex-end', gap: 3 },
+  progressBg:    { width: 56, height: 4, borderRadius: 2, overflow: 'hidden' },
+  progressFill:  { height: '100%', borderRadius: 2 },
+  progressPct:   { fontSize: 11 },
+  emptyText:     { textAlign: 'center', paddingVertical: 20, fontSize: 14 },
+  errorText:     { fontSize: 12, marginTop: 4, marginLeft: 4, marginBottom: 4 },
   // Roles
-  roles:        { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  roleChip:     { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
-  roleText:     { fontSize: 13, fontWeight: '500' },
+  roles:         { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  roleChip:      { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  roleText:      { fontSize: 13, fontWeight: '500' },
   // Info
-  infoBox:      { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 12, borderRadius: 12, borderWidth: 1, marginTop: 4 },
-  infoText:     { flex: 1, fontSize: 12, lineHeight: 18 },
+  infoBox:       { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 12, borderRadius: 12, borderWidth: 1, marginTop: 8 },
+  infoText:      { flex: 1, fontSize: 12, lineHeight: 18 },
   // Footer
-  btn:          { flex: 1 },
+  btn:           { flex: 1 },
 });
