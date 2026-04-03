@@ -528,12 +528,20 @@ export default function ProjectDetailScreen() {
               <Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={1}>{project.location}</Text>
             </View>
           </View>
-          <TouchableOpacity
-            onPress={handleAddPhoto}
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary + "15", alignItems: "center", justifyContent: "center" }}
-          >
-            <MaterialIcons name="add-a-photo" size={18} color={colors.primary} />
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <TouchableOpacity
+              onPress={handleAddPhoto}
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary + "15", alignItems: "center", justifyContent: "center" }}
+            >
+              <MaterialIcons name="add-a-photo" size={18} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push({ pathname: "/modals/project-settings", params: { projectId: project.id, projectName: project.name, projectLocation: project.location } })}
+              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}
+            >
+              <MaterialIcons name="more-vert" size={20} color={colors.foreground} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* ── Hero card ── */}

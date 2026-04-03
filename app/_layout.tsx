@@ -174,6 +174,16 @@ export default function RootLayout() {
                                     contentStyle: {backgroundColor: sheetBg},
                                 }}
                             />
+                            <Stack.Screen
+                                name="modals/project-settings"
+                                options={{
+                                    presentation: "formSheet",
+                                    sheetAllowedDetents: [1.0],
+                                    sheetGrabberVisible: true,
+                                    headerShown: false,
+                                    contentStyle: {backgroundColor: sheetBg},
+                                }}
+                            />
                         </Stack>
                         <StatusBar style="auto"/></AuthProvider>
                 </QueryClientProvider>
