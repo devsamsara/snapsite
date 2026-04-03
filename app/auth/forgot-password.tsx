@@ -1,97 +1,144 @@
+/**
+ * app/auth/forgot-password.tsx
+ *
+ * Pantalla de recuperación de contraseña.
+ * Adapta colores (dark/light) y estilo de card (flat/elevated).
+ */
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useColors } from '@/hooks/use-colors';
+import { useCardStyle } from '@/hooks/use-card-style';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppInput } from '@/components/ui/app-input';
+import { Button } from '@/components/ui/button';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
 
-const forgotPasswordSchema = z.object({
-  email: z.string().email('Correo electrónico inválido'),
+const schema = z.object({
+  email: z.string().email('Correo inválido'),
 });
 
-type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
+type FormValues = z.infer<typeof schema>;
 
 export default function ForgotPasswordScreen() {
   const [loading, setLoading] = useState(false);
-  const colors = useColors();
-  const router = useRouter();
+  const [sent, setSent]       = useState(false);
+  const colors                = useColors();
+  const cardElevation         = useCardStyle();
+  const router                = useRouter();
+  const insets                = useSafeAreaInsets();
 
-  const { control, handleSubmit, formState: { errors } } = useForm<ForgotPasswordFormValues>({
-    resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: {
-      email: '',
-    }
+  const { control, handleSubmit, getValues } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { email: '' },
   });
 
-  const handleReset = async (data: ForgotPasswordFormValues) => {
+  const onSubmit = async (_data: FormValues) => {
     setLoading(true);
-    // Simular envío de correo
     setTimeout(() => {
       setLoading(false);
-      Alert.alert('Correo Enviado', 'Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña.', [
-        { text: 'OK', onPress: () => router.push('/auth/login') }
-      ]);
+      setSent(true);
     }, 1500);
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[S.container, { backgroundColor: colors.background }]}
     >
-      <View style={styles.content}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <IconSymbol name="chevron.left" size={24} color={colors.foreground} />
+      <View style={[S.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 }]}>
+
+        {/* Back */}
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={[S.backBtn, { backgroundColor: colors.surface }]}
+        >
+          <IconSymbol name="chevron.left" size={20} color={colors.foreground} />
         </TouchableOpacity>
 
-        <View style={styles.header}>
-          <View style={[styles.iconContainer, { backgroundColor: colors.primary + '20' }]}>
-            <IconSymbol name="lock.fill" size={40} color={colors.primary} />
-          </View>
-          <Text style={[styles.title, { color: colors.foreground }]}>¿Olvidaste tu contraseña?</Text>
-          <Text style={[styles.subtitle, { color: colors.muted }]}>Ingresa tu correo y te enviaremos un enlace para recuperarla</Text>
-        </View>
-
-        <View style={styles.form}>
-          <AppInput
-            label="Correo Electrónico"
-            name="email"
-            control={control}
-            placeholder="juan@ejemplo.com"
-            icon="envelope.fill"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-
-          <TouchableOpacity 
-            style={[styles.button, { backgroundColor: colors.primary }]}
-            onPress={handleSubmit(handleReset)}
-            disabled={loading}
+        {/* Icono + título */}
+        <View style={S.header}>
+          <View
+            style={[
+              S.iconCircle,
+              { backgroundColor: sent ? colors.success + '18' : colors.primary + '18' },
+            ]}
           >
-            {loading ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <Text style={styles.buttonText}>Enviar Enlace</Text>
-            )}
-          </TouchableOpacity>
+            <IconSymbol
+              name={sent ? "checkmark.circle.fill" : "lock.rotation"}
+              size={44}
+              color={sent ? colors.success : colors.primary}
+            />
+          </View>
+          <Text style={[S.title, { color: colors.foreground }]}>
+            {sent ? '¡Correo enviado!' : 'Recuperar contraseña'}
+          </Text>
+          <Text style={[S.subtitle, { color: colors.muted }]}>
+            {sent
+              ? `Hemos enviado un enlace de recuperación a ${getValues('email')}.`
+              : 'Introduce tu correo y te enviaremos un enlace para restablecer tu contraseña.'}
+          </Text>
         </View>
+
+        {/* Formulario / Confirmación */}
+        {!sent ? (
+          <View style={[S.card, cardElevation]}>
+            <AppInput
+              label="Correo electrónico"
+              name="email"
+              control={control}
+              placeholder="tu@empresa.com"
+              icon="envelope.fill"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            <Button
+              title="Enviar enlace"
+              onPress={handleSubmit(onSubmit)}
+              isLoading={loading}
+              size="lg"
+            />
+          </View>
+        ) : (
+          <View style={[S.card, cardElevation]}>
+            <Button
+              title="Volver al inicio de sesión"
+              onPress={() => router.push('/auth/login')}
+              size="lg"
+            />
+            <Button
+              title="Reenviar correo"
+              onPress={handleSubmit(onSubmit)}
+              variant="ghost"
+              size="md"
+              style={S.resendBtn}
+            />
+          </View>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
+const S = StyleSheet.create({
   container: { flex: 1 },
-  content: { flex: 1, padding: 24, paddingTop: 60 },
-  backButton: { marginBottom: 32 },
-  header: { alignItems: 'center', marginBottom: 40 },
-  iconContainer: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-  title: { fontSize: 28, fontWeight: '800', marginBottom: 12, textAlign: 'center' },
-  subtitle: { fontSize: 16, textAlign: 'center', lineHeight: 24 },
-  form: { width: '100%' },
-  button: { height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  buttonText: { color: '#FFF', fontSize: 17, fontWeight: '700' },
+  content:   { flex: 1, paddingHorizontal: 24 },
+  backBtn:   { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 32 },
+  header:    { alignItems: 'center', marginBottom: 28 },
+  iconCircle: { width: 88, height: 88, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  title:     { fontSize: 26, fontWeight: '800', marginBottom: 10, textAlign: 'center' },
+  subtitle:  { fontSize: 15, textAlign: 'center', lineHeight: 22 },
+  card:      { borderRadius: 20, padding: 24, gap: 12 },
+  resendBtn: { marginTop: 4 },
 });
