@@ -12,13 +12,14 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
-  TextInput,
+  TextInput, Platform, KeyboardAvoidingView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle } from '@/hooks/use-card-style';
-import { ModalHeader, ModalBody } from '@/components/ui/modal-layout';
+import {ModalHeader, ModalBody, ModalRoot} from '@/components/ui/modal-layout';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import {SearchInput} from "@/components/ui/search-input";
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 const MOCK_MEMBERS = [
@@ -100,64 +101,62 @@ export default function TeamMembersModal() {
   );
 
   return (
-    <View style={[S.root, { backgroundColor: colors.background }]}>
-      <ModalHeader
-        title="Equipo"
-        subtitle={`${onlineCount} online · ${totalCount} miembros en total`}
-        onClose={() => router.back()}
-      />
+      <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ModalRoot>
+          <ModalHeader
+              title="Equipo"
+              subtitle={`${onlineCount} online · ${totalCount} miembros en total`}
+              onClose={() => router.back()}
+          />
 
-      {/* Stats rápidas */}
-      <View style={[S.statsRow, { paddingHorizontal: 20, paddingBottom: 12 }]}>
-        <View style={[S.statChip, { backgroundColor: colors.success + '15' }]}>
-          <View style={[S.statDot, { backgroundColor: colors.success }]} />
-          <Text style={[S.statText, { color: colors.success }]}>{onlineCount} online</Text>
-        </View>
-        <View style={[S.statChip, { backgroundColor: colors.border + '60' }]}>
-          <MaterialIcons name="people-outline" size={13} color={colors.muted} />
-          <Text style={[S.statText, { color: colors.muted }]}>{totalCount} total</Text>
-        </View>
-        <View style={[S.statChip, { backgroundColor: colors.primary + '15' }]}>
-          <MaterialIcons name="folder-open" size={13} color={colors.primary} />
-          <Text style={[S.statText, { color: colors.primary }]}>5 proyectos</Text>
-        </View>
-      </View>
-
-      {/* Buscador */}
-      <View style={[S.searchWrap, { backgroundColor: colors.surface, borderColor: colors.border, marginHorizontal: 20, marginBottom: 12 }]}>
-        <MaterialIcons name="search" size={18} color={colors.muted} />
-        <TextInput
-          style={[S.searchInput, { color: colors.foreground }]}
-          placeholder="Buscar por nombre, rol o proyecto..."
-          placeholderTextColor={colors.muted}
-          value={search}
-          onChangeText={setSearch}
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <MaterialIcons name="close" size={16} color={colors.muted} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <ModalBody scrollable={false}>
-        <FlatList
-          data={filtered}
-          keyExtractor={item => item.id}
-          renderItem={renderMember}
-          contentContainerStyle={[S.listContent, card, { marginHorizontal: 20, borderRadius: 16, overflow: 'hidden' }]}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={S.emptyWrap}>
-              <MaterialIcons name="people-outline" size={40} color={colors.muted} />
-              <Text style={[S.emptyText, { color: colors.muted }]}>
-                No se encontraron miembros
-              </Text>
+          {/* Stats rápidas */}
+          <View style={[S.statsRow, { paddingHorizontal: 20, paddingBottom: 12 }]}>
+            <View style={[S.statChip, { backgroundColor: colors.success + '15' }]}>
+              <View style={[S.statDot, { backgroundColor: colors.success }]} />
+              <Text style={[S.statText, { color: colors.success }]}>{onlineCount} online</Text>
             </View>
-          }
-        />
-      </ModalBody>
-    </View>
+            <View style={[S.statChip, { backgroundColor: colors.border + '60' }]}>
+              <MaterialIcons name="people-outline" size={13} color={colors.muted} />
+              <Text style={[S.statText, { color: colors.muted }]}>{totalCount} total</Text>
+            </View>
+            <View style={[S.statChip, { backgroundColor: colors.primary + '15' }]}>
+              <MaterialIcons name="folder-open" size={13} color={colors.primary} />
+              <Text style={[S.statText, { color: colors.primary }]}>5 proyectos</Text>
+            </View>
+          </View>
+
+          {/* Buscador */}
+          <View style={[{  marginHorizontal: 20, marginBottom: 12 }]}>
+            <SearchInput
+                placeholder="Buscar por nombre, rol o proyecto..."
+                value={search}
+                onChangeText={setSearch}
+                style={{ marginBottom: 16 }}
+            />
+          </View>
+
+          <ModalBody scrollable={false}>
+            <FlatList
+                data={filtered}
+                keyExtractor={item => item.id}
+                renderItem={renderMember}
+                contentContainerStyle={[S.listContent, card, { borderRadius: 16, overflow: 'hidden' }]}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={
+                  <View style={S.emptyWrap}>
+                    <MaterialIcons name="people-outline" size={40} color={colors.muted} />
+                    <Text style={[S.emptyText, { color: colors.muted }]}>
+                      No se encontraron miembros
+                    </Text>
+                  </View>
+                }
+            />
+          </ModalBody>
+        </ModalRoot>
+      </KeyboardAvoidingView>
   );
 }
 

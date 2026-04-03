@@ -79,7 +79,7 @@ export function ModalHeader({
   return (
     // zIndex + backgroundColor garantizan que el header siempre quede
     // encima del ScrollView del ModalBody cuando el usuario hace scroll.
-    <View style={[S.header, { backgroundColor: colors.surface }, style]}>
+    <View style={[S.header, { backgroundColor: colors.background }, style]}>
       {/* Drag pill — siempre visible, indica que el modal es deslizable */}
 
 
@@ -184,7 +184,7 @@ export function ModalFooter({
           paddingHorizontal: paddingH,
           paddingBottom: bottomPad,
           borderTopColor: colors.border,
-          backgroundColor: colors.surface,
+          backgroundColor: colors.background,
           flexDirection: row ? "row" : "column",
           gap: row ? 8 : 10,
         },
@@ -207,7 +207,7 @@ interface ModalRootProps {
 export function ModalRoot({ children, style }: ModalRootProps) {
   const colors = useColors();
   return (
-    <View style={[S.root, { backgroundColor: colors.surface }, style]}>
+    <View style={[S.root, { backgroundColor: colors.background }, style]}>
       {children}
     </View>
   );

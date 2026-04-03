@@ -196,11 +196,8 @@ const colorScheme = useColorScheme();
                             <Stack.Screen
                                 name="modals/team-members"
                                 options={{
-                                    presentation: "formSheet",
-                                    sheetAllowedDetents: [1.0],
-                                    sheetGrabberVisible: true,
+                                    presentation: "modal",
                                     headerShown: false,
-                                    contentStyle: {backgroundColor: sheetBg},
                                 }}
                             />
                         </Stack>
