@@ -110,6 +110,40 @@ export default function RootLayout() {
                   contentStyle: { backgroundColor: "#000" },
                 }}
               />
+              {/* ── Modal screens ── */}
+              <Stack.Screen
+                name="modals/annotation-text"
+                options={{
+                  presentation: "formSheet",
+                  headerShown: false,
+                  contentStyle: { backgroundColor: "transparent" },
+                }}
+              />
+              <Stack.Screen
+                name="modals/annotation-measure"
+                options={{
+                  presentation: "formSheet",
+                  headerShown: false,
+                  contentStyle: { backgroundColor: "transparent" },
+                }}
+              />
+              <Stack.Screen
+                name="modals/photo-lightbox"
+                options={{
+                  presentation: "fullScreenModal",
+                  headerShown: false,
+                  animation: "fade",
+                  contentStyle: { backgroundColor: "#000" },
+                }}
+              />
+              <Stack.Screen
+                name="modals/add-note"
+                options={{
+                  presentation: "formSheet",
+                  headerShown: false,
+                  contentStyle: { backgroundColor: "transparent" },
+                }}
+              />
             </Stack>
             <StatusBar style="auto" />
           </AuthProvider>

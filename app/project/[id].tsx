@@ -7,14 +7,11 @@ import {
   FlatList,
   Dimensions,
   StyleSheet,
-  Modal,
-  TextInput,
   Alert,
-  Platform,
-  KeyboardAvoidingView,
   Animated as RNAnimated,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { addNoteStore } from "@/lib/modal-stores";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useState, useRef, useCallback } from "react";
@@ -164,9 +161,7 @@ export default function ProjectDetailScreen() {
   const project: Project = MOCK_PROJECTS[id] ?? MOCK_PROJECTS["1"];
 
   const [activeTab, setActiveTab] = useState<TabId>("gallery");
-  const [lightboxPhoto, setLightboxPhoto] = useState<Photo | null>(null);
-  const [noteModal, setNoteModal] = useState(false);
-  const [noteText, setNoteText] = useState("");
+  // Lightbox y nota son ahora Stack.Screen modales
   const [notes, setNotes] = useState<Note[]>(project.notes);
   const [photos, setPhotos] = useState<Photo[]>(project.photos);
   const [filterTag, setFilterTag] = useState<string | null>(null);
@@ -182,22 +177,37 @@ export default function ProjectDetailScreen() {
     router.push({ pathname: "/add-photo-modal", params: { projectId: project.id } });
   };
 
-  const handleAddNote = () => {
-    if (!noteText.trim()) return;
-    const newNote: Note = {
-      id: uid(),
-      author: "Tú",
-      initials: "TU",
-      authorColor: colors.primary,
-      content: noteText.trim(),
-      date: "Ahora",
-      pinned: false,
-    };
-    setNotes((p) => [newNote, ...p]);
-    setNoteText("");
-    setNoteModal(false);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  };
+  const openNoteModal = useCallback(() => {
+    const promise = addNoteStore.open();
+    router.push({ pathname: "/modals/add-note", params: { projectId: project.id } });
+    promise.then((result) => {
+      if (!result) return;
+      const newNote: Note = {
+        id: uid(),
+        author: "Tú",
+        initials: "TU",
+        authorColor: colors.primary,
+        content: result.text,
+        date: "Ahora",
+        pinned: false,
+      };
+      setNotes((p) => [newNote, ...p]);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    });
+  }, [project.id, colors.primary, router]);
+
+  const openLightbox = useCallback((photo: Photo) => {
+    router.push({
+      pathname: "/modals/photo-lightbox",
+      params: {
+        url: photo.url,
+        caption: photo.caption,
+        date: photo.date,
+        tags: JSON.stringify(photo.tags),
+        projectId: project.id,
+      },
+    });
+  }, [project.id, router]);
 
   const togglePin = (noteId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -271,7 +281,7 @@ export default function ProjectDetailScreen() {
           {filteredPhotos.map((photo) => (
             <TouchableOpacity
               key={photo.id}
-              onPress={() => setLightboxPhoto(photo)}
+              onPress={() => openLightbox(photo)}
               style={{ width: (W - 40) / 2, borderRadius: 16, overflow: "hidden" }}
             >
               <Image source={{ uri: photo.url }} style={{ width: "100%", height: 150 }} resizeMode="cover" />
@@ -460,7 +470,7 @@ export default function ProjectDetailScreen() {
 
       {/* FAB */}
       <TouchableOpacity
-        onPress={() => setNoteModal(true)}
+        onPress={() => openNoteModal()}
         style={[styles.fab, { backgroundColor: colors.primary }]}
       >
         <MaterialIcons name="add" size={28} color="#FFF" />
@@ -468,94 +478,7 @@ export default function ProjectDetailScreen() {
     </View>
   );
 
-  // ─── Lightbox ─────────────────────────────────────────────────────────────
-
-  const renderLightbox = () => (
-    <Modal
-      visible={!!lightboxPhoto}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setLightboxPhoto(null)}
-    >
-      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.95)", justifyContent: "center" }}>
-        <TouchableOpacity
-          onPress={() => setLightboxPhoto(null)}
-          style={{ position: "absolute", top: Platform.OS === "ios" ? 52 : 20, right: 16, zIndex: 10, padding: 8, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 20 }}
-        >
-          <MaterialIcons name="close" size={24} color="#FFF" />
-        </TouchableOpacity>
-
-        {lightboxPhoto && (
-          <>
-            <Image
-              source={{ uri: lightboxPhoto.url }}
-              style={{ width: W, height: W }}
-              resizeMode="contain"
-            />
-            <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>
-              <Text style={{ color: "#FFF", fontSize: 16, fontWeight: "700" }}>{lightboxPhoto.caption}</Text>
-              <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, marginTop: 4 }}>{lightboxPhoto.date}</Text>
-              <View style={{ flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-                {lightboxPhoto.tags.map((tag) => (
-                  <View key={tag} style={{ backgroundColor: "rgba(255,255,255,0.15)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
-                    <Text style={{ color: "#FFF", fontSize: 12 }}>#{tag}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-            {/* Annotate button */}
-            <TouchableOpacity
-              onPress={() => {
-                setLightboxPhoto(null);
-                router.push({ pathname: "/image-editor", params: { imageUri: lightboxPhoto.url, projectId: project.id } });
-              }}
-              style={{ marginHorizontal: 24, marginTop: 20, backgroundColor: colors.primary, paddingVertical: 14, borderRadius: 14, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8 }}
-            >
-              <MaterialIcons name="edit" size={18} color="#FFF" />
-              <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Anotar Foto</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-    </Modal>
-  );
-
-  // ─── Note Modal ───────────────────────────────────────────────────────────
-
-  const renderNoteModal = () => (
-    <Modal visible={noteModal} transparent animationType="slide" onRequestClose={() => setNoteModal(false)}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
-        <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <Text style={{ color: colors.foreground, fontSize: 17, fontWeight: "700" }}>Nueva Nota</Text>
-            <TouchableOpacity onPress={() => setNoteModal(false)}>
-              <MaterialIcons name="close" size={22} color={colors.muted} />
-            </TouchableOpacity>
-          </View>
-          <TextInput
-            value={noteText}
-            onChangeText={setNoteText}
-            placeholder="Escribe una nota para el equipo..."
-            placeholderTextColor={colors.muted}
-            style={[styles.noteInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
-            multiline
-            autoFocus
-            maxLength={500}
-          />
-          <Text style={{ color: colors.muted, fontSize: 11, textAlign: "right", marginTop: 4 }}>
-            {noteText.length}/500
-          </Text>
-          <TouchableOpacity
-            onPress={handleAddNote}
-            disabled={!noteText.trim()}
-            style={[styles.saveBtn, { backgroundColor: noteText.trim() ? colors.primary : colors.border }]}
-          >
-            <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Guardar Nota</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
+  // Lightbox y nota son Stack.Screen modales
 
   // ─── Main Render ──────────────────────────────────────────────────────────
 
@@ -641,8 +564,7 @@ export default function ProjectDetailScreen() {
         </View>
       </View>
 
-      {renderLightbox()}
-      {renderNoteModal()}
+      {/* Lightbox y nota son Stack.Screen modales */}
     </ScreenContainer>
   );
 }
@@ -694,7 +616,7 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, paddingBottom: Platform.OS === "ios" ? 40 : 24,
+    padding: 24, paddingBottom: 40,
   },
   noteInput: {
     borderWidth: 1, borderRadius: 14, padding: 14,
