@@ -3,40 +3,59 @@
  *
  * Stack.Screen modal (formSheet) — personalizar la etiqueta de una medición.
  * Devuelve el resultado via annotationMeasureStore.
+ *
+ * Validación: Zod + react-hook-form
  */
-
-import React, { useState } from "react";
+import React from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { annotationMeasureStore } from "@/lib/modal-stores";
 import { ModalHeader, ModalBody, ModalFooter, ModalRoot } from "@/components/ui/modal-layout";
 import { Button } from "@/components/ui/button";
+import { AppInput } from "@/components/ui/app-input";
 import { useColors } from "@/hooks/use-colors";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+
+// ─── Schema ───────────────────────────────────────────────────────────────────
+const schema = z.object({
+  label: z
+    .string()
+    .min(1, "La etiqueta no puede estar vacía")
+    .max(30, "Máximo 30 caracteres"),
+});
+type FormValues = z.infer<typeof schema>;
 
 // ─── Presets ──────────────────────────────────────────────────────────────────
-
-const PRESETS = ["0.5 m", "1 m", "1.5 m", "2 m", "2.5 m", "3 m", "50 cm", "100 cm", "120 cm", "200 cm"];
+const PRESETS = [
+  "0.5 m", "1 m", "1.5 m", "2 m", "2.5 m",
+  "3 m", "50 cm", "100 cm", "120 cm", "200 cm",
+];
 
 // ─── Component ────────────────────────────────────────────────────────────────
-
 export default function AnnotationMeasureModal() {
   const router  = useRouter();
   const colors  = useColors();
   const params  = useLocalSearchParams<{ label?: string; color?: string }>();
 
-  const [label, setLabel] = useState(params.label ?? "");
+  const { control, handleSubmit, setValue, watch, formState: { isValid } } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { label: params.label ?? "" },
+    mode: "onChange",
+  });
 
-  const handleConfirm = () => {
-    annotationMeasureStore.resolve({ label: label.trim() || (params.label ?? "") });
+  const currentLabel = watch("label");
+
+  const onConfirm = (data: FormValues) => {
+    annotationMeasureStore.resolve({ label: data.label.trim() });
     router.back();
   };
 
@@ -51,7 +70,6 @@ export default function AnnotationMeasureModal() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ModalRoot>
-
         {/* ── Header ── */}
         <ModalHeader
           title="Etiqueta de Medida"
@@ -61,22 +79,19 @@ export default function AnnotationMeasureModal() {
 
         {/* ── Body ── */}
         <ModalBody>
-
-          {/* Input con icono */}
-          <View style={[S.inputRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <MaterialIcons name="straighten" size={20} color={colors.muted} style={S.inputIcon} />
-            <TextInput
-              value={label}
-              onChangeText={setLabel}
-              placeholder="Ej: 2.5 m"
-              placeholderTextColor={colors.muted}
-              style={[S.input, { color: colors.foreground }]}
-              autoFocus
-              selectTextOnFocus
-              returnKeyType="done"
-              onSubmitEditing={handleConfirm}
-            />
-          </View>
+          {/* Input con validación */}
+          <AppInput
+            name="label"
+            control={control}
+            label="Medida"
+            placeholder="Ej: 2.5 m"
+            icon="ruler"
+            autoFocus
+            selectTextOnFocus
+            returnKeyType="done"
+            maxLength={30}
+            onSubmitEditing={handleSubmit(onConfirm)}
+          />
 
           {/* Presets */}
           <Text style={[S.sectionLabel, { color: colors.muted }]}>Valores rápidos</Text>
@@ -84,47 +99,44 @@ export default function AnnotationMeasureModal() {
             {PRESETS.map((p) => (
               <TouchableOpacity
                 key={p}
-                onPress={() => setLabel(p)}
+                onPress={() => setValue("label", p, { shouldValidate: true })}
                 style={[
                   S.preset,
                   { backgroundColor: colors.background, borderColor: colors.border },
-                  label === p && { backgroundColor: colors.primary, borderColor: colors.primary },
+                  currentLabel === p && { backgroundColor: colors.primary, borderColor: colors.primary },
                 ]}
               >
                 <Text style={[
                   S.presetTxt,
                   { color: colors.muted },
-                  label === p && { color: "#FFF" },
+                  currentLabel === p && { color: "#FFF" },
                 ]}>
                   {p}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-
         </ModalBody>
 
         {/* ── Footer ── */}
         <ModalFooter row>
-          <Button title="Cancelar"  onPress={handleCancel}  variant="secondary" size="md" />
-          <Button title="Confirmar" onPress={handleConfirm} variant="primary"   size="md" leftIcon="check" />
+          <Button title="Cancelar"  onPress={handleCancel}              variant="secondary" size="md" />
+          <Button
+            title="Confirmar"
+            onPress={handleSubmit(onConfirm)}
+            variant="primary"
+            size="md"
+            leftIcon="check"
+            disabled={!isValid}
+          />
         </ModalFooter>
-
       </ModalRoot>
     </KeyboardAvoidingView>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-
 const S = StyleSheet.create({
-  inputRow: {
-    flexDirection: "row", alignItems: "center",
-    borderRadius: 12, borderWidth: 1,
-    paddingHorizontal: 14, marginBottom: 24,
-  },
-  inputIcon: { marginRight: 10 },
-  input: { flex: 1, fontSize: 18, fontWeight: "600", paddingVertical: 14 },
   sectionLabel: {
     fontSize: 12, fontWeight: "600",
     textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12,
