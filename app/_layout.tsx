@@ -5,7 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
-import { Platform } from "react-native";
+import { Platform, useColorScheme } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { AuthProvider } from "@/lib/auth-context";
@@ -67,6 +67,11 @@ export default function RootLayout() {
   const [trpcClient] = useState(() => createTRPCClient());
 
   // Ensure minimum 8px padding for top and bottom on mobile
+  const colorScheme = useColorScheme();
+  // Color de fondo para los formSheet — debe ser opaco para evitar
+  // que se vea la pantalla de atrás a través de los bordes redondeados de iOS
+  const sheetBg = colorScheme === "dark" ? "#1E293B" : "#F8FAFC";
+
   const providerInitialMetrics = useMemo(() => {
     const metrics = initialWindowMetrics ?? { insets: initialInsets, frame: initialFrame };
     return {
@@ -116,7 +121,9 @@ export default function RootLayout() {
                 options={{
                   presentation: "formSheet",
                   headerShown: false,
-                  contentStyle: { backgroundColor: "transparent" },
+                  // sheetBg opaco: evita ver la pantalla de atrás a través
+                  // de los bordes redondeados del formSheet en iOS
+                  contentStyle: { backgroundColor: sheetBg },
                 }}
               />
               <Stack.Screen
@@ -124,7 +131,7 @@ export default function RootLayout() {
                 options={{
                   presentation: "formSheet",
                   headerShown: false,
-                  contentStyle: { backgroundColor: "transparent" },
+                  contentStyle: { backgroundColor: sheetBg },
                 }}
               />
               <Stack.Screen
@@ -141,7 +148,7 @@ export default function RootLayout() {
                 options={{
                   presentation: "formSheet",
                   headerShown: false,
-                  contentStyle: { backgroundColor: "transparent" },
+                  contentStyle: { backgroundColor: sheetBg },
                 }}
               />
             </Stack>
