@@ -1,24 +1,22 @@
 import "@/global.css";
-import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {ApolloProvider} from "@apollo/client";
 import {Stack} from "expo-router";
 import {StatusBar} from "expo-status-bar";
-import {useCallback, useEffect, useMemo, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {GestureHandlerRootView} from "react-native-gesture-handler";
 import "react-native-reanimated";
 import {Platform, useColorScheme} from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import {ThemeProvider} from "@/lib/theme-provider";
 import {AuthProvider} from "@/lib/auth-context";
-import type {EdgeInsets, Metrics, Rect} from "react-native-safe-area-context";
+import type {EdgeInsets, Rect} from "react-native-safe-area-context";
 import {
     initialWindowMetrics,
     SafeAreaFrameContext,
     SafeAreaInsetsContext,
     SafeAreaProvider,
 } from "react-native-safe-area-context";
-
-import {createTRPCClient, trpc} from "@/lib/trpc";
-import {initManusRuntime, subscribeSafeAreaInsets} from "@/lib/_core/manus-runtime";
+import {apolloClient} from "@/lib/graphql-client";
 import {initI18n} from "@/lib/i18n";
 
 const DEFAULT_WEB_INSETS: EdgeInsets = {top: 0, right: 0, bottom: 0, left: 0};
@@ -40,37 +38,6 @@ export default function RootLayout() {
         initI18n();
     }, []);
 
-    // Initialize Manus runtime for cookie injection from parent container
-    useEffect(() => {
-        initManusRuntime();
-    }, []);
-
-    const handleSafeAreaUpdate = useCallback((metrics: Metrics) => {
-        setInsets(metrics.insets);
-        setFrame(metrics.frame);
-    }, []);
-
-    useEffect(() => {
-        if (Platform.OS !== "web") return;
-        const unsubscribe = subscribeSafeAreaInsets(handleSafeAreaUpdate);
-        return () => unsubscribe();
-    }, [handleSafeAreaUpdate]);
-
-    // Create clients once and reuse them
-    const [queryClient] = useState(
-        () =>
-            new QueryClient({
-                defaultOptions: {
-                    queries: {
-                        // Disable automatic refetching on window focus for mobile
-                        refetchOnWindowFocus: false,
-                        // Retry failed requests once
-                        retry: 1,
-                    },
-                },
-            }),
-    );
-    const [trpcClient] = useState(() => createTRPCClient());
     const colorScheme = useColorScheme();
     // sheetBg opaco: evita ver la pantalla de atrás a través de los bordes
     // redondeados del formSheet en iOS cuando backgroundColor es transparent
@@ -90,9 +57,8 @@ export default function RootLayout() {
 
     const content = (
         <GestureHandlerRootView style={{flex: 1}}>
-            <trpc.Provider client={trpcClient} queryClient={queryClient}>
-                <QueryClientProvider client={queryClient}>
-                    <AuthProvider>
+            <ApolloProvider client={apolloClient}>
+                <AuthProvider>
                         <Stack screenOptions={{headerShown: false}}>
                             <Stack.Screen
                                 name="onboarding"
@@ -109,7 +75,7 @@ export default function RootLayout() {
                                 name="(tabs)"
                                 options={{ animation: 'fade' }}
                             />
-                            <Stack.Screen name="oauth/callback"/>
+                            {/* oauth/callback removed — handled by AuthProvider */}
                             <Stack.Screen
                                 name="company-cam-clone"
                                 options={{
@@ -274,9 +240,9 @@ export default function RootLayout() {
                                 }}
                             />
                         </Stack>
-                        <StatusBar style="auto"/></AuthProvider>
-                </QueryClientProvider>
-            </trpc.Provider>
+                        <StatusBar style="auto"/>
+                </AuthProvider>
+            </ApolloProvider>
         </GestureHandlerRootView>
     );
 

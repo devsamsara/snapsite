@@ -28,7 +28,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
 
-type FormValues = { username: string; password: string };
+type FormValues = { email: string; password: string };
 
 export default function LoginScreen() {
   const { t }                 = useTranslation();
@@ -40,20 +40,24 @@ export default function LoginScreen() {
   const insets                = useSafeAreaInsets();
 
   const schema = z.object({
-    username: z.string().min(1, t('validation.usernameRequired')),
+    email: z.string().email(t('validation.emailInvalid')),
     password: z.string().min(1, t('validation.passwordRequired')),
   });
 
   const { control, handleSubmit } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { username: '', password: '' },
+    defaultValues: { email: '', password: '' },
   });
 
   const onLogin = async (data: FormValues) => {
     setLoading(true);
-    const ok = await signIn(data.username, data.password);
-    setLoading(false);
-    if (!ok) Alert.alert(t('auth.login.errorTitle'), t('auth.login.errorMessage'));
+    try {
+      await signIn(data.email, data.password);
+    } catch (e: any) {
+      Alert.alert(t('auth.login.errorTitle'), e?.message ?? t('auth.login.errorMessage'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -88,10 +92,10 @@ export default function LoginScreen() {
 
           <View style={S.fields}>
             <AppInput
-              label={t('auth.login.username')}
-              name="username"
+              label={t('auth.login.email')}
+              name="email"
               control={control}
-              placeholder={t('auth.login.usernamePlaceholder')}
+              placeholder={t('auth.login.emailPlaceholder')}
               icon="person.fill"
               autoCapitalize="none"
             />
