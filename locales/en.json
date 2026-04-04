@@ -22,7 +22,8 @@
     "version": "SnapSite v1.0.0",
     "copyright": "© 2024 FieldCam. All rights reserved.",
     "today": "Today",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "unknownError": "An unexpected error occurred."
   },
   "tabs": {
     "home": "Home",
@@ -69,7 +70,9 @@
       "hasAccount": "Already have an account?",
       "login": "Sign in",
       "successTitle": "Account created!",
-      "successMessage": "Check your email to activate your account."
+      "successMessage": "Check your email to activate your account.",
+      "errorTitle": "Registration failed",
+      "errorMessage": "Could not create account. Please try again."
     },
     "forgotPassword": {
       "title": "Reset password",
@@ -80,7 +83,9 @@
       "emailPlaceholder": "you@company.com",
       "submit": "Send link",
       "backToLogin": "Back to sign in",
-      "resend": "Resend email"
+      "resend": "Resend email",
+      "errorTitle": "Error",
+      "errorMessage": "Could not send the email. Please try again."
     },
     "confirmEmail": {
       "title": "Verify your email",
@@ -91,7 +96,11 @@
       "noCode": "Didn't receive the code?",
       "resend": "Resend",
       "resending": "Sending…",
-      "infoText": "The code expires in 15 minutes. If you can't find it, check your spam folder."
+      "infoText": "The code expires in 15 minutes. If you can't find it, check your spam folder.",
+      "successMessage": "Your email has been verified successfully.",
+      "errorTitle": "Invalid code",
+      "errorMessage": "The code is invalid or has expired.",
+      "resendSuccess": "Email resent. Check your inbox."
     }
   },
   "home": {
@@ -460,7 +469,9 @@
     "language": "Language",
     "languageDesc": "Español / English",
     "logout": "Log Out",
-    "footer": "© 2024 FieldCam. All rights reserved."
+    "footer": "© 2024 FieldCam. All rights reserved.",
+    "logoutConfirmTitle": "Sign out",
+    "logoutConfirmMessage": "Are you sure you want to sign out?"
   },
   "profile": {
     "title": "Profile",

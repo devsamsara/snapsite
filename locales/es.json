@@ -22,7 +22,8 @@
     "version": "SnapSite v1.0.0",
     "copyright": "© 2024 FieldCam. Todos los derechos reservados.",
     "today": "Hoy",
-    "yesterday": "Ayer"
+    "yesterday": "Ayer",
+    "unknownError": "Ha ocurrido un error inesperado."
   },
   "tabs": {
     "home": "Inicio",
@@ -69,7 +70,9 @@
       "hasAccount": "¿Ya tienes cuenta?",
       "login": "Inicia sesión",
       "successTitle": "¡Cuenta creada!",
-      "successMessage": "Verifica tu correo para activar la cuenta."
+      "successMessage": "Verifica tu correo para activar la cuenta.",
+      "errorTitle": "Error al registrarse",
+      "errorMessage": "No se pudo crear la cuenta. Inténtalo de nuevo."
     },
     "forgotPassword": {
       "title": "Recuperar contraseña",
@@ -80,7 +83,9 @@
       "emailPlaceholder": "tu@empresa.com",
       "submit": "Enviar enlace",
       "backToLogin": "Volver al inicio de sesión",
-      "resend": "Reenviar correo"
+      "resend": "Reenviar correo",
+      "errorTitle": "Error",
+      "errorMessage": "No se pudo enviar el correo. Inténtalo de nuevo."
     },
     "confirmEmail": {
       "title": "Verifica tu correo",
@@ -91,7 +96,11 @@
       "noCode": "¿No recibiste el código?",
       "resend": "Reenviar",
       "resending": "Enviando…",
-      "infoText": "El código expira en 15 minutos. Si no lo encuentras, revisa tu carpeta de spam."
+      "infoText": "El código expira en 15 minutos. Si no lo encuentras, revisa tu carpeta de spam.",
+      "successMessage": "Tu correo ha sido verificado correctamente.",
+      "errorTitle": "Código incorrecto",
+      "errorMessage": "El código no es válido o ha expirado.",
+      "resendSuccess": "Correo reenviado. Revisa tu bandeja de entrada."
     }
   },
   "home": {
@@ -460,7 +469,9 @@
     "language": "Idioma",
     "languageDesc": "Español / English",
     "logout": "Cerrar sesión",
-    "footer": "© 2024 FieldCam. Todos los derechos reservados."
+    "footer": "© 2024 FieldCam. Todos los derechos reservados.",
+    "logoutConfirmTitle": "Cerrar sesión",
+    "logoutConfirmMessage": "¿Estás seguro de que quieres cerrar sesión?"
   },
   "profile": {
     "title": "Perfil",

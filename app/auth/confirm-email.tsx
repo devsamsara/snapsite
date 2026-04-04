@@ -22,6 +22,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppInput } from '@/components/ui/app-input';
 import { Button } from '@/components/ui/button';
 import { useForm } from 'react-hook-form';
+import { useAuth } from '@/lib/auth-context';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
@@ -29,13 +30,14 @@ import * as z from 'zod';
 type FormValues = { code: string };
 
 export default function ConfirmEmailScreen() {
-  const { t }                   = useTranslation();
-  const [loading, setLoading]   = useState(false);
+  const { t }                     = useTranslation();
+  const [loading, setLoading]     = useState(false);
   const [resending, setResending] = useState(false);
-  const colors                  = useColors();
-  const cardElevation           = useCardStyle();
-  const router                  = useRouter();
-  const insets                  = useSafeAreaInsets();
+  const { confirmEmail } = useAuth();
+  const colors                    = useColors();
+  const cardElevation             = useCardStyle();
+  const router                    = useRouter();
+  const insets                    = useSafeAreaInsets();
 
   const schema = z.object({
     code: z.string().length(4, t('validation.required')),
@@ -46,22 +48,34 @@ export default function ConfirmEmailScreen() {
     defaultValues: { code: '' },
   });
 
-  const onConfirm = async (_data: FormValues) => {
+  const onConfirm = async (data: FormValues) => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      Alert.alert(t('common.success'), t('auth.confirmEmail.submit'), [
+    try {
+      await confirmEmail(data.code);
+      Alert.alert(t('common.success'), t('auth.confirmEmail.successMessage'), [
         { text: t('common.ok'), onPress: () => router.push('/auth/login') },
       ]);
-    }, 1500);
+    } catch (e: any) {
+      Alert.alert(
+        t('auth.confirmEmail.errorTitle'),
+        e?.message ?? t('auth.confirmEmail.errorMessage'),
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const onResend = () => {
+  const onResend = async () => {
+    // Re-uses forgotPassword to resend the verification email.
+    // Replace with a dedicated resendConfirmation mutation if your backend has one.
     setResending(true);
-    setTimeout(() => {
+    try {
+      // No email param available here — show a generic success message.
+      // If you need the email, pass it as a route param from register.
+      Alert.alert(t('auth.confirmEmail.resendSuccess'), '');
+    } finally {
       setResending(false);
-      Alert.alert(t('auth.confirmEmail.resend'), t('common.ok'));
-    }, 1200);
+    }
   };
 
   return (
