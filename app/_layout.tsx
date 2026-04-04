@@ -105,7 +105,10 @@ export default function RootLayout() {
                             <Stack.Screen name="auth/register"/>
                             <Stack.Screen name="auth/forgot-password"/>
                             <Stack.Screen name="auth/confirm-email"/>
-                            <Stack.Screen name="(tabs)"/>
+                            <Stack.Screen
+                                name="(tabs)"
+                                options={{ animation: 'fade' }}
+                            />
                             <Stack.Screen name="oauth/callback"/>
                             <Stack.Screen
                                 name="company-cam-clone"
