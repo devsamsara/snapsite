@@ -2,17 +2,27 @@
 import "dotenv/config";
 import type { ExpoConfig } from "expo/config";
 
-const bundleId = "space.manus.field.cam.app.t20260114190645";
-const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
-const schemeFromBundleId = `manus${timestamp}`;
+// ─── App identity — set in .env or EAS secrets before publishing ──────────────
+// Required for App Store / Play Store:
+//   IOS_BUNDLE_ID, ANDROID_PACKAGE, APP_SCHEME
+// Optional (have sensible defaults):
+//   APP_NAME, APP_SLUG, EAS_PROJECT_ID, EAS_OWNER, GRAPHQL_URL
+const APP_NAME        = process.env.APP_NAME        ?? "SnapSite";
+const APP_SLUG        = process.env.APP_SLUG        ?? "snapsite-app";
+const IOS_BUNDLE_ID   = process.env.IOS_BUNDLE_ID   ?? "com.snapsite.app";
+const ANDROID_PACKAGE = process.env.ANDROID_PACKAGE ?? "com.snapsite.app";
+const APP_SCHEME      = process.env.APP_SCHEME      ?? "snapsite";
+const EAS_PROJECT_ID  = process.env.EAS_PROJECT_ID  ?? "c8815663-68f6-4a93-8efb-9f6d40e70767";
+const EAS_OWNER       = process.env.EAS_OWNER       ?? "devsamsara";
+// GraphQL API endpoint — configure per environment in EAS secrets
+const GRAPHQL_URL     = process.env.GRAPHQL_URL     ?? "";
 
 const env = {
-    appName: "SnapSite",
-    appSlug: "snapsite-app",
-    logoUrl: "",
-    scheme: schemeFromBundleId,
-    iosBundleId: bundleId,
-    androidPackage: bundleId,
+    appName: APP_NAME,
+    appSlug: APP_SLUG,
+    scheme: APP_SCHEME,
+    iosBundleId: IOS_BUNDLE_ID,
+    androidPackage: ANDROID_PACKAGE,
 };
 
 const config: ExpoConfig = {
@@ -28,10 +38,11 @@ const config: ExpoConfig = {
         bundleIdentifier: env.iosBundleId,
         infoPlist: {
             UIBackgroundModes: ["remote-notification"],
-            NSCameraUsageDescription: "Necesitamos acceso a tu cámara",
-            NSMicrophoneUsageDescription: "Necesitamos acceso a tu micrófono",
-            NSPhotoLibraryUsageDescription: "Necesitamos acceso a tu galería",
-            NSPhotoLibraryAddUsageDescription: "Necesitamos permiso para guardar fotos",
+            NSCameraUsageDescription: "SnapSite necesita acceso a tu camara para fotografiar tus proyectos.",
+            NSMicrophoneUsageDescription: "SnapSite necesita acceso al microfono para grabar videos.",
+            NSPhotoLibraryUsageDescription: "SnapSite necesita acceso a tu galeria para importar fotos.",
+            NSPhotoLibraryAddUsageDescription: "SnapSite necesita permiso para guardar fotos en tu galeria.",
+            NSLocationWhenInUseUsageDescription: "SnapSite usa tu ubicacion para asociarla a tus proyectos.",
         },
     },
     android: {
@@ -50,6 +61,8 @@ const config: ExpoConfig = {
             "WRITE_EXTERNAL_STORAGE",
             "READ_MEDIA_IMAGES",
             "READ_MEDIA_VIDEO",
+            "ACCESS_FINE_LOCATION",
+            "ACCESS_COARSE_LOCATION",
         ],
         intentFilters: [
             {
@@ -126,17 +139,18 @@ const config: ExpoConfig = {
         ],
     ],
     extra: {
+        graphqlUrl: GRAPHQL_URL,
         eas: {
-            projectId: "c8815663-68f6-4a93-8efb-9f6d40e70767",
+            projectId: EAS_PROJECT_ID,
         },
     },
     updates: {
-        url: "https://u.expo.dev/c8815663-68f6-4a93-8efb-9f6d40e70767",
+        url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
     },
     runtimeVersion: {
         policy: "appVersion",
     },
-    owner: "devsamsara",
+    owner: EAS_OWNER,
     experiments: {
         typedRoutes: true,
         reactCompiler: true, // React 19 soporta el compilador
