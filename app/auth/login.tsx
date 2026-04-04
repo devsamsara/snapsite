@@ -4,7 +4,7 @@
  * Un solo card centrado con los inputs y el botón.
  * Logo pequeño arriba, enlace de registro abajo como texto simple.
  */
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -27,8 +27,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import {ONBOARDING_DONE_KEY} from "@/app/onboarding";
+// ONBOARDING_DONE_KEY is managed exclusively by auth-context (signUp) and onboarding.tsx
 
 type FormValues = { email: string; password: string };
 
@@ -50,10 +49,6 @@ export default function LoginScreen() {
     resolver: zodResolver(schema),
     defaultValues: { email: '', password: '' },
   });
-
-  useEffect(() => {
-    AsyncStorage.removeItem(ONBOARDING_DONE_KEY)
-  }, []);
 
   const onLogin = async (data: FormValues) => {
     setLoading(true);
