@@ -23,7 +23,9 @@
     "copyright": "© 2024 FieldCam. All rights reserved.",
     "today": "Today",
     "yesterday": "Yesterday",
-    "unknownError": "An unexpected error occurred."
+    "unknownError": "An unexpected error occurred.",
+    "saving": "Saving...",
+    "tryAgain": "Please try again."
   },
   "tabs": {
     "home": "Home",
@@ -44,7 +46,9 @@
       "noAccount": "Don't have an account?",
       "register": "Sign up",
       "errorTitle": "Error",
-      "errorMessage": "Incorrect username or password."
+      "errorMessage": "Incorrect username or password.",
+      "email": "Email",
+      "emailPlaceholder": "you@email.com"
     },
     "register": {
       "step": "Step {{current}} of {{total}}",
@@ -283,7 +287,9 @@
       "preview": "Preview…",
       "colorLabel": "Color",
       "sizeLabel": "Size",
-      "addButton": "Add"
+      "addButton": "Add",
+      "color": "Color",
+      "size": "Size"
     },
     "measure": {
       "title": "Measurement Label",

@@ -23,7 +23,9 @@
     "copyright": "© 2024 FieldCam. Todos los derechos reservados.",
     "today": "Hoy",
     "yesterday": "Ayer",
-    "unknownError": "Ha ocurrido un error inesperado."
+    "unknownError": "Ha ocurrido un error inesperado.",
+    "saving": "Guardando...",
+    "tryAgain": "Por favor, inténtalo de nuevo."
   },
   "tabs": {
     "home": "Inicio",
@@ -44,7 +46,9 @@
       "noAccount": "¿No tienes cuenta?",
       "register": "Regístrate",
       "errorTitle": "Error",
-      "errorMessage": "Usuario o contraseña incorrectos."
+      "errorMessage": "Usuario o contraseña incorrectos.",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "tu@correo.com"
     },
     "register": {
       "step": "Paso {{current}} de {{total}}",
@@ -283,7 +287,9 @@
       "preview": "Vista previa…",
       "colorLabel": "Color",
       "sizeLabel": "Tamaño",
-      "addButton": "Agregar"
+      "addButton": "Agregar",
+      "color": "Color",
+      "size": "Tamaño"
     },
     "measure": {
       "title": "Etiqueta de Medida",

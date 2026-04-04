@@ -32,10 +32,11 @@ export default function RootLayout() {
 
     const [insets, setInsets] = useState<EdgeInsets>(initialInsets);
     const [frame, setFrame] = useState<Rect>(initialFrame);
+    const [i18nReady, setI18nReady] = useState(false);
 
-    // Initialize i18n on first mount
+    // Initialize i18n on first mount — must be awaited before rendering any screen
     useEffect(() => {
-        initI18n();
+        initI18n().then(() => setI18nReady(true));
     }, []);
 
     const colorScheme = useColorScheme();
@@ -54,6 +55,9 @@ export default function RootLayout() {
             },
         };
     }, [initialInsets, initialFrame]);
+
+    // Don't render anything until i18n is ready — prevents key strings showing as raw keys
+    if (!i18nReady) return null;
 
     const content = (
         <GestureHandlerRootView style={{flex: 1}}>
