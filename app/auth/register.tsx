@@ -71,7 +71,7 @@ export default function RegisterScreen() {
     setTimeout(() => {
       setLoading(false);
       Alert.alert(t('auth.register.successTitle'), t('auth.register.successMessage'), [
-        { text: t('common.ok'), onPress: () => router.push('/auth/confirm-email') },
+        { text: t('common.ok'), onPress: () => router.replace('/onboarding') },
       ]);
     }, 1500);
   });

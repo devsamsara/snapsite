@@ -94,6 +94,13 @@ export default function RootLayout() {
                 <QueryClientProvider client={queryClient}>
                     <AuthProvider>
                         <Stack screenOptions={{headerShown: false}}>
+                            <Stack.Screen
+                                name="onboarding"
+                                options={{
+                                    animation: 'fade',
+                                    gestureEnabled: false,
+                                }}
+                            />
                             <Stack.Screen name="auth/login"/>
                             <Stack.Screen name="auth/register"/>
                             <Stack.Screen name="auth/forgot-password"/>

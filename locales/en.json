@@ -497,5 +497,31 @@
     "noteRequired": "Note is required",
     "selectProject": "Select a project",
     "selectRole": "Select a role"
+  },
+  "onboarding": {
+    "slide1": {
+      "tag": "Welcome to SnapSite",
+      "title": "Your project,\nunder control.",
+      "subtitle": "Manage construction projects with photos, annotations and real-time tracking — all from your phone."
+    },
+    "slide2": {
+      "tag": "Visual documentation",
+      "title": "Capture every\ndetail.",
+      "subtitle": "Photograph project progress, add precise annotations and build a complete visual record of every project."
+    },
+    "slide3": {
+      "tag": "Teamwork",
+      "title": "Collaborate\nwithout limits.",
+      "subtitle": "Invite your team, assign roles and keep everyone in sync with real-time updates."
+    },
+    "slide4": {
+      "tag": "All set",
+      "title": "Start your\nfirst project.",
+      "subtitle": "In less than 2 minutes you will have your first active project and your team working with you."
+    },
+    "skip": "Skip",
+    "next": "Next",
+    "getStarted": "Get started",
+    "stepOf": "{{current}} of {{total}}"
   }
 }
