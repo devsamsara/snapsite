@@ -4,10 +4,28 @@ import HomeScreen from "./index";
 import ProjectsScreen from "./projects";
 import ProfileScreen from "./profile";
 import { NativeTabs, Label, Icon } from "expo-router/unstable-native-tabs";
+import { useEffect, useState } from "react";
+import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ONBOARDING_DONE_KEY } from "@/app/onboarding";
 
 export default function TabLayout() {
   const { t }  = useTranslation();
   const colors = useColors();
+  const router = useRouter();
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_DONE_KEY).then((done) => {
+      if (!done) {
+        router.replace("/onboarding");
+      } else {
+        setChecked(true);
+      }
+    });
+  }, []);
+
+  if (!checked) return null;
 
   const tabs = [
     { name: "index"    as const, title: t('tabs.home'),     icon: "house.fill",       component: HomeScreen    },
