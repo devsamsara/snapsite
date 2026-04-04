@@ -357,8 +357,9 @@ const S = StyleSheet.create({
   },
   inviteRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: 10,
+    marginBottom: -16,
   },
   inviteBtn: {
     width: 48,
@@ -366,7 +367,7 @@ const S = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 20,
+    marginBottom: 20,
   },
   successBanner: {
     flexDirection: "row",
