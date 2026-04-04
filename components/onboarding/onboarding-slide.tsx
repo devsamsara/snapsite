@@ -428,11 +428,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "flex-start",
-    paddingTop: H * 0.06,
+    paddingTop: H * 0.03,
   },
   illContainer: {
     width: W,
-    height: H * 0.42,
+    height: H * 0.36,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -553,28 +553,31 @@ const styles = StyleSheet.create({
 
   // Text content
   textContainer: {
-    paddingHorizontal: 32,
+    flex: 1,
+    paddingHorizontal: 28,
     paddingTop: 8,
+    paddingBottom: 16,
     width: "100%",
   },
   tagPill: {
     alignSelf: "flex-start",
     paddingHorizontal: 12, paddingVertical: 5,
     borderRadius: 20, borderWidth: 1,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   tagText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.3 },
   title: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: "800",
-    lineHeight: 42,
-    letterSpacing: -0.8,
-    marginBottom: 14,
+    lineHeight: 38,
+    letterSpacing: -0.6,
+    marginBottom: 12,
   },
   subtitle: {
     fontSize: 16,
     lineHeight: 24,
     fontWeight: "400",
     letterSpacing: 0.1,
+    flexShrink: 1,
   },
 });
