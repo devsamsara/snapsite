@@ -7,7 +7,14 @@ import { SearchInput } from "@/components/ui/search-input";
 import { useColors } from "@/hooks/use-colors";
 import { useCardStyle, useCardStyleSm } from "@/hooks/use-card-style";
 import { FabOptions } from "@/components/fab-options";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  Easing,
+} from "react-native-reanimated";
 
 // Mock data for recent projects
 const RECENT_PROJECTS = [
@@ -144,6 +151,21 @@ export default function HomeScreen() {
   const cardElevation = useCardStyle();
   const cardSmElevation = useCardStyleSm();
   const [searchQuery, setSearchQuery] = useState("");
+
+  // ── Entrance animation: mirrors onboarding exit (scale-down + fade-in) ──
+  const enterOpacity = useSharedValue(0);
+  const enterScale   = useSharedValue(1.06);
+
+  useEffect(() => {
+    enterOpacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.quad) });
+    enterScale.value   = withSpring(1, { damping: 22, stiffness: 160, mass: 0.8 });
+  }, []);
+
+  const enterStyle = useAnimatedStyle(() => ({
+    flex: 1,
+    opacity:   enterOpacity.value,
+    transform: [{ scale: enterScale.value }],
+  }));
 
   const handleCreateProject = () => {
     // TODO: Navigate to create project screen
@@ -344,7 +366,7 @@ export default function HomeScreen() {
 
   return (
     <ScreenContainer className="p-0">
-      <View className="flex-1 bg-background">
+      <Animated.View style={enterStyle} className="bg-background">
         {/* Modern Header */}
         <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 16 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
@@ -582,7 +604,7 @@ export default function HomeScreen() {
 
         {/* Floating Action Button Options */}
         <FabOptions />
-      </View>
+      </Animated.View>
     </ScreenContainer>
   );
 }
