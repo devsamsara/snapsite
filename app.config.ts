@@ -67,6 +67,7 @@ const config: ExpoConfig = {
     },
     plugins: [
         'expo-media-library',
+        'expo-localization',
         [
             "react-native-vision-camera",
             {
