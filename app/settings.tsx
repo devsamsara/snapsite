@@ -10,6 +10,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useThemeContext } from "@/lib/theme-provider";
 import { useNotifications, scheduleTestNotification } from "@/hooks/use-notifications";
 import { useCardStyle } from "@/hooks/use-card-style";
+import { useAuth } from "@/lib/auth-context";
 import * as Notifications from 'expo-notifications';
 
 export default function SettingsScreen() {
@@ -105,9 +106,28 @@ export default function SettingsScreen() {
     router.push("/edit-profile");
   };
 
+  const { signOut } = useAuth();
+
   const handleLogout = () => {
-    // TODO: Implement logout logic
-    console.log("Logout pressed");
+    Alert.alert(
+      t('settings.logoutConfirmTitle'),
+      t('settings.logoutConfirmMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('settings.logout'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+              // Navigation guard in AuthContext will redirect to /auth/login
+            } catch (e: any) {
+              Alert.alert(t('common.error'), e?.message ?? t('common.unknownError'));
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (

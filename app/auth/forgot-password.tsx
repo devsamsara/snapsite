@@ -22,6 +22,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppInput } from '@/components/ui/app-input';
 import { Button } from '@/components/ui/button';
 import { useForm } from 'react-hook-form';
+import { useAuth } from '@/lib/auth-context';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
@@ -29,13 +30,14 @@ import * as z from 'zod';
 type FormValues = { email: string };
 
 export default function ForgotPasswordScreen() {
-  const { t }                 = useTranslation();
-  const [loading, setLoading] = useState(false);
-  const [sent, setSent]       = useState(false);
-  const colors                = useColors();
-  const cardElevation         = useCardStyle();
-  const router                = useRouter();
-  const insets                = useSafeAreaInsets();
+  const { t }                   = useTranslation();
+  const [loading, setLoading]   = useState(false);
+  const [sent, setSent]         = useState(false);
+  const { forgotPassword }      = useAuth();
+  const colors                  = useColors();
+  const cardElevation           = useCardStyle();
+  const router                  = useRouter();
+  const insets                  = useSafeAreaInsets();
 
   const schema = z.object({
     email: z.string().email(t('validation.emailInvalid')),
@@ -46,12 +48,19 @@ export default function ForgotPasswordScreen() {
     defaultValues: { email: '' },
   });
 
-  const onSubmit = async (_data: FormValues) => {
+  const onSubmit = async (data: FormValues) => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await forgotPassword(data.email);
       setSent(true);
-    }, 1500);
+    } catch (e: any) {
+      Alert.alert(
+        t('auth.forgotPassword.errorTitle'),
+        e?.message ?? t('auth.forgotPassword.errorMessage'),
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

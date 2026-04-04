@@ -24,6 +24,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppInput } from '@/components/ui/app-input';
 import { Button } from '@/components/ui/button';
 import { useForm } from 'react-hook-form';
+import { useAuth } from '@/lib/auth-context';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
@@ -56,6 +57,8 @@ export default function RegisterScreen() {
       .regex(/[a-z]/, t('validation.passwordLowercase')),
   });
 
+  const { signUp } = useAuth();
+
   const step1 = useForm<Step1Values>({
     resolver: zodResolver(step1Schema),
     defaultValues: { companyName: '', industry: '', companySize: '' },
@@ -65,15 +68,20 @@ export default function RegisterScreen() {
     defaultValues: { fullName: '', email: '', password: '' },
   });
 
-  const goNext    = step1.handleSubmit(() => setStep(2));
-  const onRegister = step2.handleSubmit(async () => {
+  const goNext     = step1.handleSubmit(() => setStep(2));
+  const onRegister = step2.handleSubmit(async (data) => {
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await signUp(data.fullName, data.email, data.password);
+      // signUp navigates to /onboarding automatically on success
+    } catch (e: any) {
+      Alert.alert(
+        t('auth.register.errorTitle'),
+        e?.message ?? t('auth.register.errorMessage'),
+      );
+    } finally {
       setLoading(false);
-      Alert.alert(t('auth.register.successTitle'), t('auth.register.successMessage'), [
-        { text: t('common.ok'), onPress: () => router.replace('/onboarding') },
-      ]);
-    }, 1500);
+    }
   });
 
   const stepTitles    = [t('auth.register.step1Title'), t('auth.register.step2Title')];

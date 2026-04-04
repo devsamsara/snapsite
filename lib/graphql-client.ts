@@ -28,12 +28,12 @@ import * as SecureStore from "expo-secure-store";
 const GRAPHQL_URL: string =
   (Constants.expoConfig?.extra?.graphqlUrl as string | undefined) ??
   process.env.GRAPHQL_URL ??
-  "";
+  'http://localhost:4000/graphql'; // fallback for local dev
 
-if (!GRAPHQL_URL && __DEV__) {
+if (__DEV__ && !Constants.expoConfig?.extra?.graphqlUrl && !process.env.GRAPHQL_URL) {
   console.warn(
-    "[Apollo] GRAPHQL_URL is not set. " +
-    "Add it to your .env file or EAS secrets."
+    '[Apollo] GRAPHQL_URL is not set. Using localhost fallback.\n' +
+    'Add GRAPHQL_URL to your .env file or EAS secrets for staging/prod.',
   );
 }
 
@@ -57,24 +57,39 @@ const authLink = new ApolloLink((operation, forward) => {
   return forward(operation);
 });
 
-// Internal cache so the sync ApolloLink can access the latest token.
+/**
+ * In-memory token cache so the synchronous ApolloLink middleware
+ * can attach the latest token without async overhead per request.
+ */
 let _cachedToken: string | null = null;
 
-/** Call this from AuthContext after login to keep the Apollo header in sync. */
+/**
+ * Persist a new JWT to SecureStore and update the in-memory cache.
+ * Pass null to clear the token on logout.
+ */
 export async function setAuthToken(token: string | null): Promise<void> {
   _cachedToken = token;
   if (token) {
     await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
   } else {
-    await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
+    await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY).catch(() => {
+      // Key may not exist on first logout — ignore
+    });
   }
 }
 
-/** Restore the token from SecureStore on app launch. */
+/**
+ * Read the token from SecureStore on app launch and warm the cache.
+ * Returns the token string, or null if none is stored.
+ */
 export async function restoreAuthToken(): Promise<string | null> {
-  const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
-  _cachedToken = token;
-  return token;
+  try {
+    const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+    _cachedToken = token;
+    return token;
+  } catch {
+    return null;
+  }
 }
 
 // ─── HTTP link ────────────────────────────────────────────────────────────────
@@ -90,7 +105,15 @@ export const apolloClient = new ApolloClient({
   cache: new InMemoryCache(),
   defaultOptions: {
     watchQuery: {
-      fetchPolicy: "cache-and-network",
+      fetchPolicy: 'cache-and-network',
+      errorPolicy: 'all',
+    },
+    query: {
+      fetchPolicy: 'network-only',
+      errorPolicy: 'all',
+    },
+    mutate: {
+      errorPolicy: 'all',
     },
   },
 });
