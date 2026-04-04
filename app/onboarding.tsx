@@ -37,10 +37,9 @@ import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/use-colors";
 import { PaginationDots } from "@/components/onboarding/pagination-dots";
 import { OnboardingSlide, type SlideData } from "@/components/onboarding/onboarding-slide";
+import { ONBOARDING_DONE_KEY } from "@/lib/auth-context";
 
 const { width: W } = Dimensions.get("window");
-
-export const ONBOARDING_DONE_KEY = "@snapsite_onboarding_done";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 

@@ -7,11 +7,15 @@ import React, {
 } from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import { gql } from '@apollo/client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   apolloClient,
   setAuthToken,
   restoreAuthToken,
 } from '@/lib/graphql-client';
+
+/** Key used to persist whether the user has already seen the onboarding. */
+export const ONBOARDING_DONE_KEY = '@snapsite_onboarding_done';
 
 export interface AuthUser {
   id: string;
@@ -153,8 +157,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isPublic     = inAuthGroup || inOnboarding;
 
     if (!user && !isPublic) {
+      // Not authenticated and not on a public screen → go to login
       router.replace('/auth/login');
     } else if (user && inAuthGroup) {
+      // Authenticated and still on auth screen → go to tabs
+      // (onboarding is handled explicitly by signUp, not here)
       router.replace('/(tabs)');
     }
   }, [user, segments, isLoading]);
@@ -186,8 +193,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         const { token, user: userData } = data.register;
         await setAuthToken(token);
+        // Mark onboarding as NOT done so it shows after registration
+        await AsyncStorage.removeItem(ONBOARDING_DONE_KEY);
         setUser(userData as AuthUser);
-        // Navigate to onboarding after successful registration
+        // Navigate to onboarding — only triggered after registration
         router.replace('/onboarding');
       } catch (error) {
         throw new Error(extractMessage(error));
