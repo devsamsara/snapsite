@@ -1,13 +1,10 @@
 /**
- * OnboardingSlide
+ * OnboardingSlide v2
  *
- * A single full-screen onboarding slide with:
- * - Large abstract visual illustration (SVG-like View composition)
- * - Animated tag pill, headline, and subtitle
- * - Entrance animations: fade + translateY via Reanimated
- *
- * Each slide has a unique accent color and illustration shape
- * derived from the app's design system.
+ * Improvements:
+ * - Idle animations on illustration elements (float, pulse, slow rotate)
+ *   using withRepeat + withSequence — start when slide becomes active
+ * - Entrance animations unchanged (staggered fade + translateY)
  */
 import React, { useEffect } from "react";
 import { View, Text, Dimensions, StyleSheet } from "react-native";
@@ -17,6 +14,8 @@ import Animated, {
   withDelay,
   withSpring,
   withTiming,
+  withRepeat,
+  withSequence,
   Easing,
 } from "react-native-reanimated";
 import { useColors } from "@/hooks/use-colors";
@@ -28,11 +27,8 @@ export interface SlideData {
   tag: string;
   title: string;
   subtitle: string;
-  /** Icon name from MaterialIcons */
   icon: string;
-  /** Accent color (hex) */
   accent: string;
-  /** Secondary accent for illustration */
   accentSoft: string;
 }
 
@@ -41,93 +37,87 @@ interface OnboardingSlideProp {
   isActive: boolean;
 }
 
-const SPRING = { damping: 22, stiffness: 180, mass: 0.8 };
-const FADE_DURATION = 380;
+const SPRING_IN  = { damping: 22, stiffness: 180, mass: 0.8 };
+const FADE_DUR   = 380;
+const FLOAT_DUR  = 2600; // ms for one float cycle
+const PULSE_DUR  = 1800;
 
 export function OnboardingSlide({ slide, isActive }: OnboardingSlideProp) {
   const colors = useColors();
 
-  // Shared animation values
-  const illustrationY  = useSharedValue(isActive ? 0 : 40);
-  const illustrationOp = useSharedValue(isActive ? 1 : 0);
-  const tagOp          = useSharedValue(isActive ? 1 : 0);
-  const tagY           = useSharedValue(isActive ? 0 : 20);
-  const titleOp        = useSharedValue(isActive ? 1 : 0);
-  const titleY         = useSharedValue(isActive ? 0 : 24);
-  const subtitleOp     = useSharedValue(isActive ? 1 : 0);
-  const subtitleY      = useSharedValue(isActive ? 0 : 20);
+  // ── Entrance animations ──────────────────────────────────────────────────
+  const illOp = useSharedValue(isActive ? 1 : 0);
+  const illY  = useSharedValue(isActive ? 0 : 40);
+  const tagOp = useSharedValue(isActive ? 1 : 0);
+  const tagY  = useSharedValue(isActive ? 0 : 20);
+  const titOp = useSharedValue(isActive ? 1 : 0);
+  const titY  = useSharedValue(isActive ? 0 : 24);
+  const subOp = useSharedValue(isActive ? 1 : 0);
+  const subY  = useSharedValue(isActive ? 0 : 20);
 
   useEffect(() => {
     if (isActive) {
-      // Staggered entrance
-      illustrationOp.value = withTiming(1, { duration: FADE_DURATION, easing: Easing.out(Easing.quad) });
-      illustrationY.value  = withSpring(0, SPRING);
-
-      tagOp.value   = withDelay(120, withTiming(1, { duration: FADE_DURATION }));
-      tagY.value    = withDelay(120, withSpring(0, SPRING));
-
-      titleOp.value = withDelay(200, withTiming(1, { duration: FADE_DURATION }));
-      titleY.value  = withDelay(200, withSpring(0, SPRING));
-
-      subtitleOp.value = withDelay(300, withTiming(1, { duration: FADE_DURATION }));
-      subtitleY.value  = withDelay(300, withSpring(0, SPRING));
+      illOp.value = withTiming(1, { duration: FADE_DUR, easing: Easing.out(Easing.quad) });
+      illY.value  = withSpring(0, SPRING_IN);
+      tagOp.value = withDelay(120, withTiming(1, { duration: FADE_DUR }));
+      tagY.value  = withDelay(120, withSpring(0, SPRING_IN));
+      titOp.value = withDelay(200, withTiming(1, { duration: FADE_DUR }));
+      titY.value  = withDelay(200, withSpring(0, SPRING_IN));
+      subOp.value = withDelay(300, withTiming(1, { duration: FADE_DUR }));
+      subY.value  = withDelay(300, withSpring(0, SPRING_IN));
     } else {
-      // Reset for next entrance
-      illustrationOp.value = withTiming(0, { duration: 200 });
-      illustrationY.value  = withTiming(40, { duration: 200 });
-      tagOp.value   = 0; tagY.value   = 20;
-      titleOp.value = 0; titleY.value = 24;
-      subtitleOp.value = 0; subtitleY.value = 20;
+      illOp.value = withTiming(0, { duration: 200 });
+      illY.value  = withTiming(40, { duration: 200 });
+      tagOp.value = 0; tagY.value = 20;
+      titOp.value = 0; titY.value = 24;
+      subOp.value = 0; subY.value = 20;
     }
   }, [isActive]);
 
-  const illustrationStyle = useAnimatedStyle(() => ({
-    opacity: illustrationOp.value,
-    transform: [{ translateY: illustrationY.value }],
+  const illStyle = useAnimatedStyle(() => ({
+    opacity: illOp.value,
+    transform: [{ translateY: illY.value }],
   }));
   const tagStyle = useAnimatedStyle(() => ({
     opacity: tagOp.value,
     transform: [{ translateY: tagY.value }],
   }));
-  const titleStyle = useAnimatedStyle(() => ({
-    opacity: titleOp.value,
-    transform: [{ translateY: titleY.value }],
+  const titStyle = useAnimatedStyle(() => ({
+    opacity: titOp.value,
+    transform: [{ translateY: titY.value }],
   }));
-  const subtitleStyle = useAnimatedStyle(() => ({
-    opacity: subtitleOp.value,
-    transform: [{ translateY: subtitleY.value }],
+  const subStyle = useAnimatedStyle(() => ({
+    opacity: subOp.value,
+    transform: [{ translateY: subY.value }],
   }));
 
   return (
     <View style={[styles.slide, { width: W }]}>
-
-      {/* ── Illustration area ── */}
-      <Animated.View style={[styles.illustrationContainer, illustrationStyle]}>
+      {/* Illustration */}
+      <Animated.View style={[styles.illContainer, illStyle]}>
         <SlideIllustration
           slideId={slide.id}
           accent={slide.accent}
           accentSoft={slide.accentSoft}
           bgColor={colors.surface}
           borderColor={colors.border}
+          isActive={isActive}
         />
       </Animated.View>
 
-      {/* ── Text content ── */}
+      {/* Text */}
       <View style={styles.textContainer}>
-        {/* Tag pill */}
         <Animated.View style={tagStyle}>
           <View style={[styles.tagPill, { backgroundColor: slide.accent + "18", borderColor: slide.accent + "30" }]}>
             <Text style={[styles.tagText, { color: slide.accent }]}>{slide.tag}</Text>
           </View>
         </Animated.View>
 
-        {/* Title */}
-        <Animated.Text style={[styles.title, { color: colors.foreground }, titleStyle]}>
+        <Animated.Text style={[styles.title, { color: colors.foreground }, titStyle]}>
           {slide.title}
         </Animated.Text>
 
-        {/* Subtitle */}
-        <Animated.Text style={[styles.subtitle, { color: colors.muted }, subtitleStyle]}>
+        <Animated.Text style={[styles.subtitle, { color: colors.muted }, subStyle]}>
           {slide.subtitle}
         </Animated.Text>
       </View>
@@ -135,98 +125,184 @@ export function OnboardingSlide({ slide, isActive }: OnboardingSlideProp) {
   );
 }
 
-// ─── Abstract Illustrations ────────────────────────────────────────────────
+// ─── Illustration dispatcher ──────────────────────────────────────────────────
 
-interface IllustrationProps {
+interface IllProps {
   slideId: string;
   accent: string;
   accentSoft: string;
   bgColor: string;
   borderColor: string;
+  isActive: boolean;
 }
 
-function SlideIllustration({ slideId, accent, accentSoft, bgColor, borderColor }: IllustrationProps) {
-  switch (slideId) {
-    case "slide1": return <IllustrationWelcome accent={accent} accentSoft={accentSoft} bgColor={bgColor} borderColor={borderColor} />;
-    case "slide2": return <IllustrationCapture accent={accent} accentSoft={accentSoft} bgColor={bgColor} borderColor={borderColor} />;
-    case "slide3": return <IllustrationTeam    accent={accent} accentSoft={accentSoft} bgColor={bgColor} borderColor={borderColor} />;
-    case "slide4": return <IllustrationStart   accent={accent} accentSoft={accentSoft} bgColor={bgColor} borderColor={borderColor} />;
+function SlideIllustration(p: IllProps) {
+  switch (p.slideId) {
+    case "slide1": return <IllustrationWelcome {...p} />;
+    case "slide2": return <IllustrationCapture {...p} />;
+    case "slide3": return <IllustrationTeam    {...p} />;
+    case "slide4": return <IllustrationStart   {...p} />;
     default:       return null;
   }
 }
 
-/** Slide 1 — Welcome: SnapSite logo-like concentric rings with center icon */
-function IllustrationWelcome({ accent, accentSoft, bgColor, borderColor }: Omit<IllustrationProps, "slideId">) {
+// ─── Shared idle hook ─────────────────────────────────────────────────────────
+
+/**
+ * Returns a shared value that floats up/down continuously while active.
+ * @param amplitude  px to float (default 6)
+ * @param duration   ms per half-cycle (default 1300)
+ * @param delay      ms before starting (default 0)
+ */
+function useFloat(isActive: boolean, amplitude = 6, duration = 1300, delay = 0) {
+  const y = useSharedValue(0);
+  useEffect(() => {
+    if (isActive) {
+      y.value = withDelay(
+        delay,
+        withRepeat(
+          withSequence(
+            withTiming(-amplitude, { duration, easing: Easing.inOut(Easing.sin) }),
+            withTiming( amplitude, { duration, easing: Easing.inOut(Easing.sin) })
+          ),
+          -1,
+          true
+        )
+      );
+    } else {
+      y.value = withTiming(0, { duration: 300 });
+    }
+  }, [isActive]);
+  return y;
+}
+
+/** Returns a shared value that pulses scale 1 → target → 1 */
+function usePulse(isActive: boolean, target = 1.08, duration = 900, delay = 0) {
+  const s = useSharedValue(1);
+  useEffect(() => {
+    if (isActive) {
+      s.value = withDelay(
+        delay,
+        withRepeat(
+          withSequence(
+            withTiming(target, { duration, easing: Easing.inOut(Easing.quad) }),
+            withTiming(1,      { duration, easing: Easing.inOut(Easing.quad) })
+          ),
+          -1,
+          true
+        )
+      );
+    } else {
+      s.value = withTiming(1, { duration: 300 });
+    }
+  }, [isActive]);
+  return s;
+}
+
+// ─── Slide 1 — Welcome ────────────────────────────────────────────────────────
+
+function IllustrationWelcome({ accent, accentSoft, bgColor, borderColor, isActive }: Omit<IllProps, "slideId">) {
+  // Center card floats gently
+  const cardY  = useFloat(isActive, 5, 1400);
+  const cardS  = usePulse(isActive, 1.03, 1600, 200);
+  // Badge TL floats with a slight offset
+  const badgeTLY = useFloat(isActive, 4, 1700, 300);
+  // Badge BR floats opposite phase
+  const badgeBRY = useFloat(isActive, 4, 1600, 600);
+
+  const cardStyle    = useAnimatedStyle(() => ({ transform: [{ translateY: cardY.value }, { scale: cardS.value }] }));
+  const badgeTLStyle = useAnimatedStyle(() => ({ transform: [{ translateY: badgeTLY.value }] }));
+  const badgeBRStyle = useAnimatedStyle(() => ({ transform: [{ translateY: badgeBRY.value }] }));
+
   return (
     <View style={styles.illBase}>
-      {/* Outer ring */}
       <View style={[styles.ring, styles.ring3, { borderColor: accent + "14", backgroundColor: accent + "06" }]} />
       <View style={[styles.ring, styles.ring2, { borderColor: accent + "22", backgroundColor: accent + "0A" }]} />
       <View style={[styles.ring, styles.ring1, { borderColor: accent + "40", backgroundColor: accent + "12" }]} />
-      {/* Center card */}
-      <View style={[styles.centerCard, { backgroundColor: bgColor, borderColor, shadowColor: accent }]}>
-        {/* App icon shape */}
+
+      <Animated.View style={[styles.centerCard, { backgroundColor: bgColor, borderColor, shadowColor: accent }, cardStyle]}>
         <View style={[styles.appIconOuter, { backgroundColor: accent }]}>
           <View style={styles.appIconInner}>
-            {/* Camera lens */}
             <View style={[styles.lens, { borderColor: "#fff" }]} />
             <View style={[styles.lensInner, { backgroundColor: "#fff" }]} />
           </View>
         </View>
         <Text style={[styles.centerCardLabel, { color: accent }]}>SnapSite</Text>
-      </View>
-      {/* Floating badges */}
-      <View style={[styles.badge, styles.badgeTL, { backgroundColor: bgColor, borderColor, shadowColor: accent }]}>
+      </Animated.View>
+
+      <Animated.View style={[styles.badge, styles.badgeTL, { backgroundColor: bgColor, borderColor, shadowColor: accent }, badgeTLStyle]}>
         <View style={[styles.badgeDot, { backgroundColor: "#10B981" }]} />
         <Text style={[styles.badgeText, { color: "#10B981" }]}>Activo</Text>
-      </View>
-      <View style={[styles.badge, styles.badgeBR, { backgroundColor: bgColor, borderColor, shadowColor: accent }]}>
+      </Animated.View>
+
+      <Animated.View style={[styles.badge, styles.badgeBR, { backgroundColor: bgColor, borderColor, shadowColor: accent }, badgeBRStyle]}>
         <Text style={[styles.badgeText, { color: accentSoft }]}>67%</Text>
         <View style={[styles.miniBar, { backgroundColor: borderColor }]}>
           <View style={[styles.miniBarFill, { backgroundColor: accent, width: "67%" }]} />
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 }
 
-/** Slide 2 — Capture: Photo grid with annotation overlays */
-function IllustrationCapture({ accent, accentSoft, bgColor, borderColor }: Omit<IllustrationProps, "slideId">) {
+// ─── Slide 2 — Capture ───────────────────────────────────────────────────────
+
+function IllustrationCapture({ accent, accentSoft, bgColor, borderColor, isActive }: Omit<IllProps, "slideId">) {
   const photos = [
-    { top: 0, left: 0, w: 110, h: 90 },
-    { top: 0, left: 118, w: 90, h: 90 },
-    { top: 98, left: 0, w: 90, h: 80 },
-    { top: 98, left: 98, w: 110, h: 80 },
+    { top: 0,  left: 0,   w: 110, h: 90 },
+    { top: 0,  left: 118, w: 90,  h: 90 },
+    { top: 98, left: 0,   w: 90,  h: 80 },
+    { top: 98, left: 98,  w: 110, h: 80 },
   ];
+
+  // Each photo card floats at a slightly different speed/phase
+  const y0 = useFloat(isActive, 5, 1500, 0);
+  const y1 = useFloat(isActive, 4, 1700, 200);
+  const y2 = useFloat(isActive, 6, 1400, 400);
+  const y3 = useFloat(isActive, 4, 1600, 100);
+  const photoYs = [y0, y1, y2, y3];
+
+  // Annotation pin pulses
+  const pinS = usePulse(isActive, 1.18, 800, 500);
+  const pinStyle = useAnimatedStyle(() => ({ transform: [{ scale: pinS.value }] }));
+
+  const photoStyles = photoYs.map((y) =>
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }))
+  );
+
   return (
     <View style={styles.illBase}>
-      {/* Photo grid */}
       <View style={{ width: 220, height: 190, position: "relative" }}>
         {photos.map((p, i) => (
-          <View
+          <Animated.View
             key={i}
-            style={{
-              position: "absolute",
-              top: p.top, left: p.left,
-              width: p.w, height: p.h,
-              borderRadius: 14,
-              backgroundColor: accent + (["18", "22", "14", "1C"][i]),
-              borderWidth: 1.5,
-              borderColor: accent + "30",
-              overflow: "hidden",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            style={[
+              {
+                position: "absolute",
+                top: p.top, left: p.left,
+                width: p.w, height: p.h,
+                borderRadius: 14,
+                backgroundColor: accent + (["18", "22", "14", "1C"][i]),
+                borderWidth: 1.5,
+                borderColor: accent + "30",
+                overflow: "hidden",
+                alignItems: "center",
+                justifyContent: "center",
+              },
+              photoStyles[i],
+            ]}
           >
-            {/* Simulated image content */}
             <View style={{ width: "60%", height: 4, backgroundColor: accent + "50", borderRadius: 2, marginBottom: 6 }} />
             <View style={{ width: "40%", height: 4, backgroundColor: accent + "30", borderRadius: 2 }} />
-          </View>
+          </Animated.View>
         ))}
+
         {/* Annotation pin */}
-        <View style={[styles.annotationPin, { backgroundColor: accent, top: 55, left: 90 }]}>
+        <Animated.View style={[styles.annotationPin, { backgroundColor: accent, top: 55, left: 90 }, pinStyle]}>
           <View style={[styles.annotationPinTip, { borderTopColor: accent }]} />
-        </View>
+        </Animated.View>
+
         {/* Measure line */}
         <View style={[styles.measureLine, { backgroundColor: "#F59E0B", top: 140, left: 20, width: 80 }]}>
           <View style={[styles.measureEndCap, { backgroundColor: "#F59E0B", left: 0 }]} />
@@ -238,49 +314,57 @@ function IllustrationCapture({ accent, accentSoft, bgColor, borderColor }: Omit<
   );
 }
 
-/** Slide 3 — Team: Avatar cluster with connection lines */
-function IllustrationTeam({ accent, accentSoft, bgColor, borderColor }: Omit<IllustrationProps, "slideId">) {
+// ─── Slide 3 — Team ──────────────────────────────────────────────────────────
+
+function IllustrationTeam({ accent, accentSoft, bgColor, borderColor, isActive }: Omit<IllProps, "slideId">) {
   const members = [
     { initials: "JP", color: "#2563EB", top: 20,  left: 80  },
     { initials: "MG", color: "#FF2D55", top: 80,  left: 20  },
     { initials: "CL", color: "#FF9500", top: 80,  left: 140 },
     { initials: "AM", color: "#10B981", top: 140, left: 80  },
   ];
+
+  // Each avatar floats independently
+  const y0 = useFloat(isActive, 5, 1600, 0);
+  const y1 = useFloat(isActive, 4, 1400, 300);
+  const y2 = useFloat(isActive, 6, 1700, 150);
+  const y3 = useFloat(isActive, 4, 1500, 450);
+  const avatarYs = [y0, y1, y2, y3];
+
+  // Hub pulses
+  const hubS = usePulse(isActive, 1.12, 1200, 400);
+  const hubStyle = useAnimatedStyle(() => ({ transform: [{ scale: hubS.value }] }));
+
+  const avatarStyles = avatarYs.map((y) =>
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }))
+  );
+
   return (
     <View style={styles.illBase}>
       <View style={{ width: 220, height: 210, position: "relative" }}>
-        {/* Connection lines */}
         <View style={[styles.connLine, { top: 56, left: 106, width: 2, height: 60, backgroundColor: accent + "30" }]} />
         <View style={[styles.connLine, { top: 56, left: 56, width: 60, height: 2, backgroundColor: accent + "30", transform: [{ rotate: "35deg" }] }]} />
         <View style={[styles.connLine, { top: 56, left: 106, width: 60, height: 2, backgroundColor: accent + "30", transform: [{ rotate: "-35deg" }] }]} />
 
-        {/* Center hub */}
-        <View style={[styles.hubCircle, { backgroundColor: accent + "18", borderColor: accent + "30", top: 80, left: 80 }]}>
+        <Animated.View style={[styles.hubCircle, { backgroundColor: accent + "18", borderColor: accent + "30", top: 80, left: 80 }, hubStyle]}>
           <View style={[styles.hubInner, { backgroundColor: accent }]} />
-        </View>
+        </Animated.View>
 
-        {/* Member avatars */}
-        {members.map((m) => (
-          <View
+        {members.map((m, i) => (
+          <Animated.View
             key={m.initials}
             style={[
               styles.avatar,
-              {
-                backgroundColor: m.color + "20",
-                borderColor: m.color + "50",
-                top: m.top,
-                left: m.left,
-              },
+              { backgroundColor: m.color + "20", borderColor: m.color + "50", top: m.top, left: m.left },
+              avatarStyles[i],
             ]}
           >
             <Text style={[styles.avatarText, { color: m.color }]}>{m.initials}</Text>
-          </View>
+          </Animated.View>
         ))}
 
-        {/* Online indicator */}
         <View style={[styles.onlineDot, { backgroundColor: "#10B981", top: 24, left: 108 }]} />
-
-        {/* Notification badge */}
         <View style={[styles.notifBadge, { backgroundColor: accent, top: 16, left: 140 }]}>
           <Text style={styles.notifText}>+2</Text>
         </View>
@@ -289,17 +373,25 @@ function IllustrationTeam({ accent, accentSoft, bgColor, borderColor }: Omit<Ill
   );
 }
 
-/** Slide 4 — Start: Rocket / launch metaphor with progress ring */
-function IllustrationStart({ accent, accentSoft, bgColor, borderColor }: Omit<IllustrationProps, "slideId">) {
+// ─── Slide 4 — Start ─────────────────────────────────────────────────────────
+
+function IllustrationStart({ accent, accentSoft, bgColor, borderColor, isActive }: Omit<IllProps, "slideId">) {
+  // Project card floats
+  const cardY = useFloat(isActive, 6, 1500, 0);
+  const cardStyle = useAnimatedStyle(() => ({ transform: [{ translateY: cardY.value }] }));
+
+  // Checkmarks pulse at different phases
+  const ck1S = usePulse(isActive, 1.2, 900, 200);
+  const ck2S = usePulse(isActive, 1.2, 900, 700);
+  const ck1Style = useAnimatedStyle(() => ({ transform: [{ scale: ck1S.value }] }));
+  const ck2Style = useAnimatedStyle(() => ({ transform: [{ scale: ck2S.value }] }));
+
   return (
     <View style={styles.illBase}>
-      {/* Outer glow ring */}
       <View style={[styles.ring, styles.ring3, { borderColor: accent + "18", backgroundColor: accent + "06" }]} />
       <View style={[styles.ring, styles.ring2, { borderColor: accent + "28", backgroundColor: accent + "0C" }]} />
 
-      {/* Center card — project card mockup */}
-      <View style={[styles.projectCard, { backgroundColor: bgColor, borderColor, shadowColor: accent }]}>
-        {/* Header */}
+      <Animated.View style={[styles.projectCard, { backgroundColor: bgColor, borderColor, shadowColor: accent }, cardStyle]}>
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
           <View style={[styles.projectThumb, { backgroundColor: accent + "20" }]} />
           <View style={{ flex: 1, marginLeft: 10 }}>
@@ -310,7 +402,6 @@ function IllustrationStart({ accent, accentSoft, bgColor, borderColor }: Omit<Il
             <Text style={{ color: "#10B981", fontSize: 9, fontWeight: "700" }}>ACTIVO</Text>
           </View>
         </View>
-        {/* Progress bar */}
         <View style={{ height: 6, backgroundColor: borderColor, borderRadius: 3, overflow: "hidden", marginBottom: 8 }}>
           <View style={{ height: "100%", width: "72%", backgroundColor: accent, borderRadius: 3 }} />
         </View>
@@ -318,15 +409,14 @@ function IllustrationStart({ accent, accentSoft, bgColor, borderColor }: Omit<Il
           <Text style={{ fontSize: 10, color: accentSoft }}>Progreso</Text>
           <Text style={{ fontSize: 10, fontWeight: "700", color: accent }}>72%</Text>
         </View>
-      </View>
+      </Animated.View>
 
-      {/* Floating checkmarks */}
-      <View style={[styles.checkBadge, styles.checkTL, { backgroundColor: "#10B981", shadowColor: "#10B981" }]}>
+      <Animated.View style={[styles.checkBadge, styles.checkTL, { backgroundColor: "#10B981", shadowColor: "#10B981" }, ck1Style]}>
         <Text style={styles.checkText}>✓</Text>
-      </View>
-      <View style={[styles.checkBadge, styles.checkBR, { backgroundColor: accent, shadowColor: accent }]}>
+      </Animated.View>
+      <Animated.View style={[styles.checkBadge, styles.checkBR, { backgroundColor: accent, shadowColor: accent }, ck2Style]}>
         <Text style={styles.checkText}>✓</Text>
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -340,9 +430,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     paddingTop: H * 0.06,
   },
-
-  // Illustration
-  illustrationContainer: {
+  illContainer: {
     width: W,
     height: H * 0.42,
     alignItems: "center",
@@ -357,7 +445,7 @@ const styles = StyleSheet.create({
   },
 
   // Rings
-  ring: { position: "absolute", borderRadius: 999, borderWidth: 1.5 },
+  ring:  { position: "absolute", borderRadius: 999, borderWidth: 1.5 },
   ring1: { width: 160, height: 160 },
   ring2: { width: 210, height: 210 },
   ring3: { width: 260, height: 260 },
@@ -411,12 +499,8 @@ const styles = StyleSheet.create({
     borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 7,
     borderLeftColor: "transparent", borderRightColor: "transparent",
   },
-  measureLine: {
-    position: "absolute", height: 2, borderRadius: 1,
-  },
-  measureEndCap: {
-    position: "absolute", width: 2, height: 8, top: -3, borderRadius: 1,
-  },
+  measureLine: { position: "absolute", height: 2, borderRadius: 1 },
+  measureEndCap: { position: "absolute", width: 2, height: 8, top: -3, borderRadius: 1 },
   measureLabel: { position: "absolute", fontSize: 10, fontWeight: "700" },
 
   // Team (slide 3)
