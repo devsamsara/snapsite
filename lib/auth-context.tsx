@@ -1,21 +1,3 @@
-/**
- * lib/auth-context.tsx
- *
- * AuthContext completo para SnapSite.
- *
- * Expone:
- *   user           — usuario autenticado o null
- *   isLoading      — true mientras restaura sesión al arrancar
- *   signIn         — login con email + password
- *   signUp         — registro con nombre, email, password
- *   signOut        — cierra sesión y limpia token
- *   forgotPassword — envía email de recuperación
- *   confirmEmail   — verifica código de confirmación
- *   updateUser     — actualiza datos del usuario en el contexto local
- *
- * Conecta con tu backend GraphQL.
- * Reemplaza los bodies de las mutations/queries con tu schema real.
- */
 import React, {
   createContext,
   useCallback,
@@ -24,14 +6,12 @@ import React, {
   useState,
 } from 'react';
 import { useRouter, useSegments } from 'expo-router';
-import { gql, ApolloError } from '@apollo/client';
+import { gql } from '@apollo/client';
 import {
   apolloClient,
   setAuthToken,
   restoreAuthToken,
 } from '@/lib/graphql-client';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface AuthUser {
   id: string;
@@ -44,26 +24,15 @@ export interface AuthUser {
 }
 
 interface AuthContextValue {
-  /** Currently signed-in user, or null if not authenticated */
   user: AuthUser | null;
-  /** True while the app is restoring a persisted session on launch */
   isLoading: boolean;
-  /** Sign in with email and password. Throws on failure. */
   signIn: (email: string, password: string) => Promise<void>;
-  /** Register a new account. Navigates to onboarding on success. */
   signUp: (name: string, email: string, password: string) => Promise<void>;
-  /** Sign out and clear the stored token. */
   signOut: () => Promise<void>;
-  /** Request a password-reset email. */
   forgotPassword: (email: string) => Promise<void>;
-  /** Verify the email confirmation code. */
   confirmEmail: (code: string) => Promise<void>;
-  /** Update the in-memory user after a profile edit. */
   updateUser: (patch: Partial<AuthUser>) => void;
 }
-
-// ─── GraphQL operations ───────────────────────────────────────────────────────
-// Replace these with your real backend schema once it is ready.
 
 const LOGIN_MUTATION = gql`
   mutation Login($email: String!, $password: String!) {
@@ -129,11 +98,8 @@ const CONFIRM_EMAIL_MUTATION = gql`
   }
 `;
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Extract a human-readable message from an Apollo or generic error. */
-function extractMessage(error: unknown): string {
-  if (error instanceof ApolloError) {
+function extractMessage(error: any): string {
+  if (error) {
     return (
       error.graphQLErrors[0]?.message ??
       error.networkError?.message ??
@@ -144,11 +110,8 @@ function extractMessage(error: unknown): string {
   return 'An unexpected error occurred.';
 }
 
-// ─── Context ──────────────────────────────────────────────────────────────────
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-// ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser]           = useState<AuthUser | null>(null);
@@ -156,7 +119,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router                    = useRouter();
   const segments                  = useSegments();
 
-  // ── Restore persisted session on app launch ──────────────────────────────
   useEffect(() => {
     const restore = async () => {
       try {
@@ -183,7 +145,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     restore();
   }, []);
 
-  // ── Navigation guard ─────────────────────────────────────────────────────
   useEffect(() => {
     if (isLoading) return;
 
@@ -198,7 +159,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, segments, isLoading]);
 
-  // ── signIn ───────────────────────────────────────────────────────────────
   const signIn = useCallback(async (email: string, password: string) => {
     try {
       const { data } = await apolloClient.mutate({
@@ -208,13 +168,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { token, user: userData } = data.login;
       await setAuthToken(token);
       setUser(userData as AuthUser);
-      // Navigation guard redirects to /(tabs) automatically
     } catch (error) {
       throw new Error(extractMessage(error));
     }
   }, []);
 
-  // ── signUp ───────────────────────────────────────────────────────────────
   const signUp = useCallback(
     async (name: string, email: string, password: string) => {
       try {
@@ -238,7 +196,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  // ── signOut ──────────────────────────────────────────────────────────────
   const signOut = useCallback(async () => {
     try {
       await setAuthToken(null);
@@ -249,7 +206,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ── forgotPassword ───────────────────────────────────────────────────────
   const forgotPassword = useCallback(async (email: string) => {
     try {
       await apolloClient.mutate({
@@ -261,7 +217,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ── confirmEmail ─────────────────────────────────────────────────────────
   const confirmEmail = useCallback(async (code: string) => {
     try {
       await apolloClient.mutate({
@@ -273,7 +228,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ── updateUser ───────────────────────────────────────────────────────────
   const updateUser = useCallback((patch: Partial<AuthUser>) => {
     setUser((prev) => (prev ? { ...prev, ...patch } : prev));
   }, []);
