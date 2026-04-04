@@ -214,6 +214,65 @@ export default function RootLayout() {
                                     headerShown: false,
                                 }}
                             />
+                            <Stack.Screen
+                                name="modals/edit-project"
+                                options={{
+                                    presentation: "formSheet",
+                                    sheetAllowedDetents: [0.85],
+                                    sheetGrabberVisible: true,
+                                    headerShown: false,
+                                    contentStyle: {backgroundColor: sheetBg},
+                                }}
+                            />
+                            <Stack.Screen
+                                name="modals/project-tags"
+                                options={{
+                                    presentation: "formSheet",
+                                    sheetAllowedDetents: [0.75],
+                                    sheetGrabberVisible: true,
+                                    headerShown: false,
+                                    contentStyle: {backgroundColor: sheetBg},
+                                }}
+                            />
+                            <Stack.Screen
+                                name="modals/project-description"
+                                options={{
+                                    presentation: "formSheet",
+                                    sheetAllowedDetents: [0.70],
+                                    sheetGrabberVisible: true,
+                                    headerShown: false,
+                                    contentStyle: {backgroundColor: sheetBg},
+                                }}
+                            />
+                            <Stack.Screen
+                                name="modals/project-contacts"
+                                options={{
+                                    presentation: "modal",
+                                    sheetAllowedDetents: [1.0],
+                                    sheetGrabberVisible: true,
+                                    headerShown: false,
+                                }}
+                            />
+                            <Stack.Screen
+                                name="modals/project-export"
+                                options={{
+                                    presentation: "formSheet",
+                                    sheetAllowedDetents: [0.80],
+                                    sheetGrabberVisible: true,
+                                    headerShown: false,
+                                    contentStyle: {backgroundColor: sheetBg},
+                                }}
+                            />
+                            <Stack.Screen
+                                name="modals/project-share"
+                                options={{
+                                    presentation: "formSheet",
+                                    sheetAllowedDetents: [0.85],
+                                    sheetGrabberVisible: true,
+                                    headerShown: false,
+                                    contentStyle: {backgroundColor: sheetBg},
+                                }}
+                            />
                         </Stack>
                         <StatusBar style="auto"/></AuthProvider>
                 </QueryClientProvider>
