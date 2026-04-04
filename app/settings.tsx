@@ -115,7 +115,7 @@ export default function SettingsScreen() {
       <View className="flex-1 bg-background">
         {/* Header */}
         <View className="px-6 pt-6 pb-4 border-b border-border">
-          <View className="flex-row items-center mb-6">
+          <View className="flex-row items-center mb-4">
             <TouchableOpacity
               onPress={handleGoBack}
               className="w-10 h-10 rounded-full items-center justify-center"
@@ -129,16 +129,16 @@ export default function SettingsScreen() {
 
         {/* Content */}
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingTop: 24 }}
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 16, paddingTop: 16 }}
           showsVerticalScrollIndicator={false}
         >
           {/* Profile Section */}
-          <View className="mb-6">
-            <Text className="text-sm font-semibold text-muted mb-3 uppercase">
+          <View className="mb-4">
+            <Text className="text-sm font-semibold text-muted mb-2 uppercase">
               {t('settings.sections.profile')}
             </Text>
             <View
-              style={[{ borderRadius: 20, padding: 24, alignItems: 'center', marginBottom: 12 }, cardElevation]}
+              style={[{ borderRadius: 16, padding: 16, alignItems: 'center', marginBottom: 12 }, cardElevation]}
             >
               {/* Avatar */}
               <View
@@ -154,7 +154,7 @@ export default function SettingsScreen() {
               <Text className="text-sm text-muted mt-1">Project Manager</Text>
 
               {/* Stats */}
-              <View className="flex-row gap-6 mt-6 pt-6 border-t border-border w-full">
+              <View className="flex-row gap-4 mt-4 pt-4 border-t border-border w-full">
                 <View className="flex-1 items-center">
                   <Text className="text-2xl font-bold text-primary">12</Text>
                   <Text className="text-xs text-muted mt-1">{t('settings.profile.projects')}</Text>
@@ -188,12 +188,12 @@ export default function SettingsScreen() {
           </View>
 
           {/* Notifications Section */}
-          <View className="mb-6">
-            <Text className="text-sm font-semibold text-muted mb-3 uppercase">
+          <View className="mb-4">
+            <Text className="text-sm font-semibold text-muted mb-2 uppercase">
               {t('settings.sections.notifications')}
             </Text>
             
-            <View style={[{ borderRadius: 20, overflow: 'hidden' }, cardElevation]}>
+            <View style={[{ borderRadius: 16, overflow: 'hidden' }, cardElevation]}>
               {/* Push Notifications */}
               <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
                 <View className="flex-row items-center flex-1">
@@ -239,12 +239,12 @@ export default function SettingsScreen() {
           </View>
 
           {/* Appearance Section */}
-          <View className="mb-6">
-            <Text className="text-sm font-semibold text-muted mb-3 uppercase">
+          <View className="mb-4">
+            <Text className="text-sm font-semibold text-muted mb-2 uppercase">
               {t('settings.sections.appearance')}
             </Text>
             
-            <View style={[{ borderRadius: 20, overflow: 'hidden' }, cardElevation]}>
+            <View style={[{ borderRadius: 16, overflow: 'hidden' }, cardElevation]}>
               {/* Dark Mode */}
               <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
                 <View className="flex-row items-center flex-1">
@@ -306,12 +306,12 @@ export default function SettingsScreen() {
           </View>
 
           {/* General Section */}
-          <View className="mb-6">
-            <Text className="text-sm font-semibold text-muted mb-3 uppercase">
+          <View className="mb-4">
+            <Text className="text-sm font-semibold text-muted mb-2 uppercase">
               {t('settings.sections.general')}
             </Text>
             
-            <View style={[{ borderRadius: 20, overflow: 'hidden' }, cardElevation]}>
+            <View style={[{ borderRadius: 16, overflow: 'hidden' }, cardElevation]}>
               {/* Privacy */}
               <TouchableOpacity style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingVertical:16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
                 <View className="flex-row items-center flex-1">

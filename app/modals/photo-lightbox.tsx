@@ -225,7 +225,7 @@ const S = StyleSheet.create({
     maxHeight: 200,
   },
   metaContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
   },
@@ -258,7 +258,7 @@ const S = StyleSheet.create({
   // Footer
   footer: {
     paddingTop: 14,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
 });

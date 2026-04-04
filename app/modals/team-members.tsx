@@ -115,7 +115,7 @@ export default function TeamMembersModal() {
           />
 
           {/* Stats rápidas */}
-          <View style={[S.statsRow, { paddingHorizontal: 20, paddingBottom: 12 }]}>
+          <View style={[S.statsRow, { paddingHorizontal: 16, paddingBottom: 12 }]}>
             <View style={[S.statChip, { backgroundColor: colors.success + '15' }]}>
               <View style={[S.statDot, { backgroundColor: colors.success }]} />
               <Text style={[S.statText, { color: colors.success }]}>{onlineCount} {t('team.online')}</Text>
@@ -173,8 +173,8 @@ const S = StyleSheet.create({
   searchWrap:  { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
   searchInput: { flex: 1, fontSize: 14 },
   // Lista
-  listContent: { paddingBottom: 20 },
-  memberRow:   { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, gap: 12 },
+  listContent: { paddingBottom: 16 },
+  memberRow:   { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, gap: 12 },
   // Avatar
   avatar:      { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', position: 'relative' },
   avatarText:  { fontSize: 15, fontWeight: '700' },

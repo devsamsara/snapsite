@@ -99,8 +99,8 @@ export default function ProjectsScreen() {
     <ScreenContainer className="p-0">
       <View className="flex-1 bg-background">
         {/* Header */}
-        <View className="px-6 pt-6 pb-4 border-b border-border">
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <View className="px-4 pt-4 pb-4 border-b border-border">
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <Text className="text-3xl font-bold text-foreground">{t('projects.title')}</Text>
             <TouchableOpacity
               onPress={() => router.push("/create-project-location")}
@@ -115,7 +115,7 @@ export default function ProjectsScreen() {
             placeholder={t('projects.searchPlaceholder')}
             value={searchText}
             onChangeText={setSearchText}
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: 12 }}
           />
 
           {/* Filter Buttons */}
@@ -146,7 +146,7 @@ export default function ProjectsScreen() {
           data={filteredProjects}
           renderItem={renderProjectCard}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 120 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }}
           scrollEnabled={true}
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-12">

@@ -23,19 +23,19 @@ export default function ProfileScreen() {
 
   return (
     <ScreenContainer className="p-0">
-      <ScrollView className="flex-1 bg-background" contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView className="flex-1 bg-background" contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Header */}
-        <View className="px-6 pt-6 pb-6 border-b border-border">
-          <Text className="text-3xl font-bold text-foreground mb-6">{t('profile.title')}</Text>
+        <View className="px-4 pt-4 pb-4 border-b border-border">
+          <Text className="text-3xl font-bold text-foreground mb-4">{t('profile.title')}</Text>
 
           {/* Profile Card */}
           <View
-            className="bg-surface rounded-2xl p-6 items-center border border-border"
+            className="bg-surface rounded-2xl p-4 items-center border border-border"
             style={{ borderColor: colors.border }}
           >
             {/* Avatar */}
             <View
-              className="w-20 h-20 rounded-full items-center justify-center mb-4"
+              className="w-20 h-20 rounded-full items-center justify-center mb-3"
               style={{ backgroundColor: colors.primary }}
             >
               <IconSymbol name="person.fill" size={40} color="#FFFFFF" />
@@ -47,7 +47,7 @@ export default function ProfileScreen() {
             <Text className="text-sm text-muted mt-1">Project Manager</Text>
 
             {/* Stats */}
-            <View className="flex-row gap-6 mt-6 pt-6 border-t border-border w-full">
+            <View className="flex-row gap-4 mt-4 pt-4 border-t border-border w-full">
               <View className="flex-1 items-center">
                 <Text className="text-2xl font-bold text-primary">12</Text>
                 <Text className="text-xs text-muted mt-1">{t('profile.projects')}</Text>
@@ -65,7 +65,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Menu Items */}
-        <View className="px-6 py-6 gap-3">
+        <View className="px-4 py-4 gap-3">
           {menuItems.map((item, index) => (
             <TouchableOpacity
               key={index}
@@ -98,7 +98,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Version Info */}
-        <View className="px-6 py-6 items-center">
+        <View className="px-4 py-4 items-center">
           <Text className="text-xs text-muted">{t('profile.version')}</Text>
         </View>
       </ScrollView>
