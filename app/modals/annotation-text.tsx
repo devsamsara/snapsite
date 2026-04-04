@@ -196,14 +196,14 @@ const S = StyleSheet.create({
   preview: {
     borderRadius: 12, borderWidth: 1,
     minHeight: 64, justifyContent: "center", alignItems: "center",
-    paddingHorizontal: 16, paddingVertical: 14, marginBottom: 16,
+    paddingHorizontal: 16, paddingVertical: 14, marginBottom: 8,
   },
   previewTxt: { fontWeight: "700", textAlign: "center" },
   label: {
     fontSize: 12, fontWeight: "600",
-    textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12,
+    textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8,
   },
-  paletteWrapper: { marginBottom: 20, overflow: "visible" },
+  paletteWrapper: { marginBottom: 16, overflow: "visible" },
   paletteContent: {
     gap: 12, paddingHorizontal: 2,
     paddingVertical: 6, alignItems: "center",

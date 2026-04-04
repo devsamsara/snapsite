@@ -220,7 +220,7 @@ export default function EditProfileScreen() {
 const S = StyleSheet.create({
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 20, paddingTop: 16, paddingBottom: 14,
+    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
@@ -228,33 +228,33 @@ const S = StyleSheet.create({
     width: 40, height: 40, borderRadius: 20,
     alignItems: "center", justifyContent: "center",
   },
-  headerTitle: { fontSize: 24, fontWeight: "700" },
+  headerTitle: { fontSize: 22, fontWeight: "700" },
 
-  scrollContent: { paddingHorizontal: 20, paddingTop: 24 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 16 },
 
-  avatarSection: { alignItems: "center", marginBottom: 32 },
+  avatarSection: { alignItems: "center", marginBottom: 24 },
   avatar: {
-    width: 96, height: 96, borderRadius: 48,
+    width: 88, height: 88, borderRadius: 44,
     alignItems: "center", justifyContent: "center", marginBottom: 12,
   },
   changePhotoBtn: { paddingVertical: 4 },
   changePhotoTxt: { fontSize: 15, fontWeight: "600" },
 
   sectionLabel: {
-    fontSize: 12, fontWeight: "600",
-    textTransform: "uppercase", letterSpacing: 0.5,
-    marginBottom: 10, marginTop: 4,
+    fontSize: 11, fontWeight: "700",
+    textTransform: "uppercase", letterSpacing: 0.6,
+    marginBottom: 8, marginTop: 0,
   },
   card: {
     borderRadius: 16, padding: 16,
-    marginBottom: 24, gap: 4,
+    marginBottom: 16, gap: 4,
   },
   optionsCard: { padding: 0, overflow: "hidden" },
   optionRow: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingVertical: 14,
+    paddingHorizontal: 16, paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  optionLeft: { flexDirection: "row", alignItems: "center", gap: 14, flex: 1 },
+  optionLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
   optionTxt: { fontSize: 15, fontWeight: "600" },
 });

@@ -368,7 +368,7 @@ export default function HomeScreen() {
     <ScreenContainer className="p-0">
       <Animated.View style={enterStyle} className="bg-background">
         {/* Modern Header */}
-        <View style={{ paddingHorizontal: 24, paddingTop: 16, paddingBottom: 16 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 13, color: colors.muted, marginBottom: 6 }}>
@@ -469,13 +469,13 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Project Status Section (Today) */}
-          <View style={{ marginTop: 16 }}>
-            <View style={{ paddingHorizontal: 24, marginBottom: 12 }}>
+          <View style={{ marginTop: 24 }}>
+            <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
               <Text style={{ fontSize: 18, fontWeight: '600', color: colors.foreground }}>
                 {t('home.today')}
               </Text>
             </View>
-            <View style={{ paddingHorizontal: 24, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+            <View style={{ paddingHorizontal: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
               {PROJECT_STATUSES.map((status) => (
                 <TouchableOpacity
                   key={status.id}
@@ -513,8 +513,8 @@ export default function HomeScreen() {
           </View>
 
           {/* Recent Projects Section */}
-          <View style={{ marginTop: 16 }}>
-            <View style={{ paddingHorizontal: 24, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ marginTop: 24 }}>
+            <View style={{ paddingHorizontal: 16, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text className="text-lg font-semibold text-foreground">
                 {t('home.recentProjects')}
               </Text>
@@ -532,13 +532,13 @@ export default function HomeScreen() {
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 14 }}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 14 }}
             />
           </View>
 
           {/* Recent Locations Section */}
-          <View style={{ marginTop: 16 }}>
-            <View style={{ paddingHorizontal: 24, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ marginTop: 24 }}>
+            <View style={{ paddingHorizontal: 16, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text className="text-lg font-semibold text-foreground">
                 {t('home.recentLocations')}
               </Text>
@@ -556,13 +556,13 @@ export default function HomeScreen() {
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 14 }}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 14 }}
             />
           </View>
 
           {/* Recent Images Section */}
-          <View style={{ marginTop: 16 }}>
-            <View style={{ paddingHorizontal: 24, marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ marginTop: 24 }}>
+            <View style={{ paddingHorizontal: 16, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text className="text-lg font-semibold text-foreground">
                 {t('home.recentImages')}
               </Text>
@@ -580,7 +580,7 @@ export default function HomeScreen() {
               keyExtractor={(item) => item.id}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 14 }}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 14 }}
             />
           </View>
 

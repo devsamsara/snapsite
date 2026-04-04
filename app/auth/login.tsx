@@ -140,17 +140,17 @@ export default function LoginScreen() {
 
 const S = StyleSheet.create({
   root:         { flex: 1 },
-  scroll:       { paddingHorizontal: 24 },
+  scroll:       { paddingHorizontal: 16 },
   // Logo
-  logoWrap:     { alignItems: 'center', marginBottom: 36, gap: 10 },
+  logoWrap:     { alignItems: 'center', marginBottom: 32, gap: 8 },
   logoBox:      { width: 60, height: 60, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
   appName:      { fontSize: 20, fontWeight: '700', letterSpacing: 0.2 },
   // Card
-  card:         { borderRadius: 20, padding: 24, marginBottom: 24 },
+  card:         { borderRadius: 16, padding: 16, marginBottom: 16 },
   cardTitle:    { fontSize: 22, fontWeight: '700' },
-  cardSub:      { fontSize: 14, marginTop: 4, marginBottom: 20 },
+  cardSub:      { fontSize: 14, marginTop: 4, marginBottom: 16 },
   fields:       { gap: 0 },
-  forgotRow:    { alignSelf: 'flex-end', marginBottom: 20, marginTop: -4 },
+  forgotRow:    { alignSelf: 'flex-end', marginBottom: 16, marginTop: -8 },
   forgotText:   { fontSize: 13, fontWeight: '600' },
   // Registro
   registerRow:  { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },

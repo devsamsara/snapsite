@@ -263,7 +263,7 @@ export default function ProjectDetailScreen() {
   // ─── Tab: Gallery ─────────────────────────────────────────────────────────
 
   const renderGallery = () => (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
       {/* Tag filter */}
       <ScrollView
         horizontal
@@ -355,7 +355,7 @@ export default function ProjectDetailScreen() {
   // ─── Tab: Timeline ────────────────────────────────────────────────────────
 
   const renderTimeline = () => (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40, paddingTop: 8 }}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, paddingTop: 8 }}>
       {project.timeline.map((event, idx) => {
         const iconName = timelineIcon(event.type);
         const iconColor = timelineColor(event.type, colors);

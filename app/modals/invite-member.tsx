@@ -248,7 +248,7 @@ const S = StyleSheet.create({
         marginBottom: 4,
     },
     roleChip: {
-        paddingHorizontal: 14,
+        paddingHorizontal: 12,
         paddingVertical: 8,
         borderRadius: 20,
         borderWidth: 1,

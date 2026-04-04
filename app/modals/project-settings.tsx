@@ -399,14 +399,14 @@ const S = StyleSheet.create({
   root: { flex: 1 },
 
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 50,
+    paddingHorizontal: 16,
+    paddingBottom: 32,
   },
 
   infoBox: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
+    gap: 12,
     marginTop: 12,
     marginBottom: 8,
     borderRadius: 14,
@@ -446,10 +446,10 @@ const S = StyleSheet.create({
   actionRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 13,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: 14,
+    gap: 12,
   },
   actionIcon: {
     width: 36,

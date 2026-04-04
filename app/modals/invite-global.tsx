@@ -133,7 +133,7 @@ export default function InviteGlobalModal() {
 
           <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{paddingBottom: 80}}
+              contentContainerStyle={{paddingBottom: 32}}
           >
           <View style={[S.projectList, cardElevation, { marginTop: 10 }]}>
             {filteredProjects.length === 0 ? (
@@ -283,7 +283,7 @@ const S = StyleSheet.create({
   sectionLabel:  { fontSize: 13, fontWeight: '700', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
   // Lista proyectos
   projectList:   { borderRadius: 14, overflow: 'hidden', marginBottom: 4 },
-  projectRow:    { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, gap: 12 },
+  projectRow:    { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, gap: 12 },
   projectDot:    { width: 10, height: 10, borderRadius: 5 },
   projectInfo:   { flex: 1 },
   projectName:   { fontSize: 14, fontWeight: '600' },
@@ -296,7 +296,7 @@ const S = StyleSheet.create({
   errorText:     { fontSize: 12, marginTop: 4, marginLeft: 4, marginBottom: 4 },
   // Roles
   roles:         { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
-  roleChip:      { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  roleChip:      { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
   roleText:      { fontSize: 13, fontWeight: '500' },
   // Info
   infoBox:       { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 12, borderRadius: 12, borderWidth: 1, marginTop: 8 },

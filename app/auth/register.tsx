@@ -244,21 +244,21 @@ export default function RegisterScreen() {
 
 const S = StyleSheet.create({
   root:            { flex: 1 },
-  scroll:          { paddingHorizontal: 24 },
-  backBtn:         { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  scroll:          { paddingHorizontal: 16 },
+  backBtn:         { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
   // Card
-  card:            { borderRadius: 20, padding: 24, marginBottom: 24 },
+  card:            { borderRadius: 16, padding: 16, marginBottom: 16 },
   // Progreso (dentro del card)
-  progressSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  progressSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   dots:            { flexDirection: 'row', gap: 6 },
   dot:             { height: 8, width: 8, borderRadius: 4 },
   stepLabel:       { fontSize: 12, fontWeight: '600' },
-  track:           { height: 3, borderRadius: 2, overflow: 'hidden', marginBottom: 20 },
+  track:           { height: 3, borderRadius: 2, overflow: 'hidden', marginBottom: 16 },
   fill:            { height: '100%', borderRadius: 2 },
   // Título del paso
   stepTitle:       { fontSize: 22, fontWeight: '700', marginBottom: 4 },
-  stepSub:         { fontSize: 14, marginBottom: 20 },
-  hint:            { fontSize: 12, marginTop: -8, marginBottom: 20, paddingHorizontal: 2 },
+  stepSub:         { fontSize: 14, marginBottom: 16 },
+  hint:            { fontSize: 12, marginTop: -8, marginBottom: 16, paddingHorizontal: 2 },
   // Footer
   loginRow:        { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   loginText:       { fontSize: 14 },

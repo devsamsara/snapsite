@@ -135,16 +135,16 @@ export default function ConfirmEmailScreen() {
 
 const S = StyleSheet.create({
   container:  { flex: 1 },
-  content:    { flex: 1, paddingHorizontal: 24 },
-  backBtn:    { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 32 },
-  header:     { alignItems: 'center', marginBottom: 28 },
-  iconCircle: { width: 88, height: 88, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  title:      { fontSize: 26, fontWeight: '800', marginBottom: 10, textAlign: 'center' },
+  content:    { flex: 1, paddingHorizontal: 16 },
+  backBtn:    { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
+  header:     { alignItems: 'center', marginBottom: 24 },
+  iconCircle: { width: 80, height: 80, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  title:      { fontSize: 24, fontWeight: '800', marginBottom: 8, textAlign: 'center' },
   subtitle:   { fontSize: 15, textAlign: 'center', lineHeight: 22 },
-  card:       { borderRadius: 20, padding: 24, gap: 12, marginBottom: 16 },
+  card:       { borderRadius: 16, padding: 16, gap: 12, marginBottom: 16 },
   resendRow:  { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingTop: 4 },
   resendLabel: { fontSize: 13 },
   resendLink: { fontSize: 13, fontWeight: '700' },
-  infoBox:    { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 14, borderRadius: 14, borderWidth: 1 },
+  infoBox:    { flexDirection: 'row', alignItems: 'flex-start', gap: 8, padding: 12, borderRadius: 12, borderWidth: 1 },
   infoText:   { flex: 1, fontSize: 12, lineHeight: 18 },
 });
