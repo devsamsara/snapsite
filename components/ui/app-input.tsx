@@ -40,7 +40,7 @@ export function AppInput<T extends FieldValues>({
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
 
-    const {maxLength, value: val} = props
+    const {maxLength} = props
     const {
         field: {onChange, onBlur, value},
         fieldState: {error: fieldError},
@@ -108,7 +108,7 @@ export function AppInput<T extends FieldValues>({
             {displayError && (
                 <Text style={styles.errorText}>{displayError}</Text>
             )}
-            {showLength && <Text style={[styles.counter, {color: colors.muted}]}>{val!.length}/{maxLength}</Text>}
+            {showLength && <Text style={[styles.counter, {color: colors.muted}]}>{(value ?? '').length}/{maxLength}</Text>}
         </View>
     );
 }

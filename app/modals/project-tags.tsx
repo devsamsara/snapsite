@@ -258,8 +258,9 @@ const S = StyleSheet.create({
   },
   addRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: 10,
+    marginBottom: -16,
   },
   addBtn: {
     width: 48,
@@ -267,7 +268,7 @@ const S = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 20,
+    marginBottom: 20,
   },
   section: {
     gap: 10,
