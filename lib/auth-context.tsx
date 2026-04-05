@@ -150,7 +150,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (isLoading) return;
+    // router.replace('/(tabs)');
+   /* if (isLoading) return;
 
     const inAuthGroup  = segments[0] === 'auth';
     const inOnboarding = segments[0] === 'onboarding';
@@ -163,18 +164,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Authenticated and still on auth screen → go to tabs
       // (onboarding is handled explicitly by signUp, not here)
       router.replace('/(tabs)');
-    }
+    }*/
   }, [user, segments, isLoading]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    try {
-      const { data } = await apolloClient.mutate({
+   try {
+     /*  const { data } = await apolloClient.mutate({
         mutation: LOGIN_MUTATION,
         variables: { email: email.trim().toLowerCase(), password },
       });
       const { token, user: userData } = data.login;
       await setAuthToken(token);
-      setUser(userData as AuthUser);
+      setUser(userData as AuthUser);*/
     } catch (error) {
       throw new Error(extractMessage(error));
     }
@@ -211,7 +212,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await apolloClient.clearStore();
     } finally {
       setUser(null);
-      // Navigation guard redirects to /auth/login automatically
     }
   }, []);
 
@@ -258,8 +258,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     </AuthContext.Provider>
   );
 }
-
-// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
