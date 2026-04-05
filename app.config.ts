@@ -153,7 +153,6 @@ const config: ExpoConfig = {
     owner: EAS_OWNER,
     experiments: {
         typedRoutes: true,
-        reactCompiler: false
     },
 };
 
