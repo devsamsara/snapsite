@@ -41,6 +41,8 @@ app-example
 # generated native folders
 /ios
 /android
+ios
+android
 
 # IDE
 .vscode/

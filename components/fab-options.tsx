@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
-import Animated, { 
-  useAnimatedStyle, 
-  withSpring, 
-  withTiming, 
+import Animated, {
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
   useSharedValue,
   interpolate,
   Extrapolate
@@ -20,10 +20,7 @@ export function FabOptions() {
 
   const toggleMenu = () => {
     const toValue = isOpen ? 0 : 1;
-    animation.value = withSpring(toValue, {
-      friction: 5,
-      tension: 40,
-    });
+    animation.value = withSpring(toValue, { friction: 5, tension: 40 });
     setIsOpen(!isOpen);
   };
 
@@ -32,75 +29,73 @@ export function FabOptions() {
     router.push('/create-project-location');
   };
 
+  // ✅ Cada animated style declarado en el top level
   const fabStyle = useAnimatedStyle(() => {
     const rotation = interpolate(animation.value, [0, 1], [0, 45]);
-    return {
-      transform: [{ rotate: `${rotation}deg` }],
-    };
+    return { transform: [{ rotate: `${rotation}deg` }] };
   });
 
-  const optionStyle = (index: number) => useAnimatedStyle(() => {
-    const translateY = interpolate(animation.value, [0, 1], [0, -70 * (index + 1)]);
-    const opacity = interpolate(animation.value, [0, 0.5, 1], [0, 0, 1]);
-    const scale = interpolate(animation.value, [0, 1], [0, 1]);
+  const option0Style = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: interpolate(animation.value, [0, 1], [0, -70]) },
+      { scale: interpolate(animation.value, [0, 1], [0, 1]) },
+    ],
+    opacity: interpolate(animation.value, [0, 0.5, 1], [0, 0, 1]),
+  }));
 
-    return {
-      transform: [{ translateY }, { scale }],
-      opacity,
-    };
-  });
+  const option1Style = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: interpolate(animation.value, [0, 1], [0, -140]) },
+      { scale: interpolate(animation.value, [0, 1], [0, 1]) },
+    ],
+    opacity: interpolate(animation.value, [0, 0.5, 1], [0, 0, 1]),
+  }));
 
-  const backdropStyle = useAnimatedStyle(() => {
-    return {
-      opacity: withTiming(animation.value * 0.5),
-      display: animation.value > 0 ? 'flex' : 'none',
-    };
-  });
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(animation.value * 0.5),
+    pointerEvents: animation.value > 0 ? 'auto' : 'none',
+  }));
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
-      {/* Backdrop */}
-      <Animated.View 
-        style={[StyleSheet.absoluteFill, backdropStyle, { backgroundColor: '#000' }]}
-      >
-        <Pressable style={StyleSheet.absoluteFill} onPress={toggleMenu} />
-      </Animated.View>
-
-      <View style={styles.fabWrapper}>
-        {/* Option: New Project */}
-        <Animated.View style={[styles.optionContainer, optionStyle(0)]}>
-          <Text style={[styles.optionLabel, { color: '#FFF' }]}>Nuevo Proyecto</Text>
-          <TouchableOpacity 
-            onPress={handleNewProject}
-            style={[styles.optionButton, { backgroundColor: colors.primary }]}
-          >
-            <IconSymbol name="plus.rectangle.on.folder.fill" size={24} color="#FFF" />
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Option: Take Photo (Example) */}
-        <Animated.View style={[styles.optionContainer, optionStyle(1)]}>
-          <Text style={[styles.optionLabel, { color: '#FFF' }]}>Tomar Foto</Text>
-          <TouchableOpacity 
-            onPress={() => { toggleMenu(); router.push('/camera-capture'); }}
-            style={[styles.optionButton, { backgroundColor: '#34C759' }]}
-          >
-            <IconSymbol name="camera.fill" size={24} color="#FFF" />
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Main FAB */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={toggleMenu}
-          style={[styles.mainFab, { backgroundColor: colors.primary }]}
+      <View style={styles.container} pointerEvents="box-none">
+        <Animated.View
+            style={[StyleSheet.absoluteFill, backdropStyle, { backgroundColor: '#000' }]}
         >
-          <Animated.View style={fabStyle}>
-            <IconSymbol name="plus" size={32} color="#FFF" />
+          <Pressable style={StyleSheet.absoluteFill} onPress={toggleMenu} />
+        </Animated.View>
+
+        <View style={styles.fabWrapper}>
+          <Animated.View style={[styles.optionContainer, option0Style]}>
+            <Text style={[styles.optionLabel, { color: '#FFF' }]}>Nuevo Proyecto</Text>
+            <TouchableOpacity
+                onPress={handleNewProject}
+                style={[styles.optionButton, { backgroundColor: colors.primary }]}
+            >
+              <IconSymbol name="plus.rectangle.on.folder.fill" size={24} color="#FFF" />
+            </TouchableOpacity>
           </Animated.View>
-        </TouchableOpacity>
+
+          <Animated.View style={[styles.optionContainer, option1Style]}>
+            <Text style={[styles.optionLabel, { color: '#FFF' }]}>Tomar Foto</Text>
+            <TouchableOpacity
+                onPress={() => { toggleMenu(); router.push('/camera-capture'); }}
+                style={[styles.optionButton, { backgroundColor: '#34C759' }]}
+            >
+              <IconSymbol name="camera.fill" size={24} color="#FFF" />
+            </TouchableOpacity>
+          </Animated.View>
+
+          <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={toggleMenu}
+              style={[styles.mainFab, { backgroundColor: colors.primary }]}
+          >
+            <Animated.View style={fabStyle}>
+              <IconSymbol name="plus" size={32} color="#FFF" />
+            </Animated.View>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
   );
 }
 

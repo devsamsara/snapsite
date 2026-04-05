@@ -122,7 +122,7 @@ const config: ExpoConfig = {
                 },
             },
         ],
-        [
+        /*[
             "expo-build-properties",
             {
                 ios: {
@@ -136,7 +136,7 @@ const config: ExpoConfig = {
                     minSdkVersion: 24,
                 },
             },
-        ],
+        ],*/
     ],
     extra: {
         graphqlUrl: GRAPHQL_URL,
