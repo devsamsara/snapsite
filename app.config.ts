@@ -126,13 +126,13 @@ const config: ExpoConfig = {
             "expo-build-properties",
             {
                 ios: {
-                    useFrameworks: "static", // CRÍTICO para cassert
+                    useFrameworks: "static",
                     deploymentTarget: "15.1",
                     newArchEnabled: true,
                 },
                 android: {
                     buildArchs: ["armeabi-v7a", "arm64-v8a"],
-                    newArchEnabled: false,
+                    newArchEnabled: true,
                     minSdkVersion: 24,
                 },
             },
@@ -153,7 +153,7 @@ const config: ExpoConfig = {
     owner: EAS_OWNER,
     experiments: {
         typedRoutes: true,
-        reactCompiler: true, // React 19 soporta el compilador
+        reactCompiler: false
     },
 };
 
