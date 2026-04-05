@@ -16,14 +16,16 @@
       "distribution": "internal",
       "ios": {
         "image": "latest",
-        "resourceClass": "m-medium"
+        "resourceClass": "m-medium",
+        "prebuildCommand": "npx expo prebuild --platform ios --clean"
       }
     },
     "production": {
       "autoIncrement": true,
       "ios": {
         "image": "latest",
-        "resourceClass": "m-medium"
+        "resourceClass": "m-medium",
+        "prebuildCommand": "npx expo prebuild --platform ios --clean"
       }
     }
   },

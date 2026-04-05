@@ -122,6 +122,7 @@ const config: ExpoConfig = {
                 },
             },
         ],
+        "./plugins/withDangerousMod"
         /*[
             "expo-build-properties",
             {
