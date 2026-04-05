@@ -15,7 +15,7 @@
     "preview": {
       "distribution": "internal",
       "ios": {
-        "image": "latest",
+        "image": "macos-ventura-13.6-xcode-15.2",
         "resourceClass": "m-medium",
         "prebuildCommand": "npx expo prebuild --platform ios --clean"
       }
@@ -23,9 +23,10 @@
     "production": {
       "autoIncrement": true,
       "ios": {
-        "image": "latest",
+        "image": "macos-ventura-13.6-xcode-15.2",
         "resourceClass": "m-medium",
-        "prebuildCommand": "npx expo prebuild --platform ios --clean"
+        "prebuildCommand": "npx expo prebuild --platform ios --clean",
+
       }
     }
   },
