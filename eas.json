@@ -4,33 +4,60 @@
     "appVersionSource": "remote"
   },
   "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
+    "base": {
       "ios": {
         "image": "latest",
         "resourceClass": "m-medium"
+      },
+      "android": {
+        "image": "latest",
+        "resourceClass": "medium"
+      },
+      "env": {
+        "EXPO_USE_FAST_RESOLVER": "1"
+      }
+    },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_USE_FAST_RESOLVER": "1",
+        "APP_ENV": "development"
       }
     },
     "preview": {
+      "extends": "base",
       "distribution": "internal",
-      "ios": {
-        "image": "macos-ventura-13.6-xcode-15.2",
-        "resourceClass": "m-medium",
-        "prebuildCommand": "npx expo prebuild --platform ios --clean"
+      "env": {
+        "APP_ENV": "preview"
       }
     },
     "production": {
+      "extends": "base",
       "autoIncrement": true,
+      "env": {
+        "APP_ENV": "production"
+      },
       "ios": {
-        "image": "macos-ventura-13.6-xcode-15.2",
+        "image": "latest",
         "resourceClass": "m-medium",
-        "prebuildCommand": "npx expo prebuild --platform ios --clean",
-
+        "buildType": "release"
+      },
+      "android": {
+        "image": "latest",
+        "resourceClass": "medium",
+        "buildType": "apk"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "",
+        "ascAppId": "",
+        "appleTeamId": ""
+      }
+    }
   }
 }
