@@ -67,13 +67,14 @@
     "react-native": "0.81.5",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-maps": "^1.20.1",
-    "react-native-reanimated": "~3.19.5",
+    "react-native-reanimated": "~4.1.7",
     "react-native-safe-area-context": "~5.6.2",
     "react-native-screens": "~4.16.0",
     "react-native-svg": "15.12.1",
     "react-native-view-shot": "^4.0.3",
     "react-native-vision-camera": "^4.7.3",
     "react-native-web": "~0.21.2",
+    "react-native-worklets": "0.5.1",
     "tailwind-merge": "^2.6.0",
     "zod": "^4.3.6"
   },
@@ -86,10 +87,5 @@
     "tailwindcss": "^3.4.17",
     "typescript": "~5.9.3"
   },
-  "packageManager": "pnpm@9.12.0",
-  "expo": {
-    "install": {
-      "exclude": ["react-native-reanimated"]
-    }
-  }
+  "packageManager": "pnpm@9.12.0"
 }

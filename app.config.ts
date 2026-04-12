@@ -126,28 +126,13 @@ const config: ExpoConfig = {
             "expo-build-properties",
             {
                 ios: {
-                    // useFrameworks: "static" is REQUIRED for Skia, VisionCamera,
-                    // and other C++ native modules that use CocoaPods frameworks.
-                    // Without it, the linker cannot find the C++ symbols at runtime
-                    // and the app crashes immediately on launch in production.
                     useFrameworks: "static",
                     deploymentTarget: "15.1",
-                    // New Architecture is DISABLED on iOS.
-                    // Root cause: EXC_BAD_ACCESS in EXJSIInstaller.mm:84 /
-                    // AppContext.swift:458 — the Expo modules host object is
-                    // installed into a JSI runtime that has already been
-                    // released during bridge initialization on iOS 26 (beta).
-                    // This is a known Expo SDK 54 + New Arch + iOS 26 issue.
-                    // Re-enable once Expo releases a fix for EXJSIInstaller.
-                    // Crash ID: EC5E1665-5108-4C45-BFD2-344332511DCA
-                    newArchEnabled: false,
+                    newArchEnabled: true,
                 },
                 android: {
                     buildArchs: ["armeabi-v7a", "arm64-v8a"],
-                    // Keep New Arch disabled on Android until all native modules
-                    // confirm Android Fabric support (VisionCamera 4 is still
-                    // experimental on Android New Arch).
-                    newArchEnabled: false,
+                    newArchEnabled: true,
                     minSdkVersion: 24,
                 },
             },
@@ -168,11 +153,6 @@ const config: ExpoConfig = {
     owner: EAS_OWNER,
     experiments: {
         typedRoutes: true,
-        // reactCompiler is intentionally DISABLED.
-        // The React Compiler transforms component functions before Reanimated/
-        // Worklets can annotate worklet closures, causing JSI serialization
-        // failures that only manifest in production (release) builds on iOS.
-        // Re-enable once react-native-worklets ships compiler-aware transforms.
     },
 };
 
