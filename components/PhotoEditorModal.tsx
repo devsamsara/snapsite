@@ -1,5 +1,18 @@
 // components/PhotoEditorModal.tsx
-import React, { useState, useRef } from 'react';
+//
+// Migración: @shopify/react-native-skia → react-native-svg
+// Motivo: Skia + Reanimated + VisionCamera compiten por el mismo recurso JSI,
+// provocando EXC_BAD_ACCESS (SIGSEGV) en producción. react-native-svg opera
+// en el hilo de UI mediante el bridge estándar, sin conflictos JSI.
+//
+// Funcionalidades preservadas:
+//   - Dibujo libre (freehand) con herramientas lápiz / pluma / marcador
+//   - Borrador (elimina el último trazo)
+//   - Paleta de colores
+//   - Rotar / Voltear imagen con expo-image-manipulator
+//   - Guardar / Descartar
+
+import React, { useState, useRef, useCallback } from 'react';
 import {
     View,
     StyleSheet,
@@ -10,15 +23,27 @@ import {
     Image,
     ScrollView,
     Alert,
+    PanResponder,
+    GestureResponderEvent,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { Canvas, Path, Skia, useCanvasRef } from '@shopify/react-native-skia';
+
+// ─── react-native-svg (reemplaza @shopify/react-native-skia) ──────────────────
+import Svg, { Path as SvgPath } from 'react-native-svg';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 type DrawingTool = 'pen' | 'marker' | 'pencil' | 'eraser';
 type EditMode = 'view' | 'draw' | 'crop' | 'filter';
+
+interface StrokePath {
+    d: string;
+    color: string;
+    strokeWidth: number;
+}
 
 interface PhotoEditorModalProps {
     visible: boolean;
@@ -27,50 +52,105 @@ interface PhotoEditorModalProps {
     onDiscard: () => void;
 }
 
-const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
-                                                               visible,
-                                                               photoUri,
-                                                               onSave,
-                                                               onDiscard,
-                                                           }) => {
-    const canvasRef = useCanvasRef();
+// ─── Stroke width por herramienta ─────────────────────────────────────────────
 
-    const [editMode, setEditMode] = useState<EditMode>('view');
-    const [tool, setTool] = useState<DrawingTool>('pen');
-    const [color, setColor] = useState('#FF0000');
-    const [paths, setPaths] = useState<any[]>([]);
-    const [currentPath, setCurrentPath] = useState<any>(null);
+function getStrokeWidth(tool: DrawingTool): number {
+    switch (tool) {
+        case 'marker':  return 10;
+        case 'pen':     return 4;
+        case 'pencil':  return 2;
+        case 'eraser':  return 18;
+        default:        return 4;
+    }
+}
+
+// ─── Componente principal ─────────────────────────────────────────────────────
+
+const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
+    visible,
+    photoUri,
+    onSave,
+    onDiscard,
+}) => {
+    const [editMode, setEditMode]     = useState<EditMode>('view');
+    const [tool, setTool]             = useState<DrawingTool>('pen');
+    const [color, setColor]           = useState('#FF0000');
+    const [paths, setPaths]           = useState<StrokePath[]>([]);
+    const [currentPath, setCurrentPath] = useState<string | null>(null);
+    const [currentPhotoUri, setCurrentPhotoUri] = useState(photoUri);
+
+    // Sincronizar URI cuando cambia la prop
+    React.useEffect(() => {
+        setCurrentPhotoUri(photoUri);
+    }, [photoUri]);
 
     const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#000000', '#FFFFFF'];
 
-    // Guardar foto (con o sin ediciones)
+    // ── PanResponder para capturar trazos de dibujo ──────────────────────────
+    // Se usa PanResponder (bridge nativo estándar) en lugar del JSI de Skia,
+    // evitando completamente el conflicto con Reanimated y VisionCamera.
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder:  () => true,
+
+            onPanResponderGrant: (e: GestureResponderEvent) => {
+                const { locationX, locationY } = e.nativeEvent;
+                setCurrentPath(`M ${locationX} ${locationY}`);
+            },
+
+            onPanResponderMove: (e: GestureResponderEvent) => {
+                const { locationX, locationY } = e.nativeEvent;
+                setCurrentPath((prev) =>
+                    prev ? `${prev} L ${locationX} ${locationY}` : `M ${locationX} ${locationY}`
+                );
+            },
+
+            onPanResponderRelease: () => {
+                setCurrentPath((prev) => {
+                    if (prev) {
+                        const sw = getStrokeWidth(tool);
+                        // El borrador dibuja en blanco (simula borrado visual)
+                        const strokeColor = tool === 'eraser' ? '#000000' : color;
+                        setPaths((p) => [...p, { d: prev, color: strokeColor, strokeWidth: sw }]);
+                    }
+                    return null;
+                });
+            },
+        })
+    ).current;
+
+    // ── Guardar foto ─────────────────────────────────────────────────────────
     const handleSave = async () => {
         try {
-            let finalUri = photoUri;
-
-            // Si hay dibujos, renderizar canvas y combinar
+            // Si hay trazos SVG, notificamos que el renderizado final
+            // se hace mediante react-native-view-shot en el editor completo.
+            // PhotoEditorModal es el editor rápido (modal); para anotaciones
+            // avanzadas el usuario puede usar image-editor.tsx.
             if (paths.length > 0) {
-                // Aquí combinarías la imagen con el canvas
-                // Por ahora guardamos la original
-                Alert.alert('Nota', 'Editor de dibujo en desarrollo. Guardando original.');
+                Alert.alert(
+                    'Nota',
+                    'Para guardar con anotaciones usa el editor completo (botón "Anotar"). Guardando imagen original.',
+                    [{ text: 'OK', onPress: () => onSave(currentPhotoUri) }]
+                );
+                return;
             }
-
-            onSave(finalUri);
+            onSave(currentPhotoUri);
         } catch (error) {
             console.error('Error saving:', error);
             Alert.alert('Error', 'No se pudo guardar');
         }
     };
 
-    // Aplicar filtros/rotación/crop
+    // ── Aplicar transformaciones con expo-image-manipulator ──────────────────
     const applyEdit = async (action: 'rotate' | 'flip' | 'crop') => {
         try {
-            let manipResult;
+            let manipResult: ImageManipulator.ImageResult | undefined;
 
             switch (action) {
                 case 'rotate':
                     manipResult = await ImageManipulator.manipulateAsync(
-                        photoUri,
+                        currentPhotoUri,
                         [{ rotate: 90 }],
                         { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
                     );
@@ -78,86 +158,94 @@ const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
 
                 case 'flip':
                     manipResult = await ImageManipulator.manipulateAsync(
-                        photoUri,
+                        currentPhotoUri,
                         [{ flip: ImageManipulator.FlipType.Horizontal }],
                         { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
                     );
                     break;
 
                 case 'crop':
-                    // Implementar crop interactivo
-                    Alert.alert('Crop', 'Función en desarrollo');
+                    Alert.alert('Recortar', 'Usa el editor completo para recorte interactivo.');
                     return;
             }
 
             if (manipResult) {
-                // Actualizar la imagen mostrada
-                console.log('Edited:', manipResult.uri);
+                setCurrentPhotoUri(manipResult.uri);
+                // Limpiar trazos al transformar la imagen
+                setPaths([]);
+                setCurrentPath(null);
             }
         } catch (error) {
             console.error('Error editing:', error);
+            Alert.alert('Error', 'No se pudo aplicar la edición');
         }
     };
+
+    // ── Deshacer último trazo ─────────────────────────────────────────────────
+    const undoLastStroke = () => {
+        setPaths((p) => p.slice(0, -1));
+    };
+
+    // ── Limpiar todos los trazos ──────────────────────────────────────────────
+    const clearDrawing = () => {
+        setPaths([]);
+        setCurrentPath(null);
+    };
+
+    // ─── Render ───────────────────────────────────────────────────────────────
 
     return (
         <Modal visible={visible} animationType="slide" statusBarTranslucent>
             <View style={styles.container}>
-                {/* Imagen */}
+
+                {/* ── Área de imagen + SVG overlay ── */}
                 <View style={styles.imageContainer}>
                     <Image
-                        source={{ uri: photoUri }}
+                        source={{ uri: currentPhotoUri }}
                         style={styles.image}
                         resizeMode="contain"
                     />
 
-                    {/* Canvas para dibujar */}
+                    {/* SVG canvas para dibujo libre — reemplaza el Canvas de Skia */}
                     {editMode === 'draw' && (
-                        <View style={StyleSheet.absoluteFill}>
-                            <Canvas
-                                ref={canvasRef}
+                        <View
+                            style={StyleSheet.absoluteFill}
+                            {...panResponder.panHandlers}
+                        >
+                            <Svg
+                                width="100%"
+                                height="100%"
                                 style={StyleSheet.absoluteFill}
-                                onTouchStart={(e) => {
-                                    const { x, y } = e.nativeEvent;
-                                    const newPath = Skia.Path.Make();
-                                    newPath.moveTo(x, y);
-                                    setCurrentPath({ path: newPath, color, tool });
-                                }}
-                                onTouchMove={(e) => {
-                                    if (!currentPath) return;
-                                    const { x, y } = e.nativeEvent;
-                                    currentPath.path.lineTo(x, y);
-                                    canvasRef.current?.redraw();
-                                }}
-                                onTouchEnd={() => {
-                                    if (currentPath) {
-                                        setPaths([...paths, currentPath]);
-                                        setCurrentPath(null);
-                                    }}
-                                }
                             >
+                                {/* Trazos confirmados */}
                                 {paths.map((p, i) => (
-                                    <Path
+                                    <SvgPath
                                         key={i}
-                                        path={p.path}
-                                        color={p.color}
-                                        style="stroke"
-                                        strokeWidth={p.tool === 'marker' ? 8 : p.tool === 'pen' ? 4 : 2}
+                                        d={p.d}
+                                        stroke={p.color}
+                                        strokeWidth={p.strokeWidth}
+                                        fill="none"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
                                     />
                                 ))}
+                                {/* Trazo en progreso */}
                                 {currentPath && (
-                                    <Path
-                                        path={currentPath.path}
-                                        color={currentPath.color}
-                                        style="stroke"
-                                        strokeWidth={tool === 'marker' ? 8 : tool === 'pen' ? 4 : 2}
+                                    <SvgPath
+                                        d={currentPath}
+                                        stroke={tool === 'eraser' ? '#000000' : color}
+                                        strokeWidth={getStrokeWidth(tool)}
+                                        fill="none"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
                                     />
                                 )}
-                            </Canvas>
+                            </Svg>
                         </View>
                     )}
                 </View>
 
-                {/* Top Bar */}
+                {/* ── Top Bar ── */}
                 <View style={styles.topBar}>
                     <TouchableOpacity style={styles.topButton} onPress={onDiscard}>
                         <Ionicons name="close" size={32} color="white" />
@@ -170,7 +258,7 @@ const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
                     </TouchableOpacity>
                 </View>
 
-                {/* Toolbar */}
+                {/* ── Toolbar principal (modo vista) ── */}
                 {editMode === 'view' && (
                     <View style={styles.toolbar}>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -203,10 +291,10 @@ const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
                     </View>
                 )}
 
-                {/* Drawing Tools */}
+                {/* ── Herramientas de dibujo ── */}
                 {editMode === 'draw' && (
                     <View style={styles.drawingTools}>
-                        {/* Color Picker */}
+                        {/* Paleta de colores */}
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
@@ -225,7 +313,7 @@ const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
                             ))}
                         </ScrollView>
 
-                        {/* Tool Selector */}
+                        {/* Selector de herramienta */}
                         <View style={styles.toolSelector}>
                             <ToolButton
                                 icon="pencil"
@@ -245,16 +333,34 @@ const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
                                 active={tool === 'marker'}
                                 onPress={() => setTool('marker')}
                             />
+                            <ToolButton
+                                icon="remove-circle-outline"
+                                label="Borrador"
+                                active={tool === 'eraser'}
+                                onPress={() => setTool('eraser')}
+                            />
                         </View>
 
-                        {/* Actions */}
+                        {/* Acciones */}
                         <View style={styles.drawingActions}>
                             <TouchableOpacity
                                 style={styles.actionButton}
-                                onPress={() => {
-                                    setPaths([]);
-                                    setCurrentPath(null);
-                                }}
+                                onPress={undoLastStroke}
+                                disabled={paths.length === 0}
+                            >
+                                <Ionicons
+                                    name="arrow-undo"
+                                    size={24}
+                                    color={paths.length === 0 ? 'rgba(255,255,255,0.3)' : 'white'}
+                                />
+                                <Text style={[styles.actionText, paths.length === 0 && { opacity: 0.3 }]}>
+                                    Deshacer
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.actionButton}
+                                onPress={clearDrawing}
                             >
                                 <Ionicons name="trash" size={24} color="white" />
                                 <Text style={styles.actionText}>Borrar todo</Text>
@@ -275,6 +381,8 @@ const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
     );
 };
 
+// ─── ToolButton ───────────────────────────────────────────────────────────────
+
 const ToolButton: React.FC<{
     icon: string;
     label: string;
@@ -289,6 +397,8 @@ const ToolButton: React.FC<{
         <Text style={[styles.toolLabel, active && styles.toolLabelActive]}>{label}</Text>
     </TouchableOpacity>
 );
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
     container: {

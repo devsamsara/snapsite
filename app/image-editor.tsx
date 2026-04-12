@@ -1,5 +1,22 @@
 /**
- * image-editor.tsx — v5  (iOS Markup pattern)
+ * image-editor.tsx — v6  (react-native-svg, sin Skia)
+ *
+ * Migración: @shopify/react-native-skia → react-native-svg
+ * Motivo: Skia + Reanimated + VisionCamera compiten por el mismo recurso JSI,
+ * lo que provoca EXC_BAD_ACCESS (SIGSEGV) en producción al inicializar el
+ * runtime de Hermes. react-native-svg opera exclusivamente en el hilo de UI
+ * mediante el bridge nativo estándar, eliminando el conflicto JSI.
+ *
+ * Funcionalidades preservadas:
+ *   - Dibujo libre (freehand paths en SVG)
+ *   - Flechas (línea + cabeza de flecha calculada trigonométricamente)
+ *   - Rectángulos y círculos (filled / stroke)
+ *   - Anotaciones de medida con etiqueta
+ *   - Stickers de texto (drag + pinch con Reanimated/Gesture Handler)
+ *   - Recorte interactivo (crop) con 4 esquinas Reanimated
+ *   - Rotación de imagen
+ *   - Undo / Redo / Clear
+ *   - Guardar en galería con react-native-view-shot
  *
  * Layout:
  *   ┌─────────────────────────────┐  ← SafeAreaView top (status bar + notch)
@@ -12,21 +29,15 @@
  *   │  [options row if tool active]│  ← color/stroke/size pickers
  *   │  [◉ Draw][T Text][→ Arrow]… │  ← tool strip
  *   └─────────────────────────────┘  ← SafeAreaView bottom (home indicator)
- *
- * Key decisions:
- * - Stack.Screen with useNavigation + useLayoutEffect sets the native header
- *   buttons (Cancelar / Guardar). The header is owned by the navigator so it
- *   is ALWAYS above the screen content — no z-index tricks needed.
- * - The image is rendered inside a View with flex:1 and Image resizeMode:"contain"
- *   so it never exceeds the available space between header and toolbar.
- * - The Skia canvas and annotation overlays are absoluteFill children of the
- *   same wrapper, so they are always clipped to the image area.
- * - Crop handles run on the UI thread via Reanimated worklets.
- * - Text stickers: Gesture.Simultaneous(pan, pinch) — drag + scale, no rotation.
- * - Image rotation: CSS transform only — annotations stay in sync.
  */
 
-import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -41,7 +52,18 @@ import { useRouter, useLocalSearchParams, Stack, useFocusEffect } from "expo-rou
 import { annotationTextStore, annotationMeasureStore } from "@/lib/modal-stores";
 import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Canvas, Path, Skia } from "@shopify/react-native-skia";
+
+// ─── react-native-svg (reemplaza @shopify/react-native-skia) ──────────────────
+import Svg, {
+  Path as SvgPath,
+  Line as SvgLine,
+  Rect as SvgRect,
+  Ellipse as SvgEllipse,
+  G as SvgG,
+  Defs,
+  Marker,
+} from "react-native-svg";
+
 import {
   GestureHandlerRootView,
   GestureDetector,
@@ -67,7 +89,7 @@ type Tool = "draw" | "text" | "arrow" | "rect" | "circle" | "measure" | "crop";
 interface DrawPath   { id: string; d: string; color: string; sw: number }
 interface TextAnn    { id: string; text: string; x: number; y: number; color: string; fontSize: number }
 interface ArrowAnn   { id: string; x1: number; y1: number; x2: number; y2: number; color: string; sw: number }
-interface ShapeAnn   { id: string; type: "rect"|"circle"; x: number; y: number; x2: number; y2: number; color: string; sw: number; filled: boolean }
+interface ShapeAnn   { id: string; type: "rect" | "circle"; x: number; y: number; x2: number; y2: number; color: string; sw: number; filled: boolean }
 interface MeasureAnn { id: string; x1: number; y1: number; x2: number; y2: number; color: string; label: string }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -89,6 +111,176 @@ const TOOLS_DEF: { id: Tool; icon: string; label: string }[] = [
 const uid = () => Math.random().toString(36).slice(2, 9);
 const pdist = (x1: number, y1: number, x2: number, y2: number) =>
   Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+
+// ─── SVG helpers ──────────────────────────────────────────────────────────────
+
+/**
+ * Construye los datos SVG de una cabeza de flecha.
+ * Devuelve dos segmentos de línea como string de path SVG.
+ */
+function arrowHeadPath(a: ArrowAnn): string {
+  const ang = Math.atan2(a.y2 - a.y1, a.x2 - a.x1);
+  const hl = 14;
+  const lx1 = a.x2 - hl * Math.cos(ang - Math.PI / 6);
+  const ly1 = a.y2 - hl * Math.sin(ang - Math.PI / 6);
+  const lx2 = a.x2 - hl * Math.cos(ang + Math.PI / 6);
+  const ly2 = a.y2 - hl * Math.sin(ang + Math.PI / 6);
+  return `M ${a.x2} ${a.y2} L ${lx1} ${ly1} M ${a.x2} ${a.y2} L ${lx2} ${ly2}`;
+}
+
+/**
+ * Construye el path SVG de las marcas perpendiculares de una anotación de medida.
+ */
+function measureTickPath(m: MeasureAnn): string {
+  const ang = Math.atan2(m.y2 - m.y1, m.x2 - m.x1);
+  const perp = ang + Math.PI / 2;
+  const tk = 6;
+  return [
+    `M ${m.x1 + tk * Math.cos(perp)} ${m.y1 + tk * Math.sin(perp)}`,
+    `L ${m.x1 - tk * Math.cos(perp)} ${m.y1 - tk * Math.sin(perp)}`,
+    `M ${m.x2 + tk * Math.cos(perp)} ${m.y2 + tk * Math.sin(perp)}`,
+    `L ${m.x2 - tk * Math.cos(perp)} ${m.y2 - tk * Math.sin(perp)}`,
+  ].join(" ");
+}
+
+// ─── SVG Overlay ──────────────────────────────────────────────────────────────
+
+interface SvgOverlayProps {
+  width: number;
+  height: number;
+  paths: DrawPath[];
+  arrows: ArrowAnn[];
+  liveArrow: ArrowAnn | null;
+  shapes: ShapeAnn[];
+  liveShape: ShapeAnn | null;
+  measures: MeasureAnn[];
+  liveMeasure: MeasureAnn | null;
+}
+
+/**
+ * Componente SVG puro que renderiza todas las anotaciones vectoriales.
+ * No usa JSI ni worklets — opera en el hilo de UI mediante el bridge estándar.
+ */
+const SvgOverlay = React.memo(function SvgOverlay({
+  width,
+  height,
+  paths,
+  arrows,
+  liveArrow,
+  shapes,
+  liveShape,
+  measures,
+  liveMeasure,
+}: SvgOverlayProps) {
+  if (width === 0 || height === 0) return null;
+
+  const allArrows  = liveArrow   ? [...arrows,   liveArrow]   : arrows;
+  const allShapes  = liveShape   ? [...shapes,   liveShape]   : shapes;
+  const allMeasures = liveMeasure ? [...measures, liveMeasure] : measures;
+
+  return (
+    <Svg
+      width={width}
+      height={height}
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+    >
+      {/* Freehand paths */}
+      {paths.map((p) => (
+        <SvgPath
+          key={p.id}
+          d={p.d}
+          stroke={p.color}
+          strokeWidth={p.sw}
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
+
+      {/* Arrows */}
+      {allArrows.map((a) => (
+        <SvgG key={a.id}>
+          {/* Shaft */}
+          <SvgPath
+            d={`M ${a.x1} ${a.y1} L ${a.x2} ${a.y2}`}
+            stroke={a.color}
+            strokeWidth={a.sw}
+            fill="none"
+            strokeLinecap="round"
+          />
+          {/* Arrowhead */}
+          <SvgPath
+            d={arrowHeadPath(a)}
+            stroke={a.color}
+            strokeWidth={a.sw}
+            fill="none"
+            strokeLinecap="round"
+          />
+        </SvgG>
+      ))}
+
+      {/* Shapes (rect / circle) */}
+      {allShapes.map((s) => {
+        const x = Math.min(s.x, s.x2);
+        const y = Math.min(s.y, s.y2);
+        const w = Math.abs(s.x2 - s.x);
+        const h = Math.abs(s.y2 - s.y);
+        if (s.type === "rect") {
+          return (
+            <SvgRect
+              key={s.id}
+              x={x}
+              y={y}
+              width={w}
+              height={h}
+              stroke={s.color}
+              strokeWidth={s.sw}
+              fill={s.filled ? s.color : "none"}
+              fillOpacity={s.filled ? 0.35 : 0}
+            />
+          );
+        }
+        // circle → SVG Ellipse
+        return (
+          <SvgEllipse
+            key={s.id}
+            cx={x + w / 2}
+            cy={y + h / 2}
+            rx={w / 2}
+            ry={h / 2}
+            stroke={s.color}
+            strokeWidth={s.sw}
+            fill={s.filled ? s.color : "none"}
+            fillOpacity={s.filled ? 0.35 : 0}
+          />
+        );
+      })}
+
+      {/* Measure lines */}
+      {allMeasures.map((m) => (
+        <SvgG key={m.id}>
+          {/* Main line */}
+          <SvgPath
+            d={`M ${m.x1} ${m.y1} L ${m.x2} ${m.y2}`}
+            stroke={m.color}
+            strokeWidth={2}
+            fill="none"
+            strokeLinecap="round"
+          />
+          {/* Tick marks */}
+          <SvgPath
+            d={measureTickPath(m)}
+            stroke={m.color}
+            strokeWidth={2}
+            fill="none"
+            strokeLinecap="round"
+          />
+        </SvgG>
+      ))}
+    </Svg>
+  );
+});
 
 // ─── Text Sticker — drag + pinch (WhatsApp style) ─────────────────────────────
 
@@ -144,12 +336,12 @@ function TextSticker({
 // ─── Crop Overlay (worklet, 4 corners) ────────────────────────────────────────
 
 function CropOverlay({ cT, cL, cR, cB }: { cT: SharedValue<number>; cL: SharedValue<number>; cR: SharedValue<number>; cB: SharedValue<number> }) {
-  const dT = useAnimatedStyle(() => ({ position:"absolute",left:0,right:0,top:0,height:cT.value,backgroundColor:"rgba(0,0,0,0.55)" }));
-  const dB = useAnimatedStyle(() => ({ position:"absolute",left:0,right:0,bottom:0,height:cB.value,backgroundColor:"rgba(0,0,0,0.55)" }));
-  const dL = useAnimatedStyle(() => ({ position:"absolute",left:0,top:cT.value,bottom:cB.value,width:cL.value,backgroundColor:"rgba(0,0,0,0.55)" }));
-  const dR = useAnimatedStyle(() => ({ position:"absolute",right:0,top:cT.value,bottom:cB.value,width:cR.value,backgroundColor:"rgba(0,0,0,0.55)" }));
-  const br = useAnimatedStyle(() => ({ position:"absolute",top:cT.value,left:cL.value,right:cR.value,bottom:cB.value,borderWidth:1.5,borderColor:"#FFF" }));
-  const gr = useAnimatedStyle(() => ({ position:"absolute",top:cT.value,left:cL.value,right:cR.value,bottom:cB.value }));
+  const dT = useAnimatedStyle(() => ({ position: "absolute", left: 0, right: 0, top: 0, height: cT.value, backgroundColor: "rgba(0,0,0,0.55)" }));
+  const dB = useAnimatedStyle(() => ({ position: "absolute", left: 0, right: 0, bottom: 0, height: cB.value, backgroundColor: "rgba(0,0,0,0.55)" }));
+  const dL = useAnimatedStyle(() => ({ position: "absolute", left: 0, top: cT.value, bottom: cB.value, width: cL.value, backgroundColor: "rgba(0,0,0,0.55)" }));
+  const dR = useAnimatedStyle(() => ({ position: "absolute", right: 0, top: cT.value, bottom: cB.value, width: cR.value, backgroundColor: "rgba(0,0,0,0.55)" }));
+  const br = useAnimatedStyle(() => ({ position: "absolute", top: cT.value, left: cL.value, right: cR.value, bottom: cB.value, borderWidth: 1.5, borderColor: "#FFF" }));
+  const gr = useAnimatedStyle(() => ({ position: "absolute", top: cT.value, left: cL.value, right: cR.value, bottom: cB.value }));
   return (
     <>
       <Animated.View style={dT} pointerEvents="none" />
@@ -158,10 +350,10 @@ function CropOverlay({ cT, cL, cR, cB }: { cT: SharedValue<number>; cL: SharedVa
       <Animated.View style={dR} pointerEvents="none" />
       <Animated.View style={br} pointerEvents="none" />
       <Animated.View style={gr} pointerEvents="none">
-        <View style={[S.gridLine,{top:"33%",width:"100%",height:1}]} />
-        <View style={[S.gridLine,{top:"66%",width:"100%",height:1}]} />
-        <View style={[S.gridLine,{left:"33%",height:"100%",width:1}]} />
-        <View style={[S.gridLine,{left:"66%",height:"100%",width:1}]} />
+        <View style={[S.gridLine, { top: "33%", width: "100%", height: 1 }]} />
+        <View style={[S.gridLine, { top: "66%", width: "100%", height: 1 }]} />
+        <View style={[S.gridLine, { left: "33%", height: "100%", width: 1 }]} />
+        <View style={[S.gridLine, { left: "66%", height: "100%", width: 1 }]} />
       </Animated.View>
     </>
   );
@@ -169,22 +361,22 @@ function CropOverlay({ cT, cL, cR, cB }: { cT: SharedValue<number>; cL: SharedVa
 
 function CropCorner({
   corner, cT, cL, cR, cB, imgW, imgH,
-}: { corner:"TL"|"TR"|"BL"|"BR"; cT:SharedValue<number>; cL:SharedValue<number>; cR:SharedValue<number>; cB:SharedValue<number>; imgW:number; imgH:number }) {
+}: { corner: "TL" | "TR" | "BL" | "BR"; cT: SharedValue<number>; cL: SharedValue<number>; cR: SharedValue<number>; cB: SharedValue<number>; imgW: number; imgH: number }) {
   const MIN = 60;
   const g = Gesture.Pan().onUpdate((e) => {
     "worklet";
-    if (corner==="TL")      { cT.value=Math.max(0,Math.min(imgH-cB.value-MIN,e.y));  cL.value=Math.max(0,Math.min(imgW-cR.value-MIN,e.x)); }
-    else if (corner==="TR") { cT.value=Math.max(0,Math.min(imgH-cB.value-MIN,e.y));  cR.value=Math.max(0,Math.min(imgW-cL.value-MIN,imgW-e.x)); }
-    else if (corner==="BL") { cB.value=Math.max(0,Math.min(imgH-cT.value-MIN,imgH-e.y)); cL.value=Math.max(0,Math.min(imgW-cR.value-MIN,e.x)); }
-    else                    { cB.value=Math.max(0,Math.min(imgH-cT.value-MIN,imgH-e.y)); cR.value=Math.max(0,Math.min(imgW-cL.value-MIN,imgW-e.x)); }
+    if (corner === "TL")      { cT.value = Math.max(0, Math.min(imgH - cB.value - MIN, e.y));  cL.value = Math.max(0, Math.min(imgW - cR.value - MIN, e.x)); }
+    else if (corner === "TR") { cT.value = Math.max(0, Math.min(imgH - cB.value - MIN, e.y));  cR.value = Math.max(0, Math.min(imgW - cL.value - MIN, imgW - e.x)); }
+    else if (corner === "BL") { cB.value = Math.max(0, Math.min(imgH - cT.value - MIN, imgH - e.y)); cL.value = Math.max(0, Math.min(imgW - cR.value - MIN, e.x)); }
+    else                      { cB.value = Math.max(0, Math.min(imgH - cT.value - MIN, imgH - e.y)); cR.value = Math.max(0, Math.min(imgW - cL.value - MIN, imgW - e.x)); }
   });
   const style = useAnimatedStyle(() => {
     "worklet";
-    const base = { position:"absolute" as const, width:28, height:28, zIndex:30 };
-    if (corner==="TL") return { ...base, top:cT.value-14,    left:cL.value-14  };
-    if (corner==="TR") return { ...base, top:cT.value-14,    right:cR.value-14 };
-    if (corner==="BL") return { ...base, bottom:cB.value-14, left:cL.value-14  };
-    return                    { ...base, bottom:cB.value-14, right:cR.value-14 };
+    const base = { position: "absolute" as const, width: 28, height: 28, zIndex: 30 };
+    if (corner === "TL") return { ...base, top: cT.value - 14,    left: cL.value - 14  };
+    if (corner === "TR") return { ...base, top: cT.value - 14,    right: cR.value - 14 };
+    if (corner === "BL") return { ...base, bottom: cB.value - 14, left: cL.value - 14  };
+    return                     { ...base, bottom: cB.value - 14, right: cR.value - 14 };
   });
   return (
     <GestureDetector gesture={g}>
@@ -209,11 +401,11 @@ export default function ImageEditorScreen() {
   const [processing, setProc] = useState(false);
 
   // Tool state
-  const [tool, setTool]       = useState<Tool | null>(null);
-  const [color, setColor]     = useState(PALETTE[0]);
-  const [stroke, setStroke]   = useState(STROKES[1]);
+  const [tool, setTool]         = useState<Tool | null>(null);
+  const [color, setColor]       = useState(PALETTE[0]);
+  const [stroke, setStroke]     = useState(STROKES[1]);
   const [fontSize, setFontSize] = useState(FONTSIZES[2]);
-  const [filled, setFilled]   = useState(false);
+  const [filled, setFilled]     = useState(false);
 
   // Annotations
   const [paths, setPaths]       = useState<DrawPath[]>([]);
@@ -252,8 +444,6 @@ export default function ImageEditorScreen() {
   }, [imageUri]);
 
   // ── Derived: image display size (contain within canvas area) ────────────────
-  // We compute this from the measured canvas area so the image is always
-  // fully visible and never overflows into the header or toolbar.
   const { dispW, dispH } = React.useMemo(() => {
     if (!canvasW || !canvasH || !imgW || !imgH) return { dispW: 0, dispH: 0 };
     const ratio = imgW / imgH;
@@ -293,8 +483,6 @@ export default function ImageEditorScreen() {
   const handleCancel = useCallback(() => router.back(), [router]);
 
   // ── Native header buttons via useLayoutEffect ────────────────────────────────
-  // This is the correct React Navigation pattern: set header options after mount.
-  // The Stack navigator owns the header so it is always above screen content.
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
@@ -318,17 +506,17 @@ export default function ImageEditorScreen() {
 
   const undo = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (tool === "draw"    && paths.length   > 0) { const l = paths[paths.length-1]; setRedo((r)=>[l,...r]); setPaths((p)=>p.slice(0,-1)); }
-    else if (tool === "text"    && texts.length   > 0) setTexts((p)=>p.slice(0,-1));
-    else if (tool === "arrow"   && arrows.length  > 0) setArrows((p)=>p.slice(0,-1));
-    else if ((tool==="rect"||tool==="circle") && shapes.length>0) setShapes((p)=>p.slice(0,-1));
-    else if (tool === "measure" && measures.length> 0) setMeasures((p)=>p.slice(0,-1));
+    if (tool === "draw"    && paths.length   > 0) { const l = paths[paths.length - 1]; setRedo((r) => [l, ...r]); setPaths((p) => p.slice(0, -1)); }
+    else if (tool === "text"    && texts.length   > 0) setTexts((p) => p.slice(0, -1));
+    else if (tool === "arrow"   && arrows.length  > 0) setArrows((p) => p.slice(0, -1));
+    else if ((tool === "rect" || tool === "circle") && shapes.length > 0) setShapes((p) => p.slice(0, -1));
+    else if (tool === "measure" && measures.length > 0) setMeasures((p) => p.slice(0, -1));
   };
 
   const redoAction = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (tool === "draw" && redo.length > 0) {
-      const f = redo[0]; setRedo((r)=>r.slice(1)); setPaths((p)=>[...p,f]);
+      const f = redo[0]; setRedo((r) => r.slice(1)); setPaths((p) => [...p, f]);
     }
   };
 
@@ -337,7 +525,7 @@ export default function ImageEditorScreen() {
     { text: "Limpiar", style: "destructive", onPress: () => { setPaths([]); setTexts([]); setArrows([]); setShapes([]); setMeasures([]); setRedo([]); } },
   ]);
 
-  const rotate = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setImgRot((r)=>(r+90)%360); };
+  const rotate = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setImgRot((r) => (r + 90) % 360); };
 
   const applyCrop = async () => {
     setProc(true);
@@ -358,7 +546,6 @@ export default function ImageEditorScreen() {
   // ── Open text annotation modal ────────────────────────────────────────────
   const openTextModal = useCallback((x: number, y: number) => {
     setTextPos({ x, y });
-    // Start listening before pushing so we don't miss the resolve
     const promise = annotationTextStore.open();
     router.push({
       pathname: "/modals/annotation-text",
@@ -396,73 +583,44 @@ export default function ImageEditorScreen() {
   // ── Gestures ─────────────────────────────────────────────────────────────────
 
   const drawG = Gesture.Pan()
-    .onStart((g) => { if (tool!=="draw") return; runOnJS(setPaths)((p)=>[...p,{id:uid(),d:`M ${g.x} ${g.y}`,color,sw:stroke}]); runOnJS(setRedo)([]); })
-    .onUpdate((g) => { if (tool!=="draw") return; runOnJS(setPaths)((p)=>{ const l=p[p.length-1]; if(!l) return p; return [...p.slice(0,-1),{...l,d:`${l.d} L ${g.x} ${g.y}`}]; }); })
+    .onStart((g) => { if (tool !== "draw") return; runOnJS(setPaths)((p) => [...p, { id: uid(), d: `M ${g.x} ${g.y}`, color, sw: stroke }]); runOnJS(setRedo)([]); })
+    .onUpdate((g) => { if (tool !== "draw") return; runOnJS(setPaths)((p) => { const l = p[p.length - 1]; if (!l) return p; return [...p.slice(0, -1), { ...l, d: `${l.d} L ${g.x} ${g.y}` }]; }); })
     .runOnJS(true);
 
   const arrowG = Gesture.Pan()
-    .onStart((g) => { if (tool!=="arrow") return; runOnJS(setLiveArrow)({id:uid(),x1:g.x,y1:g.y,x2:g.x,y2:g.y,color,sw:stroke}); })
-    .onUpdate((g) => { if (tool!=="arrow") return; runOnJS(setLiveArrow)((p)=>p?{...p,x2:g.x,y2:g.y}:null); })
-    .onEnd(() => { if (tool!=="arrow") return; runOnJS((a:ArrowAnn|null)=>{ if(a){setArrows((p)=>[...p,a]);setLiveArrow(null);} })(liveArrow); })
+    .onStart((g) => { if (tool !== "arrow") return; runOnJS(setLiveArrow)({ id: uid(), x1: g.x, y1: g.y, x2: g.x, y2: g.y, color, sw: stroke }); })
+    .onUpdate((g) => { if (tool !== "arrow") return; runOnJS(setLiveArrow)((p) => p ? { ...p, x2: g.x, y2: g.y } : null); })
+    .onEnd(() => { if (tool !== "arrow") return; runOnJS((a: ArrowAnn | null) => { if (a) { setArrows((p) => [...p, a]); setLiveArrow(null); } })(liveArrow); })
     .runOnJS(true);
 
   const shapeG = Gesture.Pan()
-    .onStart((g) => { if (tool!=="rect"&&tool!=="circle") return; runOnJS(setLiveShape)({id:uid(),type:tool as "rect"|"circle",x:g.x,y:g.y,x2:g.x,y2:g.y,color,sw:stroke,filled}); })
-    .onUpdate((g) => { if (tool!=="rect"&&tool!=="circle") return; runOnJS(setLiveShape)((p)=>p?{...p,x2:g.x,y2:g.y}:null); })
-    .onEnd(() => { if (tool!=="rect"&&tool!=="circle") return; runOnJS((s:ShapeAnn|null)=>{ if(s){setShapes((p)=>[...p,s]);setLiveShape(null);} })(liveShape); })
+    .onStart((g) => { if (tool !== "rect" && tool !== "circle") return; runOnJS(setLiveShape)({ id: uid(), type: tool as "rect" | "circle", x: g.x, y: g.y, x2: g.x, y2: g.y, color, sw: stroke, filled }); })
+    .onUpdate((g) => { if (tool !== "rect" && tool !== "circle") return; runOnJS(setLiveShape)((p) => p ? { ...p, x2: g.x, y2: g.y } : null); })
+    .onEnd(() => { if (tool !== "rect" && tool !== "circle") return; runOnJS((s: ShapeAnn | null) => { if (s) { setShapes((p) => [...p, s]); setLiveShape(null); } })(liveShape); })
     .runOnJS(true);
 
   const measureG = Gesture.Pan()
-    .onStart((g) => { if (tool!=="measure") return; runOnJS(setLiveMeasure)({id:uid(),x1:g.x,y1:g.y,x2:g.x,y2:g.y,color,label:""}); })
-    .onUpdate((g) => { if (tool!=="measure") return; runOnJS(setLiveMeasure)((p)=>p?{...p,x2:g.x,y2:g.y}:null); })
-    .onEnd(() => { if (tool!=="measure") return; runOnJS((m:MeasureAnn|null)=>{ if(m){ const auto=`${Math.round(pdist(m.x1,m.y1,m.x2,m.y2))}px`; setLiveMeasure(null); openMeasureModal({...m,label:auto}); } })(liveMeasure); })
+    .onStart((g) => { if (tool !== "measure") return; runOnJS(setLiveMeasure)({ id: uid(), x1: g.x, y1: g.y, x2: g.x, y2: g.y, color, label: "" }); })
+    .onUpdate((g) => { if (tool !== "measure") return; runOnJS(setLiveMeasure)((p) => p ? { ...p, x2: g.x, y2: g.y } : null); })
+    .onEnd(() => { if (tool !== "measure") return; runOnJS((m: MeasureAnn | null) => { if (m) { const auto = `${Math.round(pdist(m.x1, m.y1, m.x2, m.y2))}px`; setLiveMeasure(null); openMeasureModal({ ...m, label: auto }); } })(liveMeasure); })
     .runOnJS(true);
 
   const tapG = Gesture.Tap()
-    .onEnd((g) => { if (tool!=="text") return; runOnJS(openTextModal)(g.x, g.y); })
+    .onEnd((g) => { if (tool !== "text") return; runOnJS(openTextModal)(g.x, g.y); })
     .runOnJS(true);
 
   const activeGesture =
-    tool==="draw"    ? drawG
-    : tool==="arrow" ? arrowG
-    : tool==="rect"||tool==="circle" ? shapeG
-    : tool==="measure" ? measureG
-    : tool==="text"  ? tapG
+    tool === "draw"    ? drawG
+    : tool === "arrow" ? arrowG
+    : tool === "rect" || tool === "circle" ? shapeG
+    : tool === "measure" ? measureG
+    : tool === "text"  ? tapG
     : Gesture.Tap();
-
-  // ── Canvas helpers ────────────────────────────────────────────────────────────
-
-  const mkArrow = (a: ArrowAnn) => {
-    const ang=Math.atan2(a.y2-a.y1,a.x2-a.x1), hl=14;
-    const p=Skia.Path.Make();
-    p.moveTo(a.x1,a.y1); p.lineTo(a.x2,a.y2);
-    p.moveTo(a.x2,a.y2); p.lineTo(a.x2-hl*Math.cos(ang-Math.PI/6),a.y2-hl*Math.sin(ang-Math.PI/6));
-    p.moveTo(a.x2,a.y2); p.lineTo(a.x2-hl*Math.cos(ang+Math.PI/6),a.y2-hl*Math.sin(ang+Math.PI/6));
-    return p;
-  };
-  const mkShape = (s: ShapeAnn) => {
-    const x=Math.min(s.x,s.x2),y=Math.min(s.y,s.y2),w=Math.abs(s.x2-s.x),h=Math.abs(s.y2-s.y);
-    const p=Skia.Path.Make();
-    if (s.type==="rect") p.addRect(Skia.XYWHRect(x,y,w,h)); else p.addOval(Skia.XYWHRect(x,y,w,h));
-    return p;
-  };
-  const mkMeasure = (m: MeasureAnn) => {
-    const ang=Math.atan2(m.y2-m.y1,m.x2-m.x1),perp=ang+Math.PI/2,tk=6;
-    const p=Skia.Path.Make();
-    p.moveTo(m.x1,m.y1); p.lineTo(m.x2,m.y2);
-    p.moveTo(m.x1+tk*Math.cos(perp),m.y1+tk*Math.sin(perp)); p.lineTo(m.x1-tk*Math.cos(perp),m.y1-tk*Math.sin(perp));
-    p.moveTo(m.x2+tk*Math.cos(perp),m.y2+tk*Math.sin(perp)); p.lineTo(m.x2-tk*Math.cos(perp),m.y2-tk*Math.sin(perp));
-    return p;
-  };
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <GestureHandlerRootView style={S.root}>
-      {/*
-        SafeAreaView with edges={["bottom"]} — top is handled by the Stack header.
-        This gives us the exact area between the native nav bar and the home indicator.
-      */}
       <SafeAreaView style={S.root} edges={["bottom"]}>
 
         {/* ── Image area — flex:1 so it fills all space between header and toolbar ── */}
@@ -486,43 +644,45 @@ export default function ImageEditorScreen() {
               >
                 <Image source={{ uri: imgUri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
 
-                {/* Skia canvas — same size as image */}
-                <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
-                  {paths.map((p) => {
-                    const sk = Skia.Path.MakeFromSVGString(p.d); if (!sk) return null;
-                    const paint = Skia.Paint();
-                    paint.setColor(Skia.Color(p.color)); paint.setStrokeWidth(p.sw);
-                    paint.setStyle(1); paint.setAntiAlias(true); paint.setStrokeCap(1); paint.setStrokeJoin(1);
-                    return <Path key={p.id} path={sk} paint={paint} />;
-                  })}
-                  {[...arrows,...(liveArrow?[liveArrow]:[])].map((a) => {
-                    const paint=Skia.Paint(); paint.setColor(Skia.Color(a.color)); paint.setStrokeWidth(a.sw); paint.setStyle(1); paint.setAntiAlias(true);
-                    return <Path key={a.id} path={mkArrow(a)} paint={paint} />;
-                  })}
-                  {[...shapes,...(liveShape?[liveShape]:[])].map((s) => {
-                    const paint=Skia.Paint(); paint.setColor(Skia.Color(s.color)); paint.setStrokeWidth(s.sw); paint.setStyle(s.filled?0:1); paint.setAntiAlias(true);
-                    return <Path key={s.id} path={mkShape(s)} paint={paint} />;
-                  })}
-                  {[...measures,...(liveMeasure?[liveMeasure]:[])].map((m) => {
-                    const paint=Skia.Paint(); paint.setColor(Skia.Color(m.color)); paint.setStrokeWidth(2); paint.setStyle(1); paint.setAntiAlias(true);
-                    return <Path key={m.id} path={mkMeasure(m)} paint={paint} />;
-                  })}
-                </Canvas>
+                {/* SVG overlay — reemplaza el Canvas de Skia, sin JSI */}
+                <SvgOverlay
+                  width={dispW}
+                  height={dispH}
+                  paths={paths}
+                  arrows={arrows}
+                  liveArrow={liveArrow}
+                  shapes={shapes}
+                  liveShape={liveShape}
+                  measures={measures}
+                  liveMeasure={liveMeasure}
+                />
 
                 {/* Text stickers */}
                 {texts.map((t) => (
-                  <TextSticker key={t.id} ann={t} onUpdate={updateText} active={tool==="text"} />
+                  <TextSticker key={t.id} ann={t} onUpdate={updateText} active={tool === "text"} />
                 ))}
 
                 {/* Measure labels */}
                 {measures.map((m) => (
-                  <View key={`lbl-${m.id}`} style={{ position:"absolute", left:(m.x1+m.x2)/2-30, top:(m.y1+m.y2)/2-18, backgroundColor:"rgba(0,0,0,0.65)", paddingHorizontal:6, paddingVertical:2, borderRadius:4 }} pointerEvents="none">
-                    <Text style={{ color:m.color, fontSize:12, fontWeight:"700" }}>{m.label}</Text>
+                  <View
+                    key={`lbl-${m.id}`}
+                    style={{
+                      position: "absolute",
+                      left: (m.x1 + m.x2) / 2 - 30,
+                      top: (m.y1 + m.y2) / 2 - 18,
+                      backgroundColor: "rgba(0,0,0,0.65)",
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                      borderRadius: 4,
+                    }}
+                    pointerEvents="none"
+                  >
+                    <Text style={{ color: m.color, fontSize: 12, fontWeight: "700" }}>{m.label}</Text>
                   </View>
                 ))}
 
                 {/* Crop overlay */}
-                {tool==="crop" && (
+                {tool === "crop" && (
                   <>
                     <CropOverlay cT={cT} cL={cL} cR={cR} cB={cB} />
                     <CropCorner corner="TL" cT={cT} cL={cL} cR={cR} cB={cB} imgW={dispW} imgH={dispH} />
@@ -546,34 +706,34 @@ export default function ImageEditorScreen() {
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.paletteRow}>
                 {PALETTE.map((c) => (
                   <TouchableOpacity key={c} onPress={() => setColor(c)}
-                    style={[S.colorDot, { backgroundColor: c }, color===c && S.colorDotActive]} />
+                    style={[S.colorDot, { backgroundColor: c }, color === c && S.colorDotActive]} />
                 ))}
               </ScrollView>
 
               {/* Stroke / font size / fill options */}
               <View style={S.subOptions}>
                 {tool !== "text" && tool !== "measure" && STROKES.map((w) => (
-                  <TouchableOpacity key={w} onPress={() => setStroke(w)} style={[S.subBtn, stroke===w && S.subBtnOn]}>
-                    <View style={{ width: w, height: w, borderRadius: w/2, backgroundColor: color }} />
+                  <TouchableOpacity key={w} onPress={() => setStroke(w)} style={[S.subBtn, stroke === w && S.subBtnOn]}>
+                    <View style={{ width: w, height: w, borderRadius: w / 2, backgroundColor: color }} />
                   </TouchableOpacity>
                 ))}
                 {tool === "text" && FONTSIZES.map((fs) => (
-                  <TouchableOpacity key={fs} onPress={() => setFontSize(fs)} style={[S.subBtn, fontSize===fs && S.subBtnOn]}>
+                  <TouchableOpacity key={fs} onPress={() => setFontSize(fs)} style={[S.subBtn, fontSize === fs && S.subBtnOn]}>
                     <Text style={{ color: "#FFF", fontSize: 10, fontWeight: "700" }}>{fs}</Text>
                   </TouchableOpacity>
                 ))}
-                {(tool==="rect"||tool==="circle") && (
-                  <TouchableOpacity onPress={() => setFilled((v)=>!v)} style={[S.subBtn, filled && S.subBtnOn]}>
-                    <MaterialIcons name={filled?"format-color-fill":"format-color-reset"} size={18} color="#FFF" />
+                {(tool === "rect" || tool === "circle") && (
+                  <TouchableOpacity onPress={() => setFilled((v) => !v)} style={[S.subBtn, filled && S.subBtnOn]}>
+                    <MaterialIcons name={filled ? "format-color-fill" : "format-color-reset"} size={18} color="#FFF" />
                   </TouchableOpacity>
                 )}
                 {/* Undo / redo in options row */}
                 <View style={S.subDivider} />
                 <TouchableOpacity onPress={undo} disabled={!canUndo} style={S.subBtn}>
-                  <MaterialIcons name="undo" size={18} color={canUndo?"#FFF":"rgba(255,255,255,0.25)"} />
+                  <MaterialIcons name="undo" size={18} color={canUndo ? "#FFF" : "rgba(255,255,255,0.25)"} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={redoAction} disabled={redo.length===0} style={S.subBtn}>
-                  <MaterialIcons name="redo" size={18} color={redo.length>0?"#FFF":"rgba(255,255,255,0.25)"} />
+                <TouchableOpacity onPress={redoAction} disabled={redo.length === 0} style={S.subBtn}>
+                  <MaterialIcons name="redo" size={18} color={redo.length > 0 ? "#FFF" : "rgba(255,255,255,0.25)"} />
                 </TouchableOpacity>
                 {hasAnn && (
                   <TouchableOpacity onPress={clearAll} style={S.subBtn}>
@@ -615,8 +775,6 @@ export default function ImageEditorScreen() {
         </View>
       </SafeAreaView>
 
-      {/* Modals are now Stack.Screen routes — no inline Modal components */}
-
       {processing && (
         <View style={S.loader}>
           <ActivityIndicator size="large" color="#FFF" />
@@ -632,7 +790,6 @@ export default function ImageEditorScreen() {
 const S = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
 
-  // Image area — fills all space between nav bar and toolbar
   canvasArea: {
     flex: 1,
     justifyContent: "center",
@@ -640,7 +797,6 @@ const S = StyleSheet.create({
     backgroundColor: "#000",
   },
   imgWrapper: {
-    // Size is set dynamically via dispW/dispH
     overflow: "hidden",
   },
 
@@ -655,7 +811,7 @@ const S = StyleSheet.create({
   // Text sticker
   stickerBg: { backgroundColor: "rgba(0,0,0,0.50)", paddingHorizontal: 7, paddingVertical: 3, borderRadius: 5 },
   stickerTxt: { fontWeight: "700" },
-  stickerDot: { position:"absolute", top:-8, right:-8, width:18, height:18, borderRadius:9, backgroundColor:"#007AFF", alignItems:"center", justifyContent:"center" },
+  stickerDot: { position: "absolute", top: -8, right: -8, width: 18, height: 18, borderRadius: 9, backgroundColor: "#007AFF", alignItems: "center", justifyContent: "center" },
 
   // Bottom toolbar
   toolbar: {
@@ -665,7 +821,7 @@ const S = StyleSheet.create({
     paddingTop: 6,
   },
 
-  // Options row (appears above tool strip when a tool is selected)
+  // Options row
   optionsRow: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(255,255,255,0.10)",
@@ -690,7 +846,6 @@ const S = StyleSheet.create({
   applyBtn: { marginHorizontal: 16, marginTop: 4, marginBottom: 6, backgroundColor: "#007AFF", paddingVertical: 13, borderRadius: 12, alignItems: "center" },
   applyBtnTxt: { color: "#FFF", fontWeight: "700", fontSize: 15 },
 
-  // (Modal styles removed — modals are now Stack.Screen routes)
   sheetBtnGray: { backgroundColor: "#2C2C2E" },
   sheetBtnGrayTxt: { color: "#FFF", fontWeight: "500", fontSize: 15 },
   sheetBtnBlue: { backgroundColor: "#007AFF" },
