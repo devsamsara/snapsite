@@ -126,13 +126,48 @@ const config: ExpoConfig = {
             "expo-build-properties",
             {
                 ios: {
-                    useFrameworks: "static",
+                    // ─── useFrameworks: "static" REMOVED ────────────────────────────────
+                    // Previously required for @shopify/react-native-skia (C++ JSI module).
+                    // Skia has been replaced by react-native-svg (bridge-based, no JSI).
+                    //
+                    // Keeping useFrameworks: "static" WITH Expo SDK 54 + RN 0.81.x causes
+                    // a production crash: EXC_BAD_ACCESS (SIGSEGV) in EXJSIInstaller.mm:84
+                    // → AppContext.swift:458. The crash address 0x28286c6f626d7953 decodes
+                    // to 'Symbol((' — a freed JSI HostObject tag — confirming that the
+                    // static framework linker is double-initialising the Expo modules host
+                    // object when useFrameworks: static is set without Skia present.
+                    //
+                    // react-native-vision-camera 4.x works without useFrameworks: static
+                    // since VisionCamera 4 ships its own xcframework and does not require
+                    // CocoaPods static linking. Confirmed in VisionCamera 4 release notes.
+                    //
+                    // Crash ID: A1F3432B-01B0-45AE-B947-86853AC9DCCB (build 19, Apr 2026)
+                    // Related Expo issue: github.com/expo/expo/issues/39233
+
+                    // ─── buildReactNativeFromSource: false (explicit) ────────────────────
+                    // Use prebuilt Hermes V1 binaries (default for SDK 54 + RN 0.81.x).
+                    // buildReactNativeFromSource: true triggers Dead Code Stripping of
+                    // TurboModule registrations during Xcode archive, causing
+                    // KERN_PROTECTION_FAILURE on physical iOS 26 devices (PAC enforcement).
+                    // Confirmed fix: github.com/expo/expo/issues/44356
+                    buildReactNativeFromSource: false,
+
                     deploymentTarget: "15.1",
-                    newArchEnabled: true,
+
+                    // ─── New Architecture: keep disabled on iOS ──────────────────────────
+                    // Expo SDK 54 + New Arch + iOS 26 beta has a known race condition in
+                    // EXJSIInstaller where the Expo modules host object is installed into
+                    // a JSI runtime that has already been released during bridge init.
+                    // Re-enable once Expo SDK 55+ ships with the thread-safety fix
+                    // (expo-modules-core PR #44042 — merged for SDK 55).
+                    newArchEnabled: false,
                 },
                 android: {
                     buildArchs: ["armeabi-v7a", "arm64-v8a"],
-                    newArchEnabled: true,
+                    // Keep New Arch disabled on Android until all native modules
+                    // confirm Android Fabric support (VisionCamera 4 is still
+                    // experimental on Android New Arch).
+                    newArchEnabled: false,
                     minSdkVersion: 24,
                 },
             },
