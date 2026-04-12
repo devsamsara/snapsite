@@ -1,14 +1,11 @@
 module.exports = function (api) {
   api.cache(true);
 
-  // IMPORTANT: react-native-worklets/plugin MUST be the ONLY worklet-related
-  // Babel plugin. Since Reanimated 4, the Reanimated Babel plugin is bundled
-  // inside react-native-worklets/plugin. Adding react-native-reanimated/plugin
-  // separately causes double-transform crashes in production on iOS.
-  const plugins = ["react-native-worklets/plugin"];
-
+  // IMPORTANT: react-native-reanimated/plugin MUST be the last plugin in the list.
+  // Reanimated 3.x bundles its own worklets transform inside this plugin.
+  // Do NOT add react-native-worklets/plugin separately (that was only needed for Reanimated 4.x).
   return {
     presets: [["babel-preset-expo", { jsxImportSource: "nativewind" }], "nativewind/babel"],
-    plugins,
+    plugins: ["react-native-reanimated/plugin"],
   };
 };
