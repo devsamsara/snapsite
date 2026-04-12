@@ -39,25 +39,12 @@
       "env": {
         "APP_ENV": "production"
       },
-      "ios": {
-        "image": "latest",
-        "resourceClass": "m-medium",
-        "buildType": "release"
-      },
       "android": {
-        "image": "latest",
-        "resourceClass": "medium",
-        "buildType": "apk"
+        "buildType": "app-bundle"
       }
     }
   },
   "submit": {
-    "production": {
-      "ios": {
-        "appleId": "",
-        "ascAppId": "",
-        "appleTeamId": ""
-      }
-    }
+    "production": {}
   }
 }
