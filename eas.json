@@ -4,30 +4,60 @@
     "appVersionSource": "remote"
   },
   "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
+    "base": {
       "ios": {
         "image": "latest",
         "resourceClass": "m-medium"
+      },
+      "android": {
+        "image": "latest",
+        "resourceClass": "medium"
+      },
+      "env": {
+        "EXPO_USE_FAST_RESOLVER": "1"
+      }
+    },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_USE_FAST_RESOLVER": "1",
+        "APP_ENV": "development"
       }
     },
     "preview": {
+      "extends": "base",
       "distribution": "internal",
-      "ios": {
-        "image": "latest",
-        "resourceClass": "m-medium"
+      "env": {
+        "APP_ENV": "preview"
       }
     },
     "production": {
+      "extends": "base",
       "autoIncrement": true,
+      "env": {
+        "APP_ENV": "production"
+      },
       "ios": {
         "image": "latest",
-        "resourceClass": "m-medium"
+        "resourceClass": "m-medium",
+        "buildType": "release"
+      },
+      "android": {
+        "image": "latest",
+        "resourceClass": "medium",
+        "buildType": "apk"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "",
+        "ascAppId": "",
+        "appleTeamId": ""
+      }
+    }
   }
 }

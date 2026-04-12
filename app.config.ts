@@ -126,13 +126,22 @@ const config: ExpoConfig = {
             "expo-build-properties",
             {
                 ios: {
+                    // useFrameworks: "static" is REQUIRED for Skia, VisionCamera,
+                    // and other C++ native modules that use CocoaPods frameworks.
+                    // Without it, the linker cannot find the C++ symbols at runtime
+                    // and the app crashes immediately on launch in production.
                     useFrameworks: "static",
                     deploymentTarget: "15.1",
+                    // New Architecture is stable in Expo 54 / RN 0.81 with the
+                    // versions pinned in package.json. Enabled on iOS.
                     newArchEnabled: true,
                 },
                 android: {
                     buildArchs: ["armeabi-v7a", "arm64-v8a"],
-                    newArchEnabled: true,
+                    // Keep New Arch disabled on Android until all native modules
+                    // confirm Android Fabric support (VisionCamera 4 is still
+                    // experimental on Android New Arch).
+                    newArchEnabled: false,
                     minSdkVersion: 24,
                 },
             },
@@ -153,7 +162,11 @@ const config: ExpoConfig = {
     owner: EAS_OWNER,
     experiments: {
         typedRoutes: true,
-        reactCompiler: false
+        // reactCompiler is intentionally DISABLED.
+        // The React Compiler transforms component functions before Reanimated/
+        // Worklets can annotate worklet closures, causing JSI serialization
+        // failures that only manifest in production (release) builds on iOS.
+        // Re-enable once react-native-worklets ships compiler-aware transforms.
     },
 };
 
