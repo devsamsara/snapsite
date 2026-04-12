@@ -132,9 +132,15 @@ const config: ExpoConfig = {
                     // and the app crashes immediately on launch in production.
                     useFrameworks: "static",
                     deploymentTarget: "15.1",
-                    // New Architecture is stable in Expo 54 / RN 0.81 with the
-                    // versions pinned in package.json. Enabled on iOS.
-                    newArchEnabled: true,
+                    // New Architecture is DISABLED on iOS.
+                    // Root cause: EXC_BAD_ACCESS in EXJSIInstaller.mm:84 /
+                    // AppContext.swift:458 — the Expo modules host object is
+                    // installed into a JSI runtime that has already been
+                    // released during bridge initialization on iOS 26 (beta).
+                    // This is a known Expo SDK 54 + New Arch + iOS 26 issue.
+                    // Re-enable once Expo releases a fix for EXJSIInstaller.
+                    // Crash ID: EC5E1665-5108-4C45-BFD2-344332511DCA
+                    newArchEnabled: false,
                 },
                 android: {
                     buildArchs: ["armeabi-v7a", "arm64-v8a"],
