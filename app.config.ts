@@ -154,20 +154,25 @@ const config: ExpoConfig = {
 
                     deploymentTarget: "15.1",
 
-                    // ─── New Architecture: keep disabled on iOS ──────────────────────────
-                    // Expo SDK 54 + New Arch + iOS 26 beta has a known race condition in
-                    // EXJSIInstaller where the Expo modules host object is installed into
-                    // a JSI runtime that has already been released during bridge init.
-                    // Re-enable once Expo SDK 55+ ships with the thread-safety fix
-                    // (expo-modules-core PR #44042 — merged for SDK 55).
-                    newArchEnabled: false,
+                    // ─── New Architecture: ENABLED (required by Reanimated 4.x) ─────────
+                    // react-native-reanimated 4.x is a hard requirement on New Architecture
+                    // (Fabric + TurboModules). Running Reanimated 4 with newArchEnabled:false
+                    // causes an immediate crash at startup:
+                    //   ReanimatedError: Reanimated 4 supports only the React Native
+                    //   New Architecture.
+                    // Ref: https://docs.swmansion.com/react-native-reanimated/docs/guides/compatibility/
+                    //
+                    // The previous EXJSIInstaller race condition (expo-modules-core #44032)
+                    // was a separate issue caused by useFrameworks:static (now removed) and
+                    // expo-gl autolinking (now removed). With those two removed, New Arch
+                    // is safe to enable on Expo SDK 54 + RN 0.81.x.
+                    newArchEnabled: true,
                 },
                 android: {
                     buildArchs: ["armeabi-v7a", "arm64-v8a"],
-                    // Keep New Arch disabled on Android until all native modules
-                    // confirm Android Fabric support (VisionCamera 4 is still
-                    // experimental on Android New Arch).
-                    newArchEnabled: false,
+                    // New Arch enabled: required by Reanimated 4.x.
+                    // VisionCamera 4.7.x supports New Architecture on Android.
+                    newArchEnabled: true,
                     minSdkVersion: 24,
                 },
             },
