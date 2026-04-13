@@ -241,11 +241,11 @@ export default function RegisterScreen() {
 
               <View style={S.terms}>
                 <Text style={[S.termsText, { color: colors.muted }]}>{t('auth.register.terms')}</Text>
-                <TouchableOpacity onPress={() => router.push('/terms' as never)}>
+                <Pressable onPress={() => router.push('/modals/terms-modal')}>
                   <Text style={[S.termsLink, { color: colors.primary }]}>{t('auth.register.termsLink')}</Text>
-                </TouchableOpacity>
+                </Pressable>
                 <Text style={[S.termsText, { color: colors.muted }]}>{t('auth.register.and')}</Text>
-                <TouchableOpacity onPress={() => router.push('/privacy' as never)}>
+                <TouchableOpacity onPress={() => router.push('/modals/privacy-modal')}>
                   <Text style={[S.termsLink, { color: colors.primary }]}>{t('auth.register.privacyLink')}</Text>
                 </TouchableOpacity>
               </View>

@@ -109,6 +109,24 @@ export default function RootLayout() {
                             />
                             {/* ── Modal screens ── */}
                             <Stack.Screen
+                                name="modals/privacy-modal"
+                                options={{
+                                    presentation: "modal",
+                                    headerShown: false,
+                                    contentStyle: {backgroundColor: sheetBg},
+
+                                }}
+                            />
+                            <Stack.Screen
+                                name="modals/terms-modal"
+                                options={{
+                                    presentation: "modal",
+                                    headerShown: false,
+                                    contentStyle: {backgroundColor: sheetBg},
+
+                                }}
+                            />
+                            <Stack.Screen
                                 name="modals/annotation-text"
                                 options={{
                                     presentation: "formSheet",

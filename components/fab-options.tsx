@@ -20,7 +20,7 @@ export function FabOptions() {
 
   const toggleMenu = () => {
     const toValue = isOpen ? 0 : 1;
-    animation.value = withSpring(toValue, { friction: 5, tension: 40 });
+    animation.value = withSpring(toValue);
     setIsOpen(!isOpen);
   };
 
