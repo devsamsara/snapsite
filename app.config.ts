@@ -16,6 +16,9 @@ const EAS_PROJECT_ID  = process.env.EAS_PROJECT_ID  ?? "c8815663-68f6-4a93-8efb-
 const EAS_OWNER       = process.env.EAS_OWNER       ?? "devsamsara";
 // GraphQL API endpoint — configure per environment in EAS secrets
 const GRAPHQL_URL     = process.env.GRAPHQL_URL     ?? "";
+// Build environment: "development" | "preview" | "production"
+// Set automatically by EAS build profiles (see eas.json)
+const APP_ENV         = process.env.APP_ENV         ?? "development";
 
 const env = {
     appName: APP_NAME,
@@ -180,6 +183,7 @@ const config: ExpoConfig = {
     ],
     extra: {
         graphqlUrl: GRAPHQL_URL,
+        appEnv: APP_ENV,
         eas: {
             projectId: EAS_PROJECT_ID,
         },

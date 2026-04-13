@@ -8,6 +8,7 @@ import React, {
 import { useRouter, useSegments } from 'expo-router';
 import { gql } from '@apollo/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import {
   apolloClient,
   setAuthToken,
@@ -16,6 +17,38 @@ import {
 
 /** Key used to persist whether the user has already seen the onboarding. */
 export const ONBOARDING_DONE_KEY = '@snapsite_onboarding_done';
+
+// ─── Environment detection ────────────────────────────────────────────────────
+// APP_ENV is injected by EAS build profiles via app.config.ts → extra.appEnv:
+//   development → mock login enabled (tester@test.com / test)
+//   preview     → mock login enabled
+//   production  → mock login disabled, real GraphQL only
+const APP_ENV: string =
+  (Constants.expoConfig?.extra?.appEnv as string | undefined) ?? 'development';
+
+/** True when running in a non-production build (dev client or preview). */
+const IS_TEST_ENV = APP_ENV !== 'production';
+
+// ─── Mock user (only active in development / preview) ─────────────────────────
+const MOCK_TESTER: {
+  email: string;
+  password: string;
+  token: string;
+  user: AuthUser;
+} = {
+  email: 'tester@test.com',
+  password: 'test',
+  token: 'mock-token-tester',
+  user: {
+    id: 'mock-user-tester',
+    name: 'Tester',
+    email: 'tester@test.com',
+    avatarUrl: null,
+    role: 'admin',
+    company: 'SnapSite',
+    phone: null,
+  },
+};
 
 export interface AuthUser {
   id: string;
@@ -103,13 +136,10 @@ const CONFIRM_EMAIL_MUTATION = gql`
 `;
 
 function extractMessage(error: any): string {
-  if (error) {
-    return (
-      error.graphQLErrors[0]?.message ??
-      error.networkError?.message ??
-      error.message
-    );
+  if (error?.graphQLErrors?.length) {
+    return error.graphQLErrors[0]?.message ?? error.message;
   }
+  if (error?.networkError?.message) return error.networkError.message;
   if (error instanceof Error) return error.message;
   return 'An unexpected error occurred.';
 }
@@ -123,11 +153,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router                    = useRouter();
   const segments                  = useSegments();
 
+  // ─── Restore session on launch ──────────────────────────────────────────────
   useEffect(() => {
     const restore = async () => {
       try {
         const token = await restoreAuthToken();
         if (token) {
+          // Mock token: resolve locally without hitting the server
+          // (only valid in development / preview builds)
+          if (IS_TEST_ENV && token === MOCK_TESTER.token) {
+            setUser(MOCK_TESTER.user);
+            return;
+          }
+
+          // Real token: validate against the GraphQL server
           const { data } = await apolloClient.query({
             query: ME_QUERY,
             fetchPolicy: 'network-only',
@@ -149,9 +188,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     restore();
   }, []);
 
+  // ─── Route guard ────────────────────────────────────────────────────────────
   useEffect(() => {
-    // router.replace('/(tabs)');
-   /* if (isLoading) return;
+    if (isLoading) return;
 
     const inAuthGroup  = segments[0] === 'auth';
     const inOnboarding = segments[0] === 'onboarding';
@@ -164,23 +203,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Authenticated and still on auth screen → go to tabs
       // (onboarding is handled explicitly by signUp, not here)
       router.replace('/(tabs)');
-    }*/
+    }
   }, [user, segments, isLoading]);
 
+  // ─── signIn ─────────────────────────────────────────────────────────────────
   const signIn = useCallback(async (email: string, password: string) => {
-   try {
-     /*  const { data } = await apolloClient.mutate({
+    try {
+      const input = email.trim().toLowerCase();
+
+      // ── Mock login (development / preview only) ───────────────────────────
+      // Disabled automatically in production builds (APP_ENV === 'production').
+      // Credentials: tester@test.com / test
+      if (IS_TEST_ENV) {
+        if (
+          (input === MOCK_TESTER.email || input === 'tester') &&
+          password === MOCK_TESTER.password
+        ) {
+          await setAuthToken(MOCK_TESTER.token);
+          setUser(MOCK_TESTER.user);
+          return;
+        }
+      }
+
+      // ── Real GraphQL login ────────────────────────────────────────────────
+      const { data, errors } = await apolloClient.mutate({
         mutation: LOGIN_MUTATION,
-        variables: { email: email.trim().toLowerCase(), password },
+        variables: { email: input, password },
       });
+
+      if (errors?.length) {
+        throw new Error(errors[0].message);
+      }
+
       const { token, user: userData } = data.login;
       await setAuthToken(token);
-      setUser(userData as AuthUser);*/
+      setUser(userData as AuthUser);
     } catch (error) {
       throw new Error(extractMessage(error));
     }
   }, []);
 
+  // ─── signUp ─────────────────────────────────────────────────────────────────
   const signUp = useCallback(
     async (name: string, email: string, password: string) => {
       try {
@@ -206,6 +269,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  // ─── signOut ────────────────────────────────────────────────────────────────
   const signOut = useCallback(async () => {
     try {
       await setAuthToken(null);
@@ -215,6 +279,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // ─── forgotPassword ─────────────────────────────────────────────────────────
   const forgotPassword = useCallback(async (email: string) => {
     try {
       await apolloClient.mutate({
@@ -226,6 +291,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // ─── confirmEmail ───────────────────────────────────────────────────────────
   const confirmEmail = useCallback(async (code: string) => {
     try {
       await apolloClient.mutate({
@@ -237,6 +303,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // ─── updateUser ─────────────────────────────────────────────────────────────
   const updateUser = useCallback((patch: Partial<AuthUser>) => {
     setUser((prev) => (prev ? { ...prev, ...patch } : prev));
   }, []);

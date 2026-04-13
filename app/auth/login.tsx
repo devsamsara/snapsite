@@ -30,6 +30,7 @@ import * as z from 'zod';
 // ONBOARDING_DONE_KEY is managed exclusively by auth-context (signUp) and onboarding.tsx
 
 type FormValues = { email: string; password: string };
+// Accepts a valid email OR a plain username (min 1 char)
 
 export default function LoginScreen() {
   const { t }                 = useTranslation();
@@ -41,7 +42,8 @@ export default function LoginScreen() {
   const insets                = useSafeAreaInsets();
 
   const schema = z.object({
-    email: z.string().email(t('validation.emailInvalid')),
+    // Accept a valid email OR a plain username (e.g. "juan")
+    email: z.string().min(1, t('validation.emailInvalid')),
     password: z.string().min(1, t('validation.passwordRequired')),
   });
 
