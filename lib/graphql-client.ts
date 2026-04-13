@@ -20,7 +20,8 @@ if (__DEV__ && !Constants.expoConfig?.extra?.graphqlUrl && !process.env.GRAPHQL_
   );
 }
 
-const AUTH_TOKEN_KEY = "@snapsite/authToken";
+// SecureStore keys must contain only alphanumeric characters (no @, /, - or special chars)
+const AUTH_TOKEN_KEY = "snapsiteAuthToken";
 
 const authLink = new ApolloLink((operation, forward) => {
   const token = _cachedToken;

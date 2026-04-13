@@ -38,9 +38,9 @@ const MOCK_TESTER: {
 } = {
   email: 'tester@test.com',
   password: 'test',
-  token: 'mock-token-tester',
+  token: 'mockTokenTester',
   user: {
-    id: 'mock-user-tester',
+    id: 'mockUserTester',
     name: 'Tester',
     email: 'tester@test.com',
     avatarUrl: null,
@@ -161,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (token) {
           // Mock token: resolve locally without hitting the server
           // (only valid in development / preview builds)
-          if (IS_TEST_ENV && token === MOCK_TESTER.token) {
+          if (IS_TEST_ENV && token === MOCK_TESTER.token) { // 'mockTokenTester'
             setUser(MOCK_TESTER.user);
             return;
           }
