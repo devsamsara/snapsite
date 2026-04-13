@@ -1,155 +1,115 @@
 /**
  * app/auth/register.tsx
  *
- * Estilo basado en el componente de referencia:
- *   - Botón atrás en header
- *   - Título + subtítulo por paso
- *   - Step indicator (puntos + línea) cuando isAdmin = true
- *   - Slide horizontal animado entre pasos
- *   - Step 1: checkbox "¿Eres admin?", nickname, email, password, confirmPassword
- *   - Step 2 (solo admin): companyName, companyEmail, companyPhone, companyAddress
- *   - Términos de servicio + Política de privacidad
- *   - Footer "¿Ya tienes cuenta? Inicia sesión"
- *
- * Funcionalidades originales preservadas:
- *   - Validación con react-hook-form + zod
- *   - signUp() del auth-context
- *   - Navegación a /(tabs) tras registro
+ * LÓGICA: 100% original preservada (step1 empresa, step2 cuenta, signUp, zod, etc.)
+ * ESTILO: basado en el componente de referencia:
+ *   - Header fijo fuera del scroll: botón atrás 44×44, título+subtítulo
+ *   - Step indicator (2 puntos + línea conectora) visible cuando step === 2
+ *   - Slides container con Animated.Value translateX (300ms)
+ *   - Form footer con términos de servicio + footer "¿Ya tienes cuenta?"
  */
 import React, { useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
   Dimensions,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
+  View,
   Text,
   TouchableOpacity,
-  View,
+  Pressable,
+  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
+import RNAnimated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Controller, useForm } from 'react-hook-form';
+import { useColors } from '@/hooks/use-colors';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { AppInput } from '@/components/ui/app-input';
+import { Button } from '@/components/ui/button';
+import { useForm } from 'react-hook-form';
+import { useAuth } from '@/lib/auth-context';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
 
-import { useAuth } from '@/lib/auth-context';
-import { useColors } from '@/hooks/use-colors';
-import { AppInput } from '@/components/ui/app-input';
-import { Button } from '@/components/ui/button';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-type FormValues = {
-  nickname:        string;
-  email:           string;
-  password:        string;
-  confirmPassword: string;
-  isAdmin:         boolean;
-  companyName:     string;
-  companyEmail:    string;
-  companyPhone:    string;
-  companyAddress:  string;
-};
+// ─── Tipos originales ─────────────────────────────────────────────────────────
+type Step1Values = { companyName: string; industry: string; companySize: string };
+type Step2Values = { fullName: string; email: string; password: string };
+
+const TOTAL_STEPS = 2;
 
 export default function RegisterScreen() {
-  const { t }                         = useTranslation();
-  const colors                        = useColors();
-  const router                        = useRouter();
-  const insets                        = useSafeAreaInsets();
-  const { signUp }                    = useAuth();
+  const { t }                 = useTranslation();
+  const [step, setStep]       = useState(1);
+  const [loading, setLoading] = useState(false);
+  const colors                = useColors();
+  const router                = useRouter();
+  const insets                = useSafeAreaInsets();
 
-  const [currentStep, setCurrentStep] = useState(0);
-  const [isAdmin, setIsAdmin]         = useState(false);
-  const [isLoading, setIsLoading]     = useState(false);
-  const slideAnim                     = useRef(new Animated.Value(0)).current;
+  // Animación de slide (estilo referencia)
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
-  const step1Schema = z.object({
-    nickname:        z.string().min(2, t('validation.nicknameRequired') || 'Mínimo 2 caracteres'),
-    email:           z.string().email(t('validation.emailInvalid') || 'Email inválido'),
-    password:        z.string().min(6, t('validation.passwordMin', { min: 6 }) || 'Mínimo 6 caracteres'),
-    confirmPassword: z.string().min(1, t('validation.confirmRequired') || 'Confirma tu contraseña'),
-  }).refine(d => d.password === d.confirmPassword, {
-    message: t('validation.passwordMismatch') || 'Las contraseñas no coinciden',
-    path: ['confirmPassword'],
-  });
-
-  const step2Schema = z.object({
-    companyName:    z.string().min(2, t('validation.companyRequired') || 'Requerido'),
-    companyEmail:   z.string().email(t('validation.emailInvalid') || 'Email inválido'),
-    companyPhone:   z.string().min(6, t('validation.phoneRequired') || 'Requerido'),
-    companyAddress: z.string().min(4, t('validation.addressRequired') || 'Requerido'),
-  });
-
-  const {
-    control,
-    getValues,
-    setValue,
-    setError,
-    clearErrors,
-    formState: { errors },
-  } = useForm<FormValues>({
-    defaultValues: {
-      nickname: '', email: '', password: '', confirmPassword: '',
-      isAdmin: false,
-      companyName: '', companyEmail: '', companyPhone: '', companyAddress: '',
-    },
-  });
-
-  const animateToStep = (step: number) => {
+  const animateToStep = (targetStep: number) => {
     Animated.timing(slideAnim, {
-      toValue: -step * SCREEN_WIDTH,
+      toValue: -(targetStep - 1) * SCREEN_WIDTH,
       duration: 300,
       useNativeDriver: true,
     }).start();
-    setCurrentStep(step);
+    setStep(targetStep);
   };
 
-  const handleAdminToggle = () => {
-    const next = !isAdmin;
-    setIsAdmin(next);
-    setValue('isAdmin', next);
-  };
+  // ─── Schemas originales ───────────────────────────────────────────────────
+  const step1Schema = z.object({
+    companyName: z.string().min(2, t('validation.companyRequired')),
+    industry:    z.string().min(2, t('validation.industryRequired')),
+    companySize: z.string().min(1, t('validation.sizeRequired')),
+  });
+  const step2Schema = z.object({
+    fullName: z.string().min(2, t('validation.nameRequired')),
+    email:    z.string().email(t('validation.emailInvalid')),
+    password: z.string()
+      .min(10, t('validation.passwordMin', { min: 10 }))
+      .regex(/[A-Z]/, t('validation.passwordUppercase'))
+      .regex(/[a-z]/, t('validation.passwordLowercase')),
+  });
 
-  const handleNext = async () => {
-    clearErrors(['nickname', 'email', 'password', 'confirmPassword']);
-    const values = getValues();
-    const result = step1Schema.safeParse(values);
-    if (!result.success) {
-      result.error.issues.forEach(issue => {
-        const field = issue.path[0] as keyof FormValues;
-        setError(field, { message: issue.message });
-      });
-      return;
-    }
-    if (isAdmin) {
-      animateToStep(1);
-    } else {
-      await onSubmit({ ...values, isAdmin: false });
-    }
-  };
+  const { signUp } = useAuth();
 
-  const handleStep2Submit = async () => {
-    clearErrors(['companyName', 'companyEmail', 'companyPhone', 'companyAddress']);
-    const values = getValues();
-    const result = step2Schema.safeParse(values);
-    if (!result.success) {
-      result.error.issues.forEach(issue => {
-        const field = issue.path[0] as keyof FormValues;
-        setError(field, { message: issue.message });
-      });
-      return;
+  const step1 = useForm<Step1Values>({
+    resolver: zodResolver(step1Schema),
+    defaultValues: { companyName: '', industry: '', companySize: '' },
+  });
+  const step2 = useForm<Step2Values>({
+    resolver: zodResolver(step2Schema),
+    defaultValues: { fullName: '', email: '', password: '' },
+  });
+
+  // ─── Handlers originales ──────────────────────────────────────────────────
+  const goNext = step1.handleSubmit(() => animateToStep(2));
+
+  const onRegister = step2.handleSubmit(async (data) => {
+    setLoading(true);
+    try {
+      await signUp(data.fullName, data.email, data.password);
+      // signUp navigates to /onboarding automatically on success
+    } catch (e: any) {
+      Alert.alert(
+        t('auth.register.errorTitle'),
+        e?.message ?? t('auth.register.errorMessage'),
+      );
+    } finally {
+      setLoading(false);
     }
-    await onSubmit({ ...values, isAdmin: true });
-  };
+  });
 
   const handleBack = () => {
-    if (currentStep === 1) {
-      animateToStep(0);
+    if (step === 2) {
+      animateToStep(1);
     } else if (router.canGoBack()) {
       router.back();
     } else {
@@ -157,32 +117,17 @@ export default function RegisterScreen() {
     }
   };
 
-  const onSubmit = async (form: FormValues) => {
-    setIsLoading(true);
-    try {
-      await signUp(form.nickname, form.email, form.password);
-    } catch (e: any) {
-      Alert.alert(
-        t('auth.register.errorTitle'),
-        e?.message ?? t('auth.register.errorMessage'),
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getButtonLabel = () => {
-    if (isLoading) return t('auth.register.creating');
-    return isAdmin ? t('auth.register.continue') : t('auth.register.createAccount');
-  };
+  const stepTitles    = [t('auth.register.step1Title'), t('auth.register.step2Title')];
+  const stepSubtitles = [t('auth.register.step1Subtitle'), t('auth.register.step2Subtitle')];
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={[S.root, { backgroundColor: colors.background }]}
     >
-      {/* Header */}
+      {/* ── Header fijo (estilo referencia) ── */}
       <View style={[S.headerContainer, { paddingTop: insets.top + 12 }]}>
+        {/* Botón atrás 44×44 */}
         <Pressable
           onPress={handleBack}
           style={({ pressed }) => [
@@ -194,114 +139,104 @@ export default function RegisterScreen() {
           <IconSymbol name="chevron.left" size={22} color={colors.foreground} />
         </Pressable>
 
-        <View style={S.headerText}>
+        {/* Título + subtítulo */}
+        <View style={S.header}>
           <Text style={[S.title, { color: colors.foreground }]}>
-            {currentStep === 0 ? t('auth.register.step1Title') : t('auth.register.step2Title')}
+            {stepTitles[step - 1]}
           </Text>
           <Text style={[S.subtitle, { color: colors.muted }]}>
-            {currentStep === 0 ? t('auth.register.step1Subtitle') : t('auth.register.step2Subtitle')}
+            {stepSubtitles[step - 1]}
           </Text>
         </View>
 
-        {isAdmin && (
+        {/* Step indicator — solo visible en step 2 */}
+        {step === 2 && (
           <View style={S.stepIndicator}>
-            <View style={[S.stepDot, { backgroundColor: currentStep === 0 ? colors.primary : colors.border }]} />
-            <View style={[S.stepLine, { backgroundColor: currentStep === 1 ? colors.primary : colors.border }]} />
-            <View style={[S.stepDot, { backgroundColor: currentStep === 1 ? colors.primary : colors.border }]} />
+            <View style={[S.stepDot, { backgroundColor: step === 1 ? colors.primary : colors.border }]} />
+            <View style={[S.stepLine, { backgroundColor: step === 2 ? colors.primary : colors.border }]} />
+            <View style={[S.stepDot, { backgroundColor: step === 2 ? colors.primary : colors.border }]} />
           </View>
         )}
       </View>
 
-      {/* Slides */}
+      {/* ── Slides container animado (estilo referencia) ── */}
       <Animated.View style={[S.slidesContainer, { transform: [{ translateX: slideAnim }] }]}>
 
-        {/* Step 1 */}
+        {/* ── Slide 1: Empresa ── */}
         <ScrollView
           style={S.slide}
-          contentContainerStyle={[S.slideContent, { paddingBottom: insets.bottom + 32 }]}
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[S.slideContent, { paddingBottom: insets.bottom + 40 }]}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <View style={S.formContainer}>
             <View style={S.formFields}>
-
-              <Pressable style={[S.checkboxRow, S.adminCheckbox]} onPress={handleAdminToggle}>
-                <View style={[
-                  S.checkbox,
-                  {
-                    borderColor: isAdmin ? colors.primary : colors.border,
-                    backgroundColor: isAdmin ? colors.primary : 'transparent',
-                  },
-                ]}>
-                  {isAdmin && <IconSymbol name="checkmark" size={12} color="#fff" />}
+              {/* Barra de progreso original (dentro del contenido) */}
+              <View style={S.progressSection}>
+                <View style={S.dots}>
+                  {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+                    <View
+                      key={i}
+                      style={[
+                        S.dot,
+                        i + 1 === step
+                          ? { backgroundColor: colors.primary, width: 20 }
+                          : i + 1 < step
+                          ? { backgroundColor: colors.primary, opacity: 0.4 }
+                          : { backgroundColor: colors.border },
+                      ]}
+                    />
+                  ))}
                 </View>
-                <Text style={[S.checkboxLabel, { color: colors.foreground }]}>
-                  {t('auth.register.isAdmin')}
+                <Text style={[S.stepLabel, { color: colors.muted }]}>
+                  {t('auth.register.step', { current: step, total: TOTAL_STEPS })}
                 </Text>
-              </Pressable>
+              </View>
 
-              <Controller control={control} name="nickname" render={() => (
-                <AppInput
-                  label={t('auth.register.nickname')}
-                  name="nickname"
-                  control={control}
-                  placeholder={t('auth.register.nicknamePlaceholder')}
-                  icon="person.fill"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  error={errors.nickname?.message}
+              {/* Barra lineal fina */}
+              <View style={[S.track, { backgroundColor: colors.border }]}>
+                <View
+                  style={[
+                    S.fill,
+                    { width: `${(step / TOTAL_STEPS) * 100}%`, backgroundColor: colors.primary },
+                  ]}
                 />
-              )} />
+              </View>
 
-              <Controller control={control} name="email" render={() => (
+              {/* Campos paso 1 — lógica original */}
+              <RNAnimated.View entering={FadeInRight} exiting={FadeOutLeft}>
                 <AppInput
-                  label={t('auth.register.email')}
-                  name="email"
-                  control={control}
-                  placeholder={t('auth.register.emailPlaceholder')}
-                  icon="envelope.fill"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  error={errors.email?.message}
+                  label={t('auth.register.companyName')}
+                  name="companyName"
+                  control={step1.control}
+                  placeholder={t('auth.register.companyNamePlaceholder')}
+                  icon="building.2.fill"
                 />
-              )} />
-
-              <Controller control={control} name="password" render={() => (
                 <AppInput
-                  label={t('auth.register.password')}
-                  name="password"
-                  control={control}
-                  placeholder={t('auth.register.passwordPlaceholder')}
-                  icon="lock.fill"
-                  secureTextEntry
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  error={errors.password?.message}
+                  label={t('auth.register.industry')}
+                  name="industry"
+                  control={step1.control}
+                  placeholder={t('auth.register.industryPlaceholder')}
+                  icon="briefcase.fill"
                 />
-              )} />
-
-              <Controller control={control} name="confirmPassword" render={() => (
                 <AppInput
-                  label={t('auth.register.confirmPassword')}
-                  name="confirmPassword"
-                  control={control}
-                  placeholder={t('auth.register.confirmPasswordPlaceholder')}
-                  icon="lock.fill"
-                  secureTextEntry
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  error={errors.confirmPassword?.message}
+                  label={t('auth.register.companySize')}
+                  name="companySize"
+                  control={step1.control}
+                  placeholder={t('auth.register.companySizePlaceholder')}
+                  icon="person.3.fill"
+                  keyboardType="numeric"
                 />
-              )} />
+              </RNAnimated.View>
             </View>
 
+            {/* Form footer con botón + términos + footer login */}
             <View style={S.formFooter}>
               <Button
-                title={getButtonLabel()}
-                onPress={handleNext}
-                isLoading={isLoading && !isAdmin}
+                title={t('auth.register.next')}
+                onPress={goNext}
                 size="lg"
+                rightIcon="arrow-forward"
               />
 
               <View style={S.terms}>
@@ -325,70 +260,52 @@ export default function RegisterScreen() {
           </View>
         </ScrollView>
 
-        {/* Step 2 — empresa (solo admin) */}
+        {/* ── Slide 2: Cuenta ── */}
         <ScrollView
           style={S.slide}
-          contentContainerStyle={[S.slideContent, { paddingBottom: insets.bottom + 32 }]}
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[S.slideContent, { paddingBottom: insets.bottom + 40 }]}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <View style={S.formContainer}>
             <View style={S.formFields}>
-
-              <Controller control={control} name="companyName" render={() => (
+              {/* Campos paso 2 — lógica original */}
+              <RNAnimated.View entering={FadeInRight} exiting={FadeOutLeft}>
                 <AppInput
-                  label={t('auth.register.companyName')}
-                  name="companyName"
-                  control={control}
-                  placeholder={t('auth.register.companyNamePlaceholder')}
-                  icon="building.2.fill"
-                  error={errors.companyName?.message}
+                  label={t('auth.register.fullName')}
+                  name="fullName"
+                  control={step2.control}
+                  placeholder={t('auth.register.fullNamePlaceholder')}
+                  icon="person.fill"
                 />
-              )} />
-
-              <Controller control={control} name="companyEmail" render={() => (
                 <AppInput
-                  label={t('auth.register.companyEmail')}
-                  name="companyEmail"
-                  control={control}
-                  placeholder={t('auth.register.companyEmailPlaceholder')}
+                  label={t('auth.register.email')}
+                  name="email"
+                  control={step2.control}
+                  placeholder={t('auth.register.emailPlaceholder')}
                   icon="envelope.fill"
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  autoCorrect={false}
-                  error={errors.companyEmail?.message}
                 />
-              )} />
-
-              <Controller control={control} name="companyPhone" render={() => (
                 <AppInput
-                  label={t('auth.register.companyPhone')}
-                  name="companyPhone"
-                  control={control}
-                  placeholder={t('auth.register.companyPhonePlaceholder')}
-                  icon="phone.fill"
-                  keyboardType="phone-pad"
-                  error={errors.companyPhone?.message}
+                  label={t('auth.register.password')}
+                  name="password"
+                  control={step2.control}
+                  placeholder={t('auth.register.passwordPlaceholder')}
+                  icon="lock.fill"
+                  secureTextEntry
                 />
-              )} />
-
-              <Controller control={control} name="companyAddress" render={() => (
-                <AppInput
-                  label={t('auth.register.companyAddress')}
-                  name="companyAddress"
-                  control={control}
-                  placeholder={t('auth.register.companyAddressPlaceholder')}
-                  icon="map.fill"
-                  error={errors.companyAddress?.message}
-                />
-              )} />
+                <Text style={[S.hint, { color: colors.muted }]}>
+                  {t('auth.register.passwordHint')}
+                </Text>
+              </RNAnimated.View>
             </View>
 
             <View style={S.formFooter}>
               <Button
-                title={isLoading ? t('auth.register.creating') : t('auth.register.createAccount')}
-                onPress={handleStep2Submit}
-                isLoading={isLoading}
+                title={t('auth.register.createAccount')}
+                onPress={onRegister}
+                isLoading={loading}
                 size="lg"
               />
             </View>
@@ -402,6 +319,7 @@ export default function RegisterScreen() {
 const S = StyleSheet.create({
   root: { flex: 1 },
 
+  // Header fijo (estilo referencia)
   headerContainer: {
     paddingHorizontal: 24,
     paddingBottom: 8,
@@ -413,7 +331,7 @@ const S = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  headerText: {
+  header: {
     marginBottom: 8,
   },
   title: {
@@ -426,6 +344,7 @@ const S = StyleSheet.create({
     lineHeight: 20,
   },
 
+  // Step indicator (estilo referencia)
   stepIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -444,6 +363,7 @@ const S = StyleSheet.create({
     marginHorizontal: 6,
   },
 
+  // Slides (estilo referencia)
   slidesContainer: {
     flex: 1,
     flexDirection: 'row',
@@ -457,7 +377,6 @@ const S = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 8,
   },
-
   formContainer: {
     flex: 1,
     justifyContent: 'space-between',
@@ -466,28 +385,18 @@ const S = StyleSheet.create({
     flex: 1,
   },
 
-  adminCheckbox: {
-    alignSelf: 'flex-end',
-    marginBottom: 16,
-  },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
+  // Barra de progreso original (dentro del contenido)
+  progressSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  dots:            { flexDirection: 'row', gap: 6 },
+  dot:             { height: 8, width: 8, borderRadius: 4 },
+  stepLabel:       { fontSize: 12, fontWeight: '600' },
+  track:           { height: 3, borderRadius: 2, overflow: 'hidden', marginBottom: 16 },
+  fill:            { height: '100%', borderRadius: 2 },
 
+  // Hint contraseña
+  hint: { fontSize: 12, marginTop: -8, marginBottom: 16, paddingHorizontal: 2 },
+
+  // Form footer (estilo referencia)
   formFooter: {
     paddingTop: 16,
   },
@@ -514,11 +423,6 @@ const S = StyleSheet.create({
     gap: 4,
     paddingTop: 16,
   },
-  footerText: {
-    fontSize: 14,
-  },
-  footerLink: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
+  footerText: { fontSize: 14 },
+  footerLink: { fontSize: 14, fontWeight: '700' },
 });
