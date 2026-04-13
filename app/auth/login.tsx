@@ -1,49 +1,56 @@
 /**
- * app/auth/login.tsx — diseño minimalista
+ * app/auth/login.tsx
  *
- * Un solo card centrado con los inputs y el botón.
- * Logo pequeño arriba, enlace de registro abajo como texto simple.
+ * Diseño basado en el componente de referencia:
+ *   - Logo grande centrado + título + subtítulo
+ *   - Banner de error inline con icono
+ *   - Inputs con icono y toggle de contraseña (AppInput)
+ *   - Fila "Recuérdame" + "¿Olvidaste tu contraseña?"
+ *   - Botón principal de login
+ *   - Divider "o continúa con"
+ *   - Botón de Google (visual, sin OAuth por ahora)
+ *   - Footer "¿No tienes cuenta? Regístrate"
  */
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '@/lib/auth-context';
-import { useColors } from '@/hooks/use-colors';
-import { useCardStyle } from '@/hooks/use-card-style';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { AppInput } from '@/components/ui/app-input';
-import { Button } from '@/components/ui/button';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
-// ONBOARDING_DONE_KEY is managed exclusively by auth-context (signUp) and onboarding.tsx
+
+import { useAuth } from '@/lib/auth-context';
+import { useColors } from '@/hooks/use-colors';
+import { AppInput } from '@/components/ui/app-input';
+import { Button } from '@/components/ui/button';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 
 type FormValues = { email: string; password: string };
-// Accepts a valid email OR a plain username (min 1 char)
 
 export default function LoginScreen() {
-  const { t }                 = useTranslation();
-  const [loading, setLoading] = useState(false);
-  const { signIn }            = useAuth();
-  const colors                = useColors();
-  const card                  = useCardStyle();
-  const router                = useRouter();
-  const insets                = useSafeAreaInsets();
+  const { t }                       = useTranslation();
+  const [loading, setLoading]       = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [errorMsg, setErrorMsg]     = useState('');
+  const { signIn }                  = useAuth();
+  const colors                      = useColors();
+  const router                      = useRouter();
+  const insets                      = useSafeAreaInsets();
 
   const schema = z.object({
-    // Accept a valid email OR a plain username (e.g. "juan")
-    email: z.string().min(1, t('validation.emailInvalid')),
+    // Accept a valid email OR a plain username (e.g. "tester")
+    email:    z.string().min(1, t('validation.emailInvalid')),
     password: z.string().min(1, t('validation.passwordRequired')),
   });
 
@@ -53,11 +60,12 @@ export default function LoginScreen() {
   });
 
   const onLogin = async (data: FormValues) => {
+    setErrorMsg('');
     setLoading(true);
     try {
       await signIn(data.email, data.password);
     } catch (e: any) {
-      Alert.alert(t('auth.login.errorTitle'), e?.message ?? t('auth.login.errorMessage'));
+      setErrorMsg(e?.message ?? t('auth.login.errorMessage'));
     } finally {
       setLoading(false);
     }
@@ -71,71 +79,125 @@ export default function LoginScreen() {
       <ScrollView
         contentContainerStyle={[
           S.scroll,
-          { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 40 },
+          { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 32 },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Logo pequeño */}
-        <View style={S.logoWrap}>
-          <View style={[S.logoBox, { backgroundColor: colors.primary + '15' }]}>
-            <IconSymbol name="camera.fill" size={32} color={colors.primary} />
+        {/* ── Header: logo + título + subtítulo ── */}
+        <View style={S.header}>
+          <View style={[S.logoContainer, { backgroundColor: colors.surface, borderRadius: 24 }]}>
+            <Image
+              source={require('@/assets/images/icon.png')}
+              style={S.logoImage}
+              resizeMode="contain"
+            />
           </View>
-          <Text style={[S.appName, { color: colors.foreground }]}>SnapSite</Text>
-        </View>
-
-        {/* Card único */}
-        <View style={[S.card, card]}>
-          <Text style={[S.cardTitle, { color: colors.foreground }]}>
-            {t('auth.login.title')}
-          </Text>
-          <Text style={[S.cardSub, { color: colors.muted }]}>
+          <Text style={[S.title, { color: colors.foreground }]}>SnapSite</Text>
+          <Text style={[S.subtitle, { color: colors.muted }]}>
             {t('auth.login.subtitle')}
           </Text>
+        </View>
 
-          <View style={S.fields}>
-            <AppInput
-              label={t('auth.login.email')}
-              name="email"
-              control={control}
-              placeholder={t('auth.login.emailPlaceholder')}
-              icon="person.fill"
-              autoCapitalize="none"
-            />
-            <AppInput
-              label={t('auth.login.password')}
-              name="password"
-              control={control}
-              placeholder={t('auth.login.passwordPlaceholder')}
-              icon="lock.fill"
-              secureTextEntry
-            />
+        {/* ── Form ── */}
+        <View style={S.form}>
+
+          {/* Error banner */}
+          {!!errorMsg && (
+            <View style={[S.errorBanner, { backgroundColor: colors.error + '18', borderRadius: 12 }]}>
+              <IconSymbol name="exclamationmark.triangle.fill" size={18} color={colors.error} />
+              <Text style={[S.errorText, { color: colors.error }]}>{errorMsg}</Text>
+            </View>
+          )}
+
+          <AppInput
+            label={t('auth.login.email')}
+            name="email"
+            control={control}
+            placeholder="tu@email.com"
+            icon="person.fill"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+          />
+
+          <AppInput
+            label={t('auth.login.password')}
+            name="password"
+            control={control}
+            placeholder="••••••••"
+            icon="lock.fill"
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+
+          {/* Recuérdame + ¿Olvidaste tu contraseña? */}
+          <View style={S.optionsRow}>
+            {/* Checkbox inline */}
+            <Pressable style={S.checkboxRow} onPress={() => setRememberMe(!rememberMe)}>
+              <View
+                style={[
+                  S.checkbox,
+                  {
+                    borderColor: rememberMe ? colors.primary : colors.border,
+                    backgroundColor: rememberMe ? colors.primary : 'transparent',
+                  },
+                ]}
+              >
+                {rememberMe && (
+                  <IconSymbol name="checkmark" size={12} color="#fff" />
+                )}
+              </View>
+              <Text style={[S.checkboxLabel, { color: colors.muted }]}>
+                {t('auth.login.rememberMe') || 'Recuérdame'}
+              </Text>
+            </Pressable>
+
+            <TouchableOpacity onPress={() => router.push('/auth/forgot-password')}>
+              <Text style={[S.forgotText, { color: colors.primary }]}>
+                {t('auth.login.forgotPassword')}
+              </Text>
+            </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            onPress={() => router.push('/auth/forgot-password')}
-            style={S.forgotRow}
-          >
-            <Text style={[S.forgotText, { color: colors.primary }]}>
-              {t('auth.login.forgotPassword')}
-            </Text>
-          </TouchableOpacity>
-
+          {/* Botón principal */}
           <Button
-            title={t('auth.login.submit')}
+            title={loading ? t('auth.login.loading') || 'Iniciando sesión...' : t('auth.login.submit')}
             onPress={handleSubmit(onLogin)}
             isLoading={loading}
             size="lg"
           />
+
+          {/* Divider */}
+          <View style={S.dividerRow}>
+            <View style={[S.dividerLine, { backgroundColor: colors.border }]} />
+            <Text style={[S.dividerText, { color: colors.muted }]}>
+              {t('auth.login.orContinueWith') || 'o continúa con'}
+            </Text>
+            <View style={[S.dividerLine, { backgroundColor: colors.border }]} />
+          </View>
+
+          {/* Botón Google */}
+          <TouchableOpacity
+            style={[S.googleBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            activeOpacity={0.75}
+          >
+            {/* Google "G" SVG inline como texto coloreado */}
+            <Text style={S.googleLetter}>G</Text>
+            <Text style={[S.googleLabel, { color: colors.foreground }]}>
+              {t('auth.login.continueWithGoogle') || 'Continuar con Google'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Enlace de registro — texto simple, sin card */}
-        <View style={S.registerRow}>
-          <Text style={[S.registerText, { color: colors.muted }]}>
-            {t('auth.login.noAccount')}{'  '}
+        {/* ── Footer ── */}
+        <View style={S.footer}>
+          <Text style={[S.footerText, { color: colors.muted }]}>
+            {t('auth.login.noAccount')}
           </Text>
           <TouchableOpacity onPress={() => router.push('/auth/register')}>
-            <Text style={[S.registerLink, { color: colors.primary }]}>
+            <Text style={[S.footerLink, { color: colors.primary }]}>
               {t('auth.login.register')}
             </Text>
           </TouchableOpacity>
@@ -146,21 +208,131 @@ export default function LoginScreen() {
 }
 
 const S = StyleSheet.create({
-  root:         { flex: 1 },
-  scroll:       { paddingHorizontal: 16 },
-  // Logo
-  logoWrap:     { alignItems: 'center', marginBottom: 32, gap: 8 },
-  logoBox:      { width: 60, height: 60, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-  appName:      { fontSize: 20, fontWeight: '700', letterSpacing: 0.2 },
-  // Card
-  card:         { borderRadius: 16, padding: 16, marginBottom: 16 },
-  cardTitle:    { fontSize: 22, fontWeight: '700' },
-  cardSub:      { fontSize: 14, marginTop: 4, marginBottom: 16 },
-  fields:       { gap: 0 },
-  forgotRow:    { alignSelf: 'flex-end', marginBottom: 16, marginTop: -8 },
-  forgotText:   { fontSize: 13, fontWeight: '600' },
-  // Registro
-  registerRow:  { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  registerText: { fontSize: 14 },
-  registerLink: { fontSize: 14, fontWeight: '700' },
+  root:   { flex: 1 },
+  scroll: { paddingHorizontal: 24, flexGrow: 1, justifyContent: 'center' },
+
+  // Header
+  header: {
+    alignItems: 'center',
+    marginBottom: 36,
+  },
+  logoContainer: {
+    width: 100,
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: 100,
+    height: 100,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 6,
+    letterSpacing: 0.2,
+  },
+  subtitle: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+
+  // Form
+  form: {
+    marginBottom: 24,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    marginBottom: 16,
+    gap: 10,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+
+  // Options row
+  optionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: -4,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxLabel: {
+    fontSize: 14,
+  },
+  forgotText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // Divider
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 13,
+  },
+
+  // Google button
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1,
+    gap: 10,
+  },
+  googleLetter: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#4285F4',
+  },
+  googleLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
+  // Footer
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+  },
+  footerText: {
+    fontSize: 14,
+  },
+  footerLink: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
 });
