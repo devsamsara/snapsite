@@ -87,7 +87,15 @@
       "successTitle": "¡Cuenta creada!",
       "successMessage": "Verifica tu correo para activar la cuenta.",
       "errorTitle": "Error al registrarse",
-      "errorMessage": "No se pudo crear la cuenta. Inténtalo de nuevo."
+      "errorMessage": "No se pudo crear la cuenta. Inténtalo de nuevo.",
+      "companySize": "Tamaño de empresa",
+      "companySizePlaceholder": "Ej: 10-50 empleados",
+      "fullName": "Nombre completo",
+      "fullNamePlaceholder": "Juan García",
+      "industry": "Sector",
+      "industryPlaceholder": "Tecnología, Construcción...",
+      "next": "Siguiente",
+      "passwordHint": "Mínimo 10 caracteres, una mayúscula y una minúscula"
     },
     "forgotPassword": {
       "title": "Recuperar contraseña",

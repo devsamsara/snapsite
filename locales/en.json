@@ -87,7 +87,15 @@
       "successTitle": "Account created!",
       "successMessage": "Check your email to activate your account.",
       "errorTitle": "Registration failed",
-      "errorMessage": "Could not create account. Please try again."
+      "errorMessage": "Could not create account. Please try again.",
+      "companySize": "Company size",
+      "companySizePlaceholder": "e.g. 10-50 employees",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "John Smith",
+      "industry": "Industry",
+      "industryPlaceholder": "Technology, Construction...",
+      "next": "Next",
+      "passwordHint": "At least 10 characters, one uppercase and one lowercase"
     },
     "forgotPassword": {
       "title": "Reset password",
