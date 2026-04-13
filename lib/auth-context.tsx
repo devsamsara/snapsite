@@ -128,6 +128,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const token = await restoreAuthToken();
         if (token) {
+          // ── Mock token: restore session locally without hitting the server ──
+          if (token.startsWith('mock-token-')) {
+            const MOCK_SESSIONS: Record<string, AuthUser> = {
+              'mock-token-mock-user-juan': {
+                id: 'mock-user-juan',
+                name: 'Juan',
+                email: 'juan@mail.com',
+                avatarUrl: null,
+                role: 'admin',
+                company: 'SnapSite',
+                phone: null,
+              },
+            };
+            const mockUser = MOCK_SESSIONS[token];
+            if (mockUser) {
+              setUser(mockUser);
+            } else {
+              await setAuthToken(null);
+            }
+            return;
+          }
+
+          // ── Real token: validate against GraphQL server ──────────────────
           const { data } = await apolloClient.query({
             query: ME_QUERY,
             fetchPolicy: 'network-only',
@@ -150,8 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // router.replace('/(tabs)');
-   /* if (isLoading) return;
+    if (isLoading) return;
 
     const inAuthGroup  = segments[0] === 'auth';
     const inOnboarding = segments[0] === 'onboarding';
@@ -164,18 +186,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Authenticated and still on auth screen → go to tabs
       // (onboarding is handled explicitly by signUp, not here)
       router.replace('/(tabs)');
-    }*/
+    }
   }, [user, segments, isLoading]);
 
   const signIn = useCallback(async (email: string, password: string) => {
-   try {
-     /*  const { data } = await apolloClient.mutate({
-        mutation: LOGIN_MUTATION,
-        variables: { email: email.trim().toLowerCase(), password },
-      });
-      const { token, user: userData } = data.login;
-      await setAuthToken(token);
-      setUser(userData as AuthUser);*/
+    try {
+      // ── Mock credentials (demo / no-backend mode) ─────────────────────────
+      // Accepts username OR email in the first field.
+      // Add more mock users here as needed.
+      const MOCK_USERS: Array<{ username: string; email: string; password: string; user: AuthUser }> = [
+        {
+          username: 'juan',
+          email: 'juan@mail.com',
+          password: 'juan',
+          user: {
+            id: 'mock-user-juan',
+            name: 'Juan',
+            email: 'juan@mail.com',
+            avatarUrl: null,
+            role: 'admin',
+            company: 'SnapSite',
+            phone: null,
+          },
+        },
+      ];
+
+      const input = email.trim().toLowerCase();
+      const match = MOCK_USERS.find(
+        (u) =>
+          (u.username === input || u.email === input) &&
+          u.password === password,
+      );
+
+      if (match) {
+        // Persist a mock token so restoreAuthToken() works on next launch
+        await setAuthToken(`mock-token-${match.user.id}`);
+        setUser(match.user);
+        return;
+      }
+
+      // ── Real GraphQL backend (uncomment when API is ready) ────────────────
+      // const { data } = await apolloClient.mutate({
+      //   mutation: LOGIN_MUTATION,
+      //   variables: { email: input, password },
+      // });
+      // const { token, user: userData } = data.login;
+      // await setAuthToken(token);
+      // setUser(userData as AuthUser);
+
+      throw new Error('Invalid username or password.');
     } catch (error) {
       throw new Error(extractMessage(error));
     }
