@@ -194,7 +194,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const inAuthGroup  = segments[0] === 'auth';
     const inOnboarding = segments[0] === 'onboarding';
-    const isPublic     = inAuthGroup || inOnboarding;
+    // modals/terms-modal and modals/privacy-modal must be accessible
+    // without a session (reachable from the register screen)
+    const inPublicModal =
+      segments[0] === 'modals' &&
+      (segments[1] === 'terms-modal' || segments[1] === 'privacy-modal');
+    const isPublic     = inAuthGroup || inOnboarding || inPublicModal;
 
     if (!user && !isPublic) {
       // Not authenticated and not on a public screen → go to login
