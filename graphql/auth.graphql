@@ -1,0 +1,150 @@
+mutation ConfirmAccount($token: String!) {
+    confirmAccount(token: $token) {
+        refreshToken
+        token
+    }
+}
+
+mutation ForgotPassword($input: ForgotPasswordInput!) {
+    forgotPassword(input: $input)
+}
+
+mutation Login($input: LoginInput!) {
+    login(input: $input) {
+        token
+        user {
+            avatarUrl
+            company {
+                id
+                name
+            }
+            createdAt
+            id
+            email
+            lastName
+            name
+            nickname
+            phone
+            projects {
+                createdAt
+                description
+                endDate
+                id
+                latitude
+                location
+                longitude
+                name
+                members {
+                    id
+                    email
+                    name
+                    lastName
+                }
+                notes {
+                    author {
+                        company {
+                            id
+                            name
+                        }
+                    }
+                }
+                photos {
+                    id
+                    url
+                    createdAt
+                }
+                progress
+                startDate
+                status
+                thumbnail
+                timeline {
+                    id
+                    description
+                    createdAt
+                    photoUrl
+                    project {
+                        id
+                        description
+                    }
+                    title
+                    type
+                    updatedAt
+                }
+            }
+            role
+            status
+            updatedAt
+        }
+        refreshToken
+    }
+}
+
+mutation Register($input: RegisterInput!) {
+    register(input: $input) {
+        refreshToken
+        token
+        user {
+            avatarUrl
+            company {
+                id
+                name
+            }
+            createdAt
+            id
+            email
+            lastName
+            name
+            nickname
+            phone
+            projects {
+                createdAt
+                description
+                endDate
+                id
+                latitude
+                location
+                longitude
+                name
+                members {
+                    id
+                    email
+                    name
+                    lastName
+                }
+                notes {
+                    author {
+                        company {
+                            id
+                            name
+                        }
+                    }
+                }
+                photos {
+                    id
+                    url
+                    createdAt
+                }
+                progress
+                startDate
+                status
+                thumbnail
+                timeline {
+                    id
+                    description
+                    createdAt
+                    photoUrl
+                    project {
+                        id
+                        description
+                    }
+                    title
+                    type
+                    updatedAt
+                }
+            }
+            role
+            status
+            updatedAt
+        }
+    }
+}

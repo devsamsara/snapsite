@@ -1,0 +1,34 @@
+mutation CreateCompany($input: CreateCompanyInput!) {
+  createCompany(input: $input) {
+    message
+    company {
+      id
+      createdAt
+      industry
+      name
+      size
+      updatedAt
+    }
+    token
+    user {
+      id
+      name
+      email
+      avatarUrl
+      role
+      company {
+        createdAt
+        id
+        industry
+        name
+        size
+        updatedAt
+        users {
+          id
+          email
+          name
+        }
+      }
+    }
+  }
+}

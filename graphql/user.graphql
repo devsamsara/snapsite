@@ -1,0 +1,65 @@
+  query Me {
+    me {
+      avatarUrl
+      company {
+        id
+        name
+      }
+      createdAt
+      id
+      email
+      lastName
+      name
+      nickname
+      phone
+      projects {
+        createdAt
+        description
+        endDate
+        id
+        latitude
+        location
+        longitude
+        name
+        members {
+          id
+          email
+          name
+          lastName
+        }
+        notes {
+          author {
+            company {
+              id
+              name
+            }
+          }
+        }
+        photos {
+          id
+          url
+          createdAt
+        }
+        progress
+        startDate
+        status
+        thumbnail
+        timeline {
+          id
+          description
+          createdAt
+          photoUrl
+          project {
+            id
+            description
+          }
+          title
+          type
+          updatedAt
+        }
+      }
+      role
+      status
+      updatedAt
+    }
+  }
