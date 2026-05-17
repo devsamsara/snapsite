@@ -31,12 +31,16 @@ import { useAuth } from "@/lib/auth-context";
 type FormValues = { name: string; email: string; phone?: string; role?: string; company?: string };
 
 // ─── Component ────────────────────────────────────────────────────────────────
+import { UserRole } from "@/gql/graphql";
+
 export default function EditProfileScreen() {
   const { t }     = useTranslation();
   const router    = useRouter();
   const colors    = useColors();
   const cardStyle = useCardStyle();
   const { user }  = useAuth();
+
+  const isAdmin = user?.role === UserRole.Admin || user?.role === UserRole.Root;
 
   const schema = z.object({
     name: z.string().min(2, t('validation.minLength', { min: 2 })).max(60, t('validation.maxLength', { max: 60 })),
@@ -155,6 +159,7 @@ export default function EditProfileScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               returnKeyType="next"
+              editable={isAdmin}
             />
             <AppInput
               name="phone"
@@ -179,6 +184,7 @@ export default function EditProfileScreen() {
               placeholder={t('editProfile.rolePlaceholder')}
               icon="briefcase"
               returnKeyType="next"
+              editable={isAdmin}
             />
             <AppInput
               name="company"
@@ -188,6 +194,7 @@ export default function EditProfileScreen() {
               icon="building"
               returnKeyType="done"
               onSubmitEditing={handleSubmit(onSave)}
+              editable={isAdmin}
             />
           </View>
 
