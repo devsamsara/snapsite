@@ -31,7 +31,8 @@ import { useAuth } from "@/lib/auth-context";
 type FormValues = { name: string; email: string; phone?: string; role?: string; company?: string };
 
 // ─── Component ────────────────────────────────────────────────────────────────
-import { UserRole } from "@/gql/graphql";
+import { UserRole, UpdateUserDocument } from "@/gql/graphql";
+import { apolloClient } from "@/lib/graphql-client";
 
 export default function EditProfileScreen() {
   const { t }     = useTranslation();
@@ -67,11 +68,39 @@ export default function EditProfileScreen() {
   });
 
   const onSave = async (data: FormValues) => {
-    // TODO: llamar a la API (tRPC) para guardar los cambios
-    console.log("Saving profile:", data);
-    Alert.alert(t('editProfile.successTitle'), t('editProfile.successMessage'), [
-      { text: t('common.ok'), onPress: () => router.back() },
-    ]);
+    if (!user?.id) return;
+    
+    try {
+      const { data: response, errors } = await apolloClient.mutate({
+        mutation: UpdateUserDocument,
+        variables: {
+          id: user.id,
+          input: {
+            name: data.name,
+            email: isAdmin ? data.email : undefined,
+            role: isAdmin ? (data.role as UserRole) : undefined,
+            // Note: phone is not in UpdateUserInput according to schema, 
+            // but if it was, we would add it here.
+          },
+        },
+      });
+
+      if (errors && errors.length > 0) {
+        throw new Error(errors[0].message);
+      }
+
+      if (response?.updateUser) {
+        // Update local state in AuthContext
+        updateUser(response.updateUser);
+        
+        Alert.alert(t('editProfile.successTitle'), t('editProfile.successMessage'), [
+          { text: t('common.ok'), onPress: () => router.back() },
+        ]);
+      }
+    } catch (error: any) {
+      console.error("[EditProfile] Save error:", error);
+      Alert.alert(t('common.error'), error.message || t('editProfile.errorSave'));
+    }
   };
 
   const handleChangePhoto = () => {

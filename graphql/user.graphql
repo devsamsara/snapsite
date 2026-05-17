@@ -63,3 +63,16 @@
       updatedAt
     }
   }
+
+mutation UpdateUser($id: ID!, $input: UpdateUserInput!) {
+  updateUser(id: $id, input: $input) {
+    id
+    name
+    lastName
+    email
+    phone
+    role
+    status
+    avatarUrl
+  }
+}
