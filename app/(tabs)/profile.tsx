@@ -84,7 +84,6 @@ export default function ProfileScreen() {
     return picturesCount;
   };
 
-  console.log(user);
   return (
     <ScreenContainer className="p-0">
       <ScrollView

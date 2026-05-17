@@ -1,20 +1,15 @@
-/**
- * app/edit-profile.tsx
- *
- * Pantalla de edición de perfil.
- * Validación: Zod + react-hook-form
- * Inputs: AppInput (no TextInput nativo)
- * Tema: dark/light mode via useColors
- */
+
 import React from "react";
 import {
+  ActivityIndicator,
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-} from "react-native";
+} from 'react-native';
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
@@ -22,24 +17,23 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ScreenContainer } from "@/components/screen-container";
 import { AppInput } from "@/components/ui/app-input";
-import { Button } from "@/components/ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { useCardStyle } from "@/hooks/use-card-style";
 import { useAuth } from "@/lib/auth-context";
 
-type FormValues = { name: string; email: string; phone?: string; role?: string; company?: string };
-
 // ─── Component ────────────────────────────────────────────────────────────────
-import { UserRole, UpdateUserDocument } from "@/gql/graphql";
+import { UserRole, UpdateUserDocument, User } from '@/gql/graphql';
 import { apolloClient } from "@/lib/graphql-client";
+
+type FormValues = { name: string; email: string; phone?: string; role?: string; company?: string };
 
 export default function EditProfileScreen() {
   const { t }     = useTranslation();
   const router    = useRouter();
   const colors    = useColors();
   const cardStyle = useCardStyle();
-  const { user }  = useAuth();
+  const { user, updateUser }  = useAuth();
 
   const isAdmin = user?.role === UserRole.Admin || user?.role === UserRole.Root;
 
@@ -69,30 +63,30 @@ export default function EditProfileScreen() {
 
   const onSave = async (data: FormValues) => {
     if (!user?.id) return;
-    
+
     try {
-      const { data: response, errors } = await apolloClient.mutate({
+      const { data: response, error } = await apolloClient.mutate({
         mutation: UpdateUserDocument,
         variables: {
-          id: user.id,
+          updateUserId: user.id,
           input: {
+            company: data.company,
+            phone: data.phone,
             name: data.name,
             email: isAdmin ? data.email : undefined,
             role: isAdmin ? (data.role as UserRole) : undefined,
-            // Note: phone is not in UpdateUserInput according to schema, 
-            // but if it was, we would add it here.
           },
         },
       });
 
-      if (errors && errors.length > 0) {
-        throw new Error(errors[0].message);
+      if (error) {
+        throw new Error(error.message);
       }
 
       if (response?.updateUser) {
         // Update local state in AuthContext
-        updateUser(response.updateUser);
-        
+        updateUser(response.updateUser as User);
+
         Alert.alert(t('editProfile.successTitle'), t('editProfile.successMessage'), [
           { text: t('common.ok'), onPress: () => router.back() },
         ]);
