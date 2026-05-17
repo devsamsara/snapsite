@@ -130,8 +130,8 @@ export default function EditProfileScreen() {
             disabled={!isValid || !isDirty || isSubmitting}
             style={[
               S.saveBtn,
-              { backgroundColor: (!isValid || !isDirty) ? colors.surface : colors.primary },
-              (!isValid || !isDirty) && { opacity: 0.6 }
+              { backgroundColor: (!isValid || !isDirty) ? colors.border : colors.primary },
+              (!isValid || !isDirty) && { opacity: 0.8 }
             ]}
           >
             {isSubmitting ? (
@@ -285,6 +285,18 @@ const S = StyleSheet.create({
     minWidth: 80,
     alignItems: "center",
     justifyContent: "center",
+    // Añadimos sombra sutil para mejorar visibilidad en modo claro
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   saveBtnTxt: {
     fontSize: 15,

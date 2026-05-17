@@ -114,7 +114,7 @@ export function Button({
     if (isDisabled && !isLink) return colors.border;
     switch (variant) {
       case "primary":   return colors.primary;
-      case "secondary": return "transparent";
+      case "secondary": return colors.surface;
       case "ghost":     return "transparent";
       case "danger":    return colors.error;
       case "link":      return "transparent";
@@ -125,14 +125,14 @@ export function Button({
     if (isDisabled) return colors.muted;
     switch (variant) {
       case "primary":   return "#FFFFFF";
-      case "secondary": return colors.primary;
+      case "secondary": return colors.foreground;
       case "ghost":     return colors.primary;
       case "danger":    return "#FFFFFF";
       case "link":      return colors.primary;
     }
   };
 
-  const borderColor = variant === "secondary" ? colors.primary : "transparent";
+  const borderColor = variant === "secondary" ? colors.border : "transparent";
   const iconColor   = textColor();
 
   // ── Content ─────────────────────────────────────────────────────────────────
