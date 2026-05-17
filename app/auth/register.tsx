@@ -93,8 +93,14 @@ export default function RegisterScreen() {
   const goNext = step1.handleSubmit(() => animateToStep(2));
 
   const onRegister = step2.handleSubmit(async (data) => {
+    const s1 = step1.getValues();
     setLoading(true);
     try {
+      // Combine Step 1 (Company) and Step 2 (User) data
+      // Note: If your backend expects company data, you might need to update the signUp signature
+      // or call a separate mutation. For now, we ensure we have access to all data here.
+      console.log('Registering with:', { ...s1, ...data });
+      
       await signUp(data.fullName, data.email, data.password);
       // signUp navigates to /onboarding automatically on success
     } catch (e: any) {
