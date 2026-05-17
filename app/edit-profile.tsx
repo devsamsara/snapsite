@@ -130,16 +130,25 @@ export default function EditProfileScreen() {
             disabled={!isValid || !isDirty || isSubmitting}
             style={[
               S.saveBtn,
-              { backgroundColor: (!isValid || !isDirty) ? colors.border : colors.primary },
-              (!isValid || !isDirty) && { opacity: 0.8 }
+              { 
+                backgroundColor: (!isValid || !isDirty || isSubmitting) 
+                  ? (isSubmitting ? colors.primary : colors.border) 
+                  : colors.primary 
+              },
+              (!isValid || !isDirty) && !isSubmitting && { opacity: 0.5 }
             ]}
           >
             {isSubmitting ? (
               <View style={S.loadingContainer}>
-                <IconSymbol name="arrow.triangle.2.circlepath" size={16} color="#FFFFFF" />
+                <ActivityIndicator size="small" color="#FFFFFF" />
               </View>
             ) : (
-              <Text style={[S.saveBtnTxt, { color: "#FFFFFF" }]}>
+              <Text 
+                style={[
+                  S.saveBtnTxt, 
+                  { color: (!isValid || !isDirty) ? colors.muted : "#FFFFFF" }
+                ]}
+              >
                 {t('common.save')}
               </Text>
             )}

@@ -111,6 +111,11 @@ export function Button({
 
   // ── Derived colors ──────────────────────────────────────────────────────────
   const bgColor = (): string => {
+    // Si está cargando, mantenemos el color de fondo original para que el spinner blanco se vea bien
+    if (isLoading && !isLink) {
+      if (variant === "primary") return colors.primary;
+      if (variant === "danger") return colors.error;
+    }
     if (isDisabled && !isLink) return colors.border;
     switch (variant) {
       case "primary":   return colors.primary;
@@ -141,7 +146,7 @@ export function Button({
       return (
         <ActivityIndicator
           size="small"
-          color={variant === "primary" || variant === "danger" ? "#FFF" : colors.primary}
+          color={(variant === "primary" || variant === "danger" || isLoading) ? "#FFFFFF" : colors.primary}
         />
       );
     }
