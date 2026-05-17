@@ -63,20 +63,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const token = await restoreAuthToken();
         if (token) {
           // Real token: validate against the GraphQL server
-          const { data } = await apolloClient.query({
+          const { data, error } = await apolloClient.query({
             query: MeDocument,
             fetchPolicy: 'network-only',
           });
+
           if (data?.me) {
             setUser(data.me as User);
-          } else {
-            // Token exists but server rejected it — clear it
-            await setAuthToken(null);
+          } else if (error) {
+            // If there's a GraphQL error (like unauthorized), clear token
+            // But if it's a network error, we might want to keep the token and try again later
+            const isAuthError = error.graphQLErrors.some(
+              (ge) => ge.extensions?.code === 'UNAUTHENTICATED' || ge.message.includes('unauthorized')
+            );
+            
+            if (isAuthError) {
+              await setAuthToken(null);
+            }
           }
         }
-      } catch {
-        // Network error or invalid token — silently clear
-        await setAuthToken(null);
+      } catch (e) {
+        // Only clear token if we are SURE it's an authentication error.
+        // On network errors (no internet), we should keep the token so the user
+        // remains "logged in" (even if offline).
+        console.error('[Auth] Restore session error:', e);
       } finally {
         setIsLoading(false);
       }
