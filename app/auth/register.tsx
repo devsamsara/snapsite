@@ -34,6 +34,7 @@ import { useAuth } from '@/lib/auth-context';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
+import { CreateCompanyInput } from '@/gql/graphql';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -96,12 +97,17 @@ export default function RegisterScreen() {
     const s1 = step1.getValues();
     setLoading(true);
     try {
-      // Combine Step 1 (Company) and Step 2 (User) data
-      // Note: If your backend expects company data, you might need to update the signUp signature
-      // or call a separate mutation. For now, we ensure we have access to all data here.
       console.log('Registering with:', { ...s1, ...data });
-      
-      await signUp(data.fullName, data.email, data.password);
+
+      const companyData: CreateCompanyInput = {
+        name: s1.companyName,
+        industry: s1.industry,
+        size: Number.parseInt(s1.companySize),
+        contactEmail: data.email,
+        contactPassword: data.password,
+        contactName: data.fullName
+      };
+      await signUp(companyData);
       // signUp navigates to /onboarding automatically on success
     } catch (e: any) {
       Alert.alert(
@@ -158,7 +164,7 @@ export default function RegisterScreen() {
         {/* Step indicator — solo visible en step 2 */}
         {step === 2 && (
           <View style={S.stepIndicator}>
-            <View style={[S.stepDot, { backgroundColor: step === 1 ? colors.primary : colors.border }]} />
+            <View style={[S.stepDot, { backgroundColor: colors.border }]} />
             <View style={[S.stepLine, { backgroundColor: step === 2 ? colors.primary : colors.border }]} />
             <View style={[S.stepDot, { backgroundColor: step === 2 ? colors.primary : colors.border }]} />
           </View>

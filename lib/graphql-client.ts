@@ -10,8 +10,8 @@ import * as SecureStore from "expo-secure-store";
 
 const GRAPHQL_URL: string =
   (Constants.expoConfig?.extra?.graphqlUrl as string | undefined) ??
-  process.env.GRAPHQL_URL ??
-  'http://localhost:4000/graphql';
+  process.env.EXPO_PUBLIC_API_URL ??
+  'http://192.168.1.65:4000/api/graphql';
 
 if (__DEV__ && !Constants.expoConfig?.extra?.graphqlUrl && !process.env.GRAPHQL_URL) {
   console.warn(

@@ -8,7 +8,7 @@ const config: CodegenConfig = {
     withComponent: false,
     withHOC: false,
   },
-  schema: 'http://localhost:4000/api/graphql',
+  schema: 'http://192.168.1.65:4000/api/graphql',
   documents: 'graphql/**/*.graphql',
   generates: {
     'gql/': {
@@ -16,10 +16,7 @@ const config: CodegenConfig = {
       plugins: [],
     },
     './graphql.schema.json': {
-      plugins: [
-        'typescript',
-        'typescript-operations',
-      ],
+      plugins: ['typescript', 'typescript-operations'],
     },
   },
 };

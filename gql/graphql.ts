@@ -50,7 +50,6 @@ export type CompanyFiltersInput = {
 
 export type CreateCompanyInput = {
   contactEmail: Scalars['String']['input'];
-  contactLastName: Scalars['String']['input'];
   contactName: Scalars['String']['input'];
   contactPassword: Scalars['String']['input'];
   industry: Scalars['String']['input'];

@@ -180,8 +180,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ─── signUp ─────────────────────────────────────────────────────────────────
   const signUp = useCallback(
-    async (data: CreateCompanyInput) => {
-      const {contactPassword, contactEmail, contactName, contactLastName, size, industry} = data;
+    async (input: CreateCompanyInput) => {
+      const {contactPassword, contactEmail, contactName, size, industry} = input;
       try {
         const { data, error } = await apolloClient.mutate({
           mutation: CreateCompanyDocument,
@@ -190,7 +190,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               contactPassword,
               contactEmail: contactEmail.trim().toLowerCase(),
               contactName: contactName.trim(),
-              contactLastName: contactLastName.trim(),
               name: contactName.trim(),
               size,
               industry,
