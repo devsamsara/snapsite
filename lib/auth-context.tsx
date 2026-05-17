@@ -133,9 +133,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Not authenticated and not on a public screen → go to login
       router.replace('/auth/login');
     } else if (user && inAuthGroup) {
-      // Authenticated and still on auth screen → go to tabs
-      // (onboarding is handled explicitly by signUp, not here)
-      router.replace('/(tabs)');
+      // Authenticated and still on auth screen
+      // Check if onboarding is needed
+      AsyncStorage.getItem(ONBOARDING_DONE_KEY).then((done) => {
+        if (done === 'true') {
+          router.replace('/(tabs)');
+        } else {
+          router.replace('/onboarding');
+        }
+      });
     }
   }, [user, segments, isLoading]);
 

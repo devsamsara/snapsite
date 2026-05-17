@@ -507,7 +507,10 @@
     "messages": "Mensajes",
     "settings": "Ajustes",
     "version": "SnapSite v1.0.0",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "logoutConfirmTitle": "Cerrar sesión",
+    "logoutConfirmMessage": "¿Estás seguro de que deseas cerrar sesión?",
+    "logoutError": "No se pudo cerrar sesión. Inténtalo de nuevo."
   },
   "validation": {
     "required": "Este campo es obligatorio",

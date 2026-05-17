@@ -1,14 +1,16 @@
-import { ScrollView, Text, View, TouchableOpacity } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
+import { useAuth } from "@/lib/auth-context";
 
 export default function ProfileScreen() {
   const { t }  = useTranslation();
   const colors = useColors();
   const router = useRouter();
+  const { user, signOut } = useAuth();
 
   const menuItems = [
     { icon: "person.fill",                          label: t('profile.editProfile'), action: "edit",     route: "/edit-profile" },
@@ -17,8 +19,34 @@ export default function ProfileScreen() {
     { icon: "trash.fill",                           label: t('profile.logout'),      action: "logout",   route: null, color: "error" },
   ];
 
+  const handleLogout = () => {
+    Alert.alert(
+      t('profile.logoutConfirmTitle'),
+      t('profile.logoutConfirmMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { 
+          text: t('profile.logout'), 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+              // router.replace('/auth/login') is handled by AuthProvider's route guard
+            } catch (error) {
+              Alert.alert(t('common.error'), t('profile.logoutError'));
+            }
+          }
+        },
+      ]
+    );
+  };
+
   const handlePress = (item: typeof menuItems[0]) => {
-    if (item.route) router.push(item.route as any);
+    if (item.action === 'logout') {
+      handleLogout();
+    } else if (item.route) {
+      router.push(item.route as any);
+    }
   };
 
   return (
@@ -42,9 +70,9 @@ export default function ProfileScreen() {
             </View>
 
             {/* User Info */}
-            <Text className="text-2xl font-bold text-foreground">John Doe</Text>
-            <Text className="text-sm text-muted mt-1">john@example.com</Text>
-            <Text className="text-sm text-muted mt-1">Project Manager</Text>
+            <Text className="text-2xl font-bold text-foreground">{user?.name || 'User'}</Text>
+            <Text className="text-sm text-muted mt-1">{user?.email || ''}</Text>
+            <Text className="text-sm text-muted mt-1">{user?.role || ''}</Text>
 
             {/* Stats */}
             <View className="flex-row gap-4 mt-4 pt-4 border-t border-border w-full">
