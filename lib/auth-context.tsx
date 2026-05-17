@@ -17,6 +17,8 @@ import {
 
 /** Key used to persist whether the user has already seen the onboarding. */
 export const ONBOARDING_DONE_KEY = '@snapsite_onboarding_done';
+/** Key used to persist the user object. */
+export const AUTH_USER_KEY = '@snapsite_auth_user';
 
 export interface AuthUser {
   id: string;
@@ -60,32 +62,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const restore = async () => {
       try {
+        // 1. Restore token
         const token = await restoreAuthToken();
+        
+        // 2. Restore user from cache immediately for instant UI
+        const cachedUser = await AsyncStorage.getItem(AUTH_USER_KEY);
+        if (cachedUser) {
+          setUser(JSON.parse(cachedUser) as User);
+        }
+
         if (token) {
-          // Real token: validate against the GraphQL server
+          // 3. Validate/Refresh user data in background
           const { data, error } = await apolloClient.query({
             query: MeDocument,
             fetchPolicy: 'network-only',
-          });
+          }).catch(err => ({ data: null, error: err }));
 
           if (data?.me) {
-            setUser(data.me as User);
+            const freshUser = data.me as User;
+            setUser(freshUser);
+            await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(freshUser));
           } else if (error) {
-            // If there's a GraphQL error (like unauthorized), clear token
-            // But if it's a network error, we might want to keep the token and try again later
-            const isAuthError = error.graphQLErrors.some(
-              (ge) => ge.extensions?.code === 'UNAUTHENTICATED' || ge.message.includes('unauthorized')
+            const isAuthError = error.graphQLErrors?.some(
+              (ge: any) => ge.extensions?.code === 'UNAUTHENTICATED' || ge.message.includes('unauthorized')
             );
             
             if (isAuthError) {
               await setAuthToken(null);
+              await AsyncStorage.removeItem(AUTH_USER_KEY);
+              setUser(null);
             }
           }
+        } else {
+          // No token, ensure no user
+          setUser(null);
+          await AsyncStorage.removeItem(AUTH_USER_KEY);
         }
       } catch (e) {
-        // Only clear token if we are SURE it's an authentication error.
-        // On network errors (no internet), we should keep the token so the user
-        // remains "logged in" (even if offline).
         console.error('[Auth] Restore session error:', e);
       } finally {
         setIsLoading(false);
@@ -145,6 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { token, user: userData } = data.login;
       await setAuthToken(token);
+      await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
       setUser(userData as User);
     } catch (error) {
       throw new Error(extractMessage(error));
@@ -176,6 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { user, token } = data.createCompany;
         await setAuthToken(token);
         await AsyncStorage.removeItem(ONBOARDING_DONE_KEY);
+        await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
         setUser(user as User);
         router.replace('/onboarding');
       } catch (error) {
@@ -189,6 +204,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     try {
       await setAuthToken(null);
+      await AsyncStorage.removeItem(AUTH_USER_KEY);
       await apolloClient.clearStore();
     } finally {
       setUser(null);
@@ -224,8 +240,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ─── updateUser ─────────────────────────────────────────────────────────────
-  const updateUser = useCallback((patch: Partial<User>) => {
-    setUser(prev => (prev ? { ...prev, ...patch } : prev));
+  const updateUser = useCallback(async (patch: Partial<User>) => {
+    setUser(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, ...patch };
+      AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(updated));
+      return updated;
+    });
   }, []);
 
   return (
