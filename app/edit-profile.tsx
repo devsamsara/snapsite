@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { useCardStyle } from "@/hooks/use-card-style";
+import { useAuth } from "@/lib/auth-context";
 
 type FormValues = { name: string; email: string; phone?: string; role?: string; company?: string };
 
@@ -35,6 +36,7 @@ export default function EditProfileScreen() {
   const router    = useRouter();
   const colors    = useColors();
   const cardStyle = useCardStyle();
+  const { user }  = useAuth();
 
   const schema = z.object({
     name: z.string().min(2, t('validation.minLength', { min: 2 })).max(60, t('validation.maxLength', { max: 60 })),
@@ -51,11 +53,11 @@ export default function EditProfileScreen() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      name:    "John Doe",
-      email:   "john@example.com",
-      phone:   "+1 (555) 123-4567",
-      role:    "Project Manager",
-      company: "FieldCam Inc.",
+      name:    user?.name || "",
+      email:   user?.email || "",
+      phone:   user?.phone || "",
+      role:    user?.role || "",
+      company: user?.company?.name || "",
     },
     mode: "onChange",
   });
@@ -90,14 +92,25 @@ export default function EditProfileScreen() {
             </Text>
           </View>
 
-          <Button
-            title={t('common.save')}
+          <TouchableOpacity
             onPress={handleSubmit(onSave)}
-            variant="primary"
-            size="sm"
-            loading={isSubmitting}
-            disabled={!isValid || !isDirty}
-          />
+            disabled={!isValid || !isDirty || isSubmitting}
+            style={[
+              S.saveBtn,
+              { backgroundColor: (!isValid || !isDirty) ? colors.surface : colors.primary },
+              (!isValid || !isDirty) && { opacity: 0.6 }
+            ]}
+          >
+            {isSubmitting ? (
+              <View style={S.loadingContainer}>
+                <IconSymbol name="arrow.triangle.2.circlepath" size={16} color="#FFFFFF" />
+              </View>
+            ) : (
+              <Text style={[S.saveBtnTxt, { color: "#FFFFFF" }]}>
+                {t('common.save')}
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* ── Content ── */}
@@ -229,6 +242,23 @@ const S = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   headerTitle: { fontSize: 22, fontWeight: "700" },
+  saveBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    minWidth: 80,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  saveBtnTxt: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
 
   scrollContent: { paddingHorizontal: 16, paddingTop: 16 },
 
