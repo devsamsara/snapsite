@@ -519,7 +519,19 @@
     "logout": "Cerrar sesión",
     "logoutConfirmTitle": "Cerrar sesión",
     "logoutConfirmMessage": "¿Estás seguro de que deseas cerrar sesión?",
-    "logoutError": "No se pudo cerrar sesión. Inténtalo de nuevo."
+    "logoutError": "No se pudo cerrar sesión. Inténtalo de nuevo.",
+    "deleteAccount": "Eliminar cuenta",
+    "leaveCompany": "Abandonar empresa",
+    "deleteAccountConfirmTitle": "Eliminar empresa",
+    "deleteAccountConfirmMessage": "Esta acción eliminará permanentemente tu empresa, todos sus proyectos, fotos y usuarios asociados. Esta acción no se puede deshacer.",
+    "leaveCompanyConfirmTitle": "Abandonar empresa",
+    "leaveCompanyConfirmMessage": "Se eliminará tu cuenta y dejarás de tener acceso a la empresa y sus proyectos. Esta acción no se puede deshacer.",
+    "deleteAccountConfirmButton": "Eliminar empresa",
+    "leaveCompanyConfirmButton": "Abandonar empresa",
+    "deleteAccountSuccess": "Empresa eliminada correctamente.",
+    "leaveCompanySuccess": "Has abandonado la empresa correctamente.",
+    "deleteAccountError": "No se pudo eliminar la empresa. Inténtalo de nuevo.",
+    "leaveCompanyError": "No se pudo abandonar la empresa. Inténtalo de nuevo."
   },
   "validation": {
     "required": "Este campo es obligatorio",

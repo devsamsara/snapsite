@@ -519,7 +519,19 @@
     "logout": "Log out",
     "logoutConfirmTitle": "Log out",
     "logoutConfirmMessage": "Are you sure you want to log out?",
-    "logoutError": "Could not log out. Please try again."
+    "logoutError": "Could not log out. Please try again.",
+    "deleteAccount": "Delete account",
+    "leaveCompany": "Leave company",
+    "deleteAccountConfirmTitle": "Delete company",
+    "deleteAccountConfirmMessage": "This will permanently delete your company, all its projects, photos and associated users. This action cannot be undone.",
+    "leaveCompanyConfirmTitle": "Leave company",
+    "leaveCompanyConfirmMessage": "Your account will be deleted and you will lose access to the company and its projects. This action cannot be undone.",
+    "deleteAccountConfirmButton": "Delete company",
+    "leaveCompanyConfirmButton": "Leave company",
+    "deleteAccountSuccess": "Company deleted successfully.",
+    "leaveCompanySuccess": "You have left the company successfully.",
+    "deleteAccountError": "Could not delete the company. Please try again.",
+    "leaveCompanyError": "Could not leave the company. Please try again."
   },
   "validation": {
     "required": "This field is required",

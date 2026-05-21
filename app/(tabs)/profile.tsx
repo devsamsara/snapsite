@@ -5,13 +5,19 @@ import { ScreenContainer } from '@/components/screen-container';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColors } from '@/hooks/use-colors';
 import { useAuth } from '@/lib/auth-context';
-import { Project } from '@/gql/graphql';
+import { UserRole, DeleteUserDocument, DeleteCompanyDocument } from '@/gql/graphql';
+import { apolloClient } from '@/lib/graphql-client';
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
   const colors = useColors();
   const router = useRouter();
   const { user, signOut } = useAuth();
+
+  // Role-based flags
+  // Root = owner/admin who created the company → can delete the whole company
+  // Admin / User = member → can only leave (deletes their own account)
+  const isOwner = user?.role === UserRole.Root;
 
   const menuItems = [
     {
@@ -33,7 +39,7 @@ export default function ProfileScreen() {
       route: '/settings',
     },
     {
-      icon: 'trash.fill',
+      icon: 'rectangle.portrait.and.arrow.right',
       label: t('profile.logout'),
       action: 'logout',
       route: null,
@@ -41,6 +47,7 @@ export default function ProfileScreen() {
     },
   ];
 
+  // ─── Logout ──────────────────────────────────────────────────────────────────
   const handleLogout = () => {
     Alert.alert(
       t('profile.logoutConfirmTitle'),
@@ -53,9 +60,68 @@ export default function ProfileScreen() {
           onPress: async () => {
             try {
               await signOut();
-              // router.replace('/auth/login') is handled by AuthProvider's route guard
-            } catch (error) {
+            } catch {
               Alert.alert(t('common.error'), t('profile.logoutError'));
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // ─── Delete company (owner / Root role) ──────────────────────────────────────
+  const handleDeleteCompany = () => {
+    Alert.alert(
+      t('profile.deleteAccountConfirmTitle'),
+      t('profile.deleteAccountConfirmMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('profile.deleteAccountConfirmButton'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const companyId = user?.company?.id;
+              if (!companyId) throw new Error('No company id');
+
+              await apolloClient.mutate({
+                mutation: DeleteCompanyDocument,
+                variables: { id: companyId },
+              });
+
+              await signOut();
+            } catch (error) {
+              Alert.alert(t('common.error'), t('profile.deleteAccountError'));
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // ─── Leave company (Admin / User roles) ──────────────────────────────────────
+  const handleLeaveCompany = () => {
+    Alert.alert(
+      t('profile.leaveCompanyConfirmTitle'),
+      t('profile.leaveCompanyConfirmMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('profile.leaveCompanyConfirmButton'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const userId = user?.id;
+              if (!userId) throw new Error('No user id');
+
+              await apolloClient.mutate({
+                mutation: DeleteUserDocument,
+                variables: { id: userId },
+              });
+
+              await signOut();
+            } catch (error) {
+              Alert.alert(t('common.error'), t('profile.leaveCompanyError'));
             }
           },
         },
@@ -80,7 +146,6 @@ export default function ProfileScreen() {
         }
       });
     }
-
     return picturesCount;
   };
 
@@ -178,6 +243,56 @@ export default function ProfileScreen() {
               <IconSymbol name="chevron.right" size={16} color={colors.muted} />
             </TouchableOpacity>
           ))}
+
+          {/* Danger zone separator */}
+          <View
+            className="mt-2 mb-1 px-1"
+          >
+            <Text
+              className="text-xs font-semibold uppercase tracking-widest"
+              style={{ color: colors.muted }}
+            >
+              {t('projectSettings.sectionDanger')}
+            </Text>
+          </View>
+
+          {/* Delete / Leave button — role-dependent */}
+          <TouchableOpacity
+            onPress={isOwner ? handleDeleteCompany : handleLeaveCompany}
+            className="flex-row items-center justify-between px-4 py-4 rounded-xl border"
+            style={{
+              backgroundColor: colors.error + '10',
+              borderColor: colors.error + '40',
+            }}
+          >
+            <View className="flex-row items-center flex-1">
+              <IconSymbol
+                name={isOwner ? 'building.2.fill' : 'rectangle.portrait.and.arrow.right.fill'}
+                size={20}
+                color={colors.error}
+              />
+              <View style={{ marginLeft: 16, flex: 1 }}>
+                <Text
+                  className="font-semibold"
+                  style={{ color: colors.error }}
+                >
+                  {isOwner
+                    ? t('profile.deleteAccountConfirmButton')
+                    : t('profile.leaveCompanyConfirmButton')}
+                </Text>
+                <Text
+                  className="text-xs mt-0.5"
+                  style={{ color: colors.error + 'CC' }}
+                  numberOfLines={2}
+                >
+                  {isOwner
+                    ? t('profile.deleteAccountConfirmMessage')
+                    : t('profile.leaveCompanyConfirmMessage')}
+                </Text>
+              </View>
+            </View>
+            <IconSymbol name="chevron.right" size={16} color={colors.error} />
+          </TouchableOpacity>
         </View>
 
         {/* Version Info */}
