@@ -8,7 +8,7 @@ const config: CodegenConfig = {
     withComponent: false,
     withHOC: false,
   },
-  schema: 'https://site--backoffice--dz9c78m5fdc5.code.run/api/graphql',
+  schema: 'http://192.168.1.65:4000/api/graphql',
   documents: 'graphql/**/*.graphql',
   generates: {
     'gql/': {
