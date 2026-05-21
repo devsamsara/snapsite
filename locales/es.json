@@ -145,7 +145,16 @@
     "documents": "Documentos",
     "comments": "Comentarios",
     "hoursAgo": "hace {{count}} horas",
-    "daysAgo": "hace {{count}} días"
+    "daysAgo": "hace {{count}} días",
+    "emptyProjects": "No hay proyectos todavía",
+    "emptyProjectsHint": "Crea tu primer proyecto para empezar",
+    "emptyImages": "No hay imágenes todavía",
+    "emptyImagesHint": "Añade tu primera foto para empezar",
+    "emptyLocations": "No hay ubicaciones todavía",
+    "emptyLocationsHint": "Crea tu primera ubicación para empezar",
+    "loading": "Cargando...",
+    "errorTitle": "Error al cargar",
+    "errorMessage": "No se pudieron cargar los datos. Inténtalo de nuevo."
   },
   "projects": {
     "title": "Proyectos",

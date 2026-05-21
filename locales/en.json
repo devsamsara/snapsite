@@ -145,7 +145,16 @@
     "documents": "Documents",
     "comments": "Comments",
     "hoursAgo": "{{count}} hours ago",
-    "daysAgo": "{{count}} days ago"
+    "daysAgo": "{{count}} days ago",
+    "emptyProjects": "No projects yet",
+    "emptyProjectsHint": "Create your first project to get started",
+    "emptyImages": "No images yet",
+    "emptyImagesHint": "Add your first photo to get started",
+    "emptyLocations": "No locations yet",
+    "emptyLocationsHint": "Create your first location to get started",
+    "loading": "Loading...",
+    "errorTitle": "Failed to load",
+    "errorMessage": "Could not load data. Please try again."
   },
   "projects": {
     "title": "Projects",

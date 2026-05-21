@@ -219,14 +219,16 @@ export default function HomeScreen() {
   const renderEmptyContent = (
     id: 'projects' | 'images' | 'locations'
   ) => {
+    const titleKey = `home.empty${id.charAt(0).toUpperCase() + id.slice(1)}` as const;
+    const hintKey  = `home.empty${id.charAt(0).toUpperCase() + id.slice(1)}Hint` as const;
     return (
       <View className="flex-1 items-center justify-center py-12 px-6">
         <IconSymbol name="photo.stack.fill" size={48} color={colors.border} />
         <Text className="text-lg font-semibold text-foreground mt-4">
-          {`No ${id} yet`}
+          {t(titleKey)}
         </Text>
         <Text className="text-sm text-muted text-center mt-2">
-          {`Create your first ${id.substring(0, id.length - 1)} to get started`}
+          {t(hintKey)}
         </Text>
       </View>
     );
@@ -421,12 +423,16 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
-  if (authLoading || loading){
-    return <Text>Cargando</Text>;
+  if (authLoading || loading) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <Text className="text-muted">{t('home.loading')}</Text>
+      </View>
+    );
   }
 
-  if(error) {
-    console.log(error)
+  if (error) {
+    console.log('[HomeScreen] GraphQL error:', error);
   }
 
   return (
