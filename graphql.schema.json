@@ -91,6 +91,15 @@ export type CreateTimelineEventInput = {
   type: TimelineEventType;
 };
 
+export type DashboardData = {
+  __typename?: 'DashboardData';
+  currentCompany: Company;
+  projectStatusData: Array<Maybe<ProjectStatusData>>;
+  recentImages: Array<RecentImage>;
+  recentLocations: Array<RecentLocation>;
+  recentProjects: Array<RecentProject>;
+};
+
 export type DefaultResponse = {
   code: Scalars['String']['output'];
   message: Scalars['String']['output'];
@@ -353,6 +362,13 @@ export type ProjectFiltersInput = {
   status?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type ProjectStatusData = {
+  __typename?: 'ProjectStatusData';
+  color: Scalars['String']['output'];
+  count: Scalars['Int']['output'];
+  nameKey: Scalars['String']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
   findCompany: Company;
@@ -361,6 +377,7 @@ export type Query = {
   findTimelineEvent: TimelineEvent;
   findUser: User;
   getCompanies: PaginatedCompanies;
+  getDashboardData: DashboardData;
   getMyProjects: Array<Project>;
   getNotesByProject: Array<Note>;
   getPinnedNotes: Array<Note>;
@@ -424,6 +441,35 @@ export type QueryGetProjectsArgs = {
 
 export type QueryGetUsersArgs = {
   filters?: InputMaybe<UserFiltersInput>;
+};
+
+export type RecentImage = {
+  __typename?: 'RecentImage';
+  date: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  projectName: Scalars['String']['output'];
+  url: Scalars['String']['output'];
+};
+
+export type RecentLocation = {
+  __typename?: 'RecentLocation';
+  id: Scalars['ID']['output'];
+  lastVisit: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  projectsCount: Scalars['Int']['output'];
+};
+
+export type RecentProject = {
+  __typename?: 'RecentProject';
+  commentsCount: Scalars['Int']['output'];
+  createdAt: Scalars['String']['output'];
+  documentsCount: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  location: Scalars['String']['output'];
+  members: Array<User>;
+  name: Scalars['String']['output'];
+  progress: Scalars['Int']['output'];
+  status: Scalars['String']['output'];
 };
 
 export type RegisterInput = {
@@ -561,7 +607,7 @@ export type LoginMutationVariables = Exact<{
 }>;
 
 
-export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'AuthPayload', token: string, refreshToken: string, user: { __typename?: 'User', avatarUrl?: string | null, createdAt: string, id: string, email: string, lastName?: string | null, name: string, nickname?: string | null, phone?: string | null, role: UserRole, status: UserStatus, updatedAt: string, company?: { __typename?: 'Company', id: string, name: string, users: Array<{ __typename?: 'User', id: string, name: string }> } | null, projects?: Array<{ __typename?: 'Project', createdAt: string, description: string, endDate?: string | null, id: string, latitude?: number | null, location: string, longitude?: number | null, name: string, progress: number, startDate: string, status: string, thumbnail?: string | null, members: Array<{ __typename?: 'User', id: string, email: string, name: string, lastName?: string | null }>, notes: Array<{ __typename?: 'Note', author: { __typename?: 'User', company?: { __typename?: 'Company', id: string, name: string } | null } }>, photos: Array<{ __typename?: 'Photo', id: string, url: string, createdAt: string }>, timeline: Array<{ __typename?: 'TimelineEvent', id: string, description: string, createdAt: string, photoUrl?: string | null, title: string, type: TimelineEventType, updatedAt: string, project: { __typename?: 'Project', id: string, description: string } }> } | null> | null } } };
+export type LoginMutation = { __typename?: 'Mutation', login: { __typename?: 'AuthPayload', token: string, refreshToken: string, user: { __typename?: 'User', id: string, email: string, name: string, lastName?: string | null, nickname?: string | null, avatarUrl?: string | null, role: UserRole, status: UserStatus, company?: { __typename?: 'Company', id: string, name: string } | null } } };
 
 export type RegisterMutationVariables = Exact<{
   input: RegisterInput;
@@ -569,6 +615,11 @@ export type RegisterMutationVariables = Exact<{
 
 
 export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'AuthPayload', refreshToken: string, token: string, user: { __typename?: 'User', avatarUrl?: string | null, createdAt: string, id: string, email: string, lastName?: string | null, name: string, nickname?: string | null, phone?: string | null, role: UserRole, status: UserStatus, updatedAt: string, company?: { __typename?: 'Company', id: string, name: string } | null, projects?: Array<{ __typename?: 'Project', createdAt: string, description: string, endDate?: string | null, id: string, latitude?: number | null, location: string, longitude?: number | null, name: string, progress: number, startDate: string, status: string, thumbnail?: string | null, members: Array<{ __typename?: 'User', id: string, email: string, name: string, lastName?: string | null }>, notes: Array<{ __typename?: 'Note', author: { __typename?: 'User', company?: { __typename?: 'Company', id: string, name: string } | null } }>, photos: Array<{ __typename?: 'Photo', id: string, url: string, createdAt: string }>, timeline: Array<{ __typename?: 'TimelineEvent', id: string, description: string, createdAt: string, photoUrl?: string | null, title: string, type: TimelineEventType, updatedAt: string, project: { __typename?: 'Project', id: string, description: string } }> } | null> | null } } };
+
+export type CurrentCompanyQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type CurrentCompanyQuery = { __typename?: 'Query', getDashboardData: { __typename?: 'DashboardData', currentCompany: { __typename?: 'Company', id: string, name: string, users: Array<{ __typename?: 'User', id: string, name: string, avatarUrl?: string | null }> }, projectStatusData: Array<{ __typename?: 'ProjectStatusData', color: string, count: number, nameKey: string } | null>, recentImages: Array<{ __typename?: 'RecentImage', date: string, id: string, projectName: string, url: string }>, recentLocations: Array<{ __typename?: 'RecentLocation', id: string, lastVisit: string, name: string, projectsCount: number }>, recentProjects: Array<{ __typename?: 'RecentProject', id: string, name: string, location: string, progress: number, status: string, documentsCount: number, createdAt: string, members: Array<{ __typename?: 'User', id: string, name: string }> }> } };
 
 export type CreateCompanyMutationVariables = Exact<{
   input: CreateCompanyInput;

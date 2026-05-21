@@ -1,3 +1,53 @@
+# =============================================================================
+# QUERIES
+# =============================================================================
+query CurrentCompany {
+  getDashboardData {
+    currentCompany {
+      id
+      name
+      users {
+        id
+        name
+        avatarUrl
+      }
+    }
+    projectStatusData {
+      color
+      count
+      nameKey
+    }
+    recentImages {
+      date
+      id
+      projectName
+      url
+    }
+    recentLocations {
+      id
+      lastVisit
+      name
+      projectsCount
+    }
+    recentProjects {
+      id
+      name
+      location
+      progress
+      status
+      documentsCount
+      createdAt
+      members {
+        id
+        name
+      }
+    }
+  }
+}
+
+# =============================================================================
+# MUTATIONS
+# =============================================================================
 mutation CreateCompany($input: CreateCompanyInput!) {
   createCompany(input: $input) {
     message

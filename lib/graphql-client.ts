@@ -11,7 +11,7 @@ import * as SecureStore from "expo-secure-store";
 const GRAPHQL_URL: string =
   (Constants.expoConfig?.extra?.graphqlUrl as string | undefined) ??
   process.env.EXPO_PUBLIC_API_URL ??
-  'https://site--backoffice--dz9c78m5fdc5.code.run/api/graphql';
+  'http://192.168.1.65:4000/api/graphql';
 
 if (__DEV__ && !Constants.expoConfig?.extra?.graphqlUrl && !process.env.GRAPHQL_URL) {
   console.warn(
@@ -63,6 +63,7 @@ const httpLink = createHttpLink({
   uri: GRAPHQL_URL,
 });
 
+console.log('url', GRAPHQL_URL)
 export const apolloClient = new ApolloClient({
   link: from([authLink, httpLink]),
   cache: new InMemoryCache(),

@@ -120,7 +120,7 @@ export default function ProfileScreen() {
             <View className="flex-row gap-4 mt-4 pt-4 border-t border-border w-full">
               <View className="flex-1 items-center">
                 <Text className="text-2xl font-bold text-primary">
-                  {user?.projects?.length}
+                  {/*{user?.projects?.length}*/}
                 </Text>
                 <Text className="text-xs text-muted mt-1">
                   {t('profile.projects')}
@@ -128,7 +128,7 @@ export default function ProfileScreen() {
               </View>
               <View className="flex-1 items-center">
                 <Text className="text-2xl font-bold text-primary">
-                  {getPictures()}
+                  {/*{getPictures()}*/}
                 </Text>
                 <Text className="text-xs text-muted mt-1">
                   {t('profile.photos')}
@@ -136,7 +136,7 @@ export default function ProfileScreen() {
               </View>
               <View className="flex-1 items-center">
                 <Text className="text-2xl font-bold text-primary">
-                  {user?.company?.users.length}
+                  {/*{user?.company?.users.length}*/}
                 </Text>
                 <Text className="text-xs text-muted mt-1">
                   {t('profile.teamMembers')}
