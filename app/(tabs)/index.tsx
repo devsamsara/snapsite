@@ -24,6 +24,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { CurrentCompanyDocument, ProjectStatusData } from '@/gql/graphql';
 import { useQuery } from '@apollo/client/react';
+import { useAuth } from '@/lib/auth-context';
 
 // Mock data for recent projects
 const RECENT_PROJECTS = [
@@ -159,7 +160,13 @@ export default function HomeScreen() {
   const cardElevation = useCardStyle();
   const cardSmElevation = useCardStyleSm();
   const [searchQuery, setSearchQuery] = useState('');
-  const {data, loading, error} = useQuery(CurrentCompanyDocument);
+  const { isLoading: authLoading } = useAuth();
+  const {data, loading, error} = useQuery(CurrentCompanyDocument, {
+    // Do NOT fire this request until AuthProvider has finished restoring
+    // the token from SecureStore. Without this guard the query races against
+    // restoreAuthToken() and goes out without the Authorization header.
+    skip: authLoading,
+  });
 
   // ── Entrance animation: mirrors onboarding exit (scale-down + fade-in) ──
   const enterOpacity = useSharedValue(0);
@@ -414,7 +421,7 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
-  if (loading){
+  if (authLoading || loading){
     return <Text>Cargando</Text>;
   }
 

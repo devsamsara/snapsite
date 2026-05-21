@@ -23,6 +23,20 @@ if (__DEV__ && !Constants.expoConfig?.extra?.graphqlUrl && !process.env.GRAPHQL_
 // SecureStore keys must contain only alphanumeric characters (no @, /, - or special chars)
 const AUTH_TOKEN_KEY = "snapsiteAuthToken";
 
+// In-memory cache: populated on login/restore, cleared on logout.
+// Declared BEFORE authLink so the closure always references the same variable.
+let _cachedToken: string | null = null;
+
+/**
+ * Auth link: injects the Bearer token into every request.
+ *
+ * Uses the in-memory _cachedToken (synchronous, zero-latency).
+ * The token is guaranteed to be populated before any query fires because:
+ *   1. AuthProvider calls restoreAuthToken() and awaits it.
+ *   2. AuthProvider sets isLoading = false only after that await.
+ *   3. HomeScreen (and every other screen) skips its useQuery while
+ *      isLoading is true, so no request can leave before the token is ready.
+ */
 const authLink = new ApolloLink((operation, forward) => {
   const token = _cachedToken;
   if (token) {
@@ -35,8 +49,6 @@ const authLink = new ApolloLink((operation, forward) => {
   }
   return forward(operation);
 });
-
-let _cachedToken: string | null = null;
 
 export async function setAuthToken(token: string | null): Promise<void> {
   _cachedToken = token;
