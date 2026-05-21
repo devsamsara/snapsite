@@ -1,7 +1,7 @@
 import { Text, View, TouchableOpacity, ScrollView, FlatList, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Platform } from "react-native";
+import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { SearchInput } from "@/components/ui/search-input";
 import { useColors } from "@/hooks/use-colors";
@@ -18,7 +18,7 @@ import Animated,
 } from "react-native-reanimated";
 import { useHomeDataQuery } from "@/gql/graphql";
 
-export function HomeContent() {
+export default function HomeContent() {
   const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
@@ -67,16 +67,16 @@ export function HomeContent() {
 
   // ── Entrance animation: mirrors onboarding exit (scale-down + fade-in) ──
   const enterOpacity = useSharedValue(0);
-  const enterScale = useSharedValue(1.06);
+  const enterScale   = useSharedValue(1.06);
 
   useEffect(() => {
     enterOpacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.quad) });
-    enterScale.value = withSpring(1, { damping: 22, stiffness: 160, mass: 0.8 });
+    enterScale.value   = withSpring(1, { damping: 22, stiffness: 160, mass: 0.8 });
   }, []);
 
   const enterStyle = useAnimatedStyle(() => ({
     flex: 1,
-    opacity: enterOpacity.value,
+    opacity:   enterOpacity.value,
     transform: [{ scale: enterScale.value }],
   }));
 
@@ -100,10 +100,10 @@ export function HomeContent() {
     // TODO: Navigate to location detail screen
   };
   const handleInviteTap = () => {
-    router.push("/modals/invite-global");
+    router.push('/modals/invite-global');
   };
   const handleAvatarsTap = () => {
-    router.push("/modals/team-members");
+    router.push('/modals/team-members');
   };
 
   const renderProjectCard = ({ item }: { item: typeof RECENT_PROJECTS[0] }) => (
@@ -146,7 +146,7 @@ export function HomeContent() {
         {/* Progress Bar */}
         <View className="mb-3">
           <View className="flex-row justify-between mb-2">
-            <Text className="text-xs text-muted">{t("home.progress")}</Text>
+            <Text className="text-xs text-muted">{t('home.progress')}</Text>
             <Text className="text-xs font-semibold text-foreground">
               {item.progress || 0}%
             </Text>
@@ -279,26 +279,122 @@ export function HomeContent() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <Text className="text-foreground">Loading...</Text>
-      </View>
+      <ScreenContainer className="p-0">
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-foreground">Loading...</Text>
+        </View>
+      </ScreenContainer>
     );
   }
 
   if (error) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <Text className="text-red-500">Error: {error.message}</Text>
-      </View>
+      <ScreenContainer className="p-0">
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-red-500">Error: {error.message}</Text>
+        </View>
+      </ScreenContainer>
     );
   }
 
   return (
+    <ScreenContainer className="p-0">
       <Animated.View style={enterStyle} className="bg-background">
-
+        {/* Modern Header */}
+        <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, color: colors.muted, marginBottom: 6 }}>
+                {t("home.workspace")}
+              </Text>
+              <Text style={{ fontSize: 24, fontWeight: "700", color: colors.foreground, marginBottom: 12 }}>
+                {t("home.workspaceName")}
+              </Text>
+              {/* Team Avatars (Mocked for now) */}
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <TouchableOpacity
+                  onPress={handleAvatarsTap}
+                  style={{ flexDirection: "row", marginRight: 12 }}
+                >
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <View
+                      key={i}
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        backgroundColor: colors.primary,
+                        marginLeft: i > 1 ? -8 : 0,
+                        borderWidth: 2,
+                        borderColor: colors.background,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: "600", color: "#FFFFFF" }}>
+                        {String.fromCharCode(64 + i)}
+                      </Text>
+                    </View>
+                  ))}
+                  <View
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      backgroundColor: colors.surface,
+                      marginLeft: -8,
+                      borderWidth: 2,
+                      borderColor: colors.background,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: "600", color: colors.muted }}>
+                      +7
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleInviteTap}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 8,
+                    backgroundColor: colors.primary,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: "#FFFFFF" }}>
+                    {t("home.invite")}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <TouchableOpacity
+              onPress={handleSettingsTap}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: colors.surface,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <IconSymbol name="gear" size={20} color={colors.foreground} />
+            </TouchableOpacity>
+          </View>
+          <SearchInput
+            placeholder={t("home.searchPlaceholder")}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
 
         <ScrollView
-          contentContainerStyle={{ paddingBottom: 100, paddingTop: Platform.OS === "ios" ? 90 : 0 }} // Adjust for large title
+          contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
         >
           {/* Project Statuses Section */}
@@ -358,7 +454,6 @@ export function HomeContent() {
                 </Text>
               </TouchableOpacity>
             </View>
-            {/* Horizontal Projects List */}
             {RECENT_PROJECTS.length > 0 ? (
               <FlatList
                 data={RECENT_PROJECTS}
@@ -396,7 +491,6 @@ export function HomeContent() {
                 </Text>
               </TouchableOpacity>
             </View>
-            {/* Horizontal Locations List */}
             {RECENT_LOCATIONS.length > 0 ? (
               <FlatList
                 data={RECENT_LOCATIONS}
@@ -417,7 +511,7 @@ export function HomeContent() {
                   {t("home.noLocationsYet")}
                 </Text>
                 <Text className="text-sm text-muted text-center mt-2">
-                  {t("home.addFirstLocation")}
+                  {t("home.createFirstLocation")}
                 </Text>
               </View>
             )}
@@ -434,7 +528,6 @@ export function HomeContent() {
                 </Text>
               </TouchableOpacity>
             </View>
-            {/* Horizontal Images List */}
             {RECENT_IMAGES.length > 0 ? (
               <FlatList
                 data={RECENT_IMAGES}
@@ -464,5 +557,6 @@ export function HomeContent() {
         {/* Floating Action Button Options */}
         <FabOptions />
       </Animated.View>
+    </ScreenContainer>
   );
 }
