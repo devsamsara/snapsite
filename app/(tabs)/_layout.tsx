@@ -10,9 +10,9 @@ export default function TabLayout() {
   const colors = useColors();
 
   const tabs = [
-    { name: "index"    as const, title: t("tabs.home"),     icon: "house.fill",       component: HomeScreen    },
-    { name: "projects" as const, title: t("tabs.projects"), icon: "photo.stack.fill", component: ProjectsScreen },
-    { name: "profile"  as const, title: t("tabs.profile"),  icon: "person.fill",      component: ProfileScreen  },
+    { name: "index"    as const, title: t('tabs.home'),     icon: "house.fill",       component: HomeScreen    },
+    { name: "projects" as const, title: t('tabs.projects'), icon: "photo.stack.fill", component: ProjectsScreen },
+    { name: "profile"  as const, title: t('tabs.profile'),  icon: "person.fill",      component: ProfileScreen  },
   ];
 
   return (
