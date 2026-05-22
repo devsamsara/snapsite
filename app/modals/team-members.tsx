@@ -104,7 +104,7 @@ export default function TeamMembersModal() {
 
   return (
       <KeyboardAvoidingView
-          style={{ flex: 1 }}
+          style={S.flex1}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ModalRoot>
@@ -136,7 +136,7 @@ export default function TeamMembersModal() {
                 placeholder={t('team.searchPlaceholder')}
                 value={search}
                 onChangeText={setSearch}
-                style={{ marginBottom: 16 }}
+                style={S.mb16}
             />
           </View>
 
@@ -192,4 +192,6 @@ const S = StyleSheet.create({
   // Empty
   emptyWrap:   { alignItems: 'center', paddingVertical: 40, gap: 12 },
   emptyText:   { fontSize: 14 },
+  flex1: { flex: 1 },
+  mb16: { marginBottom: 16 },
 });

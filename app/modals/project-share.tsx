@@ -159,7 +159,7 @@ export default function ProjectShareModal() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={S.flex1}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
     >
@@ -253,7 +253,7 @@ export default function ProjectShareModal() {
             )}
 
             <View style={S.inviteRow}>
-              <View style={{ flex: 1 }}>
+              <View style={S.flex1}>
                 <AppInput
                   name="email"
                   control={control}
@@ -382,4 +382,5 @@ const S = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
+  flex1: { flex: 1 },
 });

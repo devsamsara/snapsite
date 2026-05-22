@@ -67,56 +67,25 @@ const MOCK_PROJECTS: Record<string, Project> = {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Photo {
-  id: string;
-  url: string;
-  date: string;
-  caption: string;
-  tags: string[];
+  id: string; url: string; date: string; caption: string; tags: string[];
 }
-
 interface TimelineEvent {
-  id: string;
-  date: string;
-  title: string;
-  description: string;
-  type: "photo" | "note" | "milestone" | "team";
-  photoUrl?: string;
+  id: string; date: string; title: string; description: string;
+  type: "photo" | "note" | "milestone" | "team"; photoUrl?: string;
 }
-
 interface TeamMember {
-  id: string;
-  name: string;
-  role: string;
-  initials: string;
-  color: string;
-  lastActivity: string;
-  online: boolean;
+  id: string; name: string; role: string; initials: string;
+  color: string; lastActivity: string; online: boolean;
 }
-
 interface Note {
-  id: string;
-  author: string;
-  initials: string;
-  authorColor: string;
-  content: string;
-  date: string;
-  pinned: boolean;
+  id: string; author: string; initials: string; authorColor: string;
+  content: string; date: string; pinned: boolean;
 }
-
 interface Project {
-  id: string;
-  name: string;
-  location: string;
-  thumbnail: string;
-  description: string;
-  status: string;
-  progress: number;
-  startDate: string;
-  endDate: string;
-  photos: Photo[];
-  timeline: TimelineEvent[];
-  team: TeamMember[];
-  notes: Note[];
+  id: string; name: string; location: string; thumbnail: string;
+  description: string; status: string; progress: number;
+  startDate: string; endDate: string;
+  photos: Photo[]; timeline: TimelineEvent[]; team: TeamMember[]; notes: Note[];
 }
 
 type TabId = "gallery" | "timeline" | "team" | "notes";
@@ -130,9 +99,7 @@ const TABS: { id: TabId; icon: string; labelKey: string }[] = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function uid() {
-  return Math.random().toString(36).slice(2, 9);
-}
+function uid() { return Math.random().toString(36).slice(2, 9); }
 
 function timelineIcon(type: TimelineEvent["type"]) {
   switch (type) {
@@ -172,10 +139,7 @@ export default function ProjectDetailScreen() {
 
   const tabAnim = useRef(new RNAnimated.Value(0)).current;
 
-  const switchTab = (tab: TabId) => {
-    Haptics.selectionAsync();
-    setActiveTab(tab);
-  };
+  const switchTab = (tab: TabId) => { Haptics.selectionAsync(); setActiveTab(tab); };
 
   const handleAddPhoto = () => {
     router.push({ pathname: "/add-photo-modal", params: { projectId: project.id } });
@@ -186,22 +150,10 @@ export default function ProjectDetailScreen() {
     router.push({ pathname: "/modals/invite-member", params: { projectId: project.id } });
     promise.then((result) => {
       if (!result) return;
-      const initials = result.name
-        .split(" ")
-        .slice(0, 2)
-        .map((w) => w[0]?.toUpperCase() ?? "")
-        .join("");
+      const initials = result.name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
       const palette = ["#007AFF", "#FF2D55", "#FF9500", "#4CD964", "#5856D6", "#FF3B30", "#34C759"];
       const color = palette[Math.floor(Math.random() * palette.length)];
-      const newMember: TeamMember = {
-        id: uid(),
-        name: result.name,
-        role: result.role,
-        initials,
-        color,
-        lastActivity: "Ahora",
-        online: false,
-      };
+      const newMember: TeamMember = { id: uid(), name: result.name, role: result.role, initials, color, lastActivity: "Ahora", online: false };
       setTeam((p) => [...p, newMember]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     });
@@ -212,31 +164,14 @@ export default function ProjectDetailScreen() {
     router.push({ pathname: "/modals/add-note", params: { projectId: project.id } });
     promise.then((result) => {
       if (!result) return;
-      const newNote: Note = {
-        id: uid(),
-        author: "Tú",
-        initials: "TU",
-        authorColor: colors.primary,
-        content: result.text,
-        date: "Ahora",
-        pinned: false,
-      };
+      const newNote: Note = { id: uid(), author: "Tú", initials: "TU", authorColor: colors.primary, content: result.text, date: "Ahora", pinned: false };
       setNotes((p) => [newNote, ...p]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     });
   }, [project.id, colors.primary, router]);
 
   const openLightbox = useCallback((photo: Photo) => {
-    router.push({
-      pathname: "/modals/photo-lightbox",
-      params: {
-        url: photo.url,
-        caption: photo.caption,
-        date: photo.date,
-        tags: JSON.stringify(photo.tags),
-        projectId: project.id,
-      },
-    });
+    router.push({ pathname: "/modals/photo-lightbox", params: { url: photo.url, caption: photo.caption, date: photo.date, tags: JSON.stringify(photo.tags), projectId: project.id } });
   }, [project.id, router]);
 
   const togglePin = (noteId: string) => {
@@ -247,92 +182,64 @@ export default function ProjectDetailScreen() {
   const deleteNote = (noteId: string) => {
     Alert.alert(t("project.deleteNoteTitle"), t("project.deleteNoteConfirm"), [
       { text: t("common.cancel"), style: "cancel" },
-      {
-        text: t("common.delete"),
-        style: "destructive",
-        onPress: () => setNotes((p) => p.filter((n) => n.id !== noteId)),
-      },
+      { text: t("common.delete"), style: "destructive", onPress: () => setNotes((p) => p.filter((n) => n.id !== noteId)) },
     ]);
   };
 
   const allTags = Array.from(new Set(photos.flatMap((p) => p.tags)));
-  const filteredPhotos = filterTag
-    ? photos.filter((p) => p.tags.includes(filterTag))
-    : photos;
+  const filteredPhotos = filterTag ? photos.filter((p) => p.tags.includes(filterTag)) : photos;
 
   // ─── Tab: Gallery ─────────────────────────────────────────────────────────
 
   const renderGallery = () => (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={S.galleryScroll}>
       {/* Tag filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12, gap: 8 }}
-      >
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.tagScroll}>
         <TouchableOpacity
           onPress={() => setFilterTag(null)}
-          style={[
-            styles.tag,
-            { backgroundColor: !filterTag ? colors.primary : colors.surface, borderColor: colors.border },
-          ]}
+          style={[S.tag, { backgroundColor: !filterTag ? colors.primary : colors.surface, borderColor: colors.border }]}
         >
-          <Text style={{ color: !filterTag ? "#FFF" : colors.muted, fontSize: 12, fontWeight: "600" }}>
-            {t("project.all")}
-          </Text>
+          <Text style={[S.tagText, { color: !filterTag ? "#FFF" : colors.muted }]}>{t("project.all")}</Text>
         </TouchableOpacity>
         {allTags.map((tag) => (
           <TouchableOpacity
             key={tag}
             onPress={() => setFilterTag(filterTag === tag ? null : tag)}
-            style={[
-              styles.tag,
-              { backgroundColor: filterTag === tag ? colors.primary : colors.surface, borderColor: colors.border },
-            ]}
+            style={[S.tag, { backgroundColor: filterTag === tag ? colors.primary : colors.surface, borderColor: colors.border }]}
           >
-            <Text style={{ color: filterTag === tag ? "#FFF" : colors.muted, fontSize: 12, fontWeight: "600" }}>
-              #{tag}
-            </Text>
+            <Text style={[S.tagText, { color: filterTag === tag ? "#FFF" : colors.muted }]}>#{tag}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
-      {/* Photo count */}
-      <View style={{ paddingHorizontal: 16, marginBottom: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <Text style={{ color: colors.muted, fontSize: 13 }}>
+      {/* Photo count + add */}
+      <View style={S.photoCountRow}>
+        <Text style={[S.photoCountText, { color: colors.muted }]}>
           {filteredPhotos.length} {filteredPhotos.length === 1 ? t("project.photo") : t("project.photos")}
         </Text>
-        <TouchableOpacity
-          onPress={handleAddPhoto}
-          style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.primary + "20", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}
-        >
+        <TouchableOpacity onPress={handleAddPhoto} style={[S.addPhotoBtn, { backgroundColor: colors.primary + "20" }]}>
           <MaterialIcons name="add-a-photo" size={16} color={colors.primary} />
-          <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "700" }}>{t("project.add")}</Text>
+          <Text style={[S.addPhotoBtnText, { color: colors.primary }]}>{t("project.add")}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Grid */}
-      <View style={{ paddingHorizontal: 16 }}>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+      <View style={S.gridWrapper}>
+        <View style={S.grid}>
           {filteredPhotos.map((photo) => (
             <TouchableOpacity
               key={photo.id}
               onPress={() => openLightbox(photo)}
-              style={{ width: (W - 40) / 2, borderRadius: 16, overflow: "hidden" }}
+              style={[S.gridItem, { width: (W - 40) / 2 }]}
             >
-              <Image source={{ uri: photo.url }} style={{ width: "100%", height: 150 }} resizeMode="cover" />
-              <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.55)", padding: 8 }}>
-                <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "600" }} numberOfLines={1}>
-                  {photo.caption}
-                </Text>
-                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 10, marginTop: 2 }}>
-                  {photo.date}
-                </Text>
+              <Image source={{ uri: photo.url }} style={S.gridItemImg} resizeMode="cover" />
+              <View style={S.gridItemOverlay}>
+                <Text style={S.gridItemCaption} numberOfLines={1}>{photo.caption}</Text>
+                <Text style={S.gridItemDate}>{photo.date}</Text>
               </View>
-              {/* Annotate shortcut */}
               <TouchableOpacity
                 onPress={() => router.push({ pathname: "/image-editor", params: { imageUri: photo.url, projectId: project.id } })}
-                style={{ position: "absolute", top: 8, right: 8, backgroundColor: "rgba(0,0,0,0.5)", borderRadius: 20, padding: 6 }}
+                style={S.gridItemEditBtn}
               >
                 <MaterialIcons name="edit" size={14} color="#FFF" />
               </TouchableOpacity>
@@ -341,9 +248,9 @@ export default function ProjectDetailScreen() {
         </View>
 
         {filteredPhotos.length === 0 && (
-          <View style={{ alignItems: "center", paddingVertical: 48 }}>
+          <View style={S.emptyState}>
             <MaterialIcons name="photo-library" size={48} color={colors.border} />
-            <Text style={{ color: colors.muted, marginTop: 12, fontSize: 15 }}>
+            <Text style={[S.emptyStateText, { color: colors.muted }]}>
               {t("project.noPhotos")}{filterTag ? ` #${filterTag}` : ""}
             </Text>
           </View>
@@ -355,37 +262,28 @@ export default function ProjectDetailScreen() {
   // ─── Tab: Timeline ────────────────────────────────────────────────────────
 
   const renderTimeline = () => (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, paddingTop: 8 }}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={S.timelineScroll}>
       {project.timeline.map((event, idx) => {
         const iconName = timelineIcon(event.type);
         const iconColor = timelineColor(event.type, colors);
         const isLast = idx === project.timeline.length - 1;
         return (
-          <View key={event.id} style={{ flexDirection: "row", gap: 12 }}>
+          <View key={event.id} style={S.timelineRow}>
             {/* Line + icon */}
-            <View style={{ alignItems: "center", width: 36 }}>
-              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: iconColor + "20", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
+            <View style={S.timelineIconCol}>
+              <View style={[S.timelineIconBg, { backgroundColor: iconColor + "20" }]}>
                 <MaterialIcons name={iconName as any} size={18} color={iconColor} />
               </View>
-              {!isLast && <View style={{ width: 2, flex: 1, backgroundColor: colors.border, marginTop: 4 }} />}
+              {!isLast && <View style={[S.timelineLine, { backgroundColor: colors.border }]} />}
             </View>
-
             {/* Content */}
-            <View style={{ flex: 1, paddingBottom: isLast ? 0 : 20 }}>
-              <Text style={{ color: colors.muted, fontSize: 11, marginBottom: 4 }}>{event.date}</Text>
-              <View style={[styles.cardBase, cardElevation]}>
-                <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "700", marginBottom: 4 }}>
-                  {event.title}
-                </Text>
-                <Text style={{ color: colors.muted, fontSize: 13, lineHeight: 18 }}>
-                  {event.description}
-                </Text>
+            <View style={[S.timelineContent, isLast && S.timelineContentLast]}>
+              <Text style={[S.timelineDate, { color: colors.muted }]}>{event.date}</Text>
+              <View style={[S.cardBase, cardElevation]}>
+                <Text style={[S.timelineTitle, { color: colors.foreground }]}>{event.title}</Text>
+                <Text style={[S.timelineDesc, { color: colors.muted }]}>{event.description}</Text>
                 {event.photoUrl && (
-                  <Image
-                    source={{ uri: event.photoUrl }}
-                    style={{ width: "100%", height: 120, borderRadius: 10, marginTop: 10 }}
-                    resizeMode="cover"
-                  />
+                  <Image source={{ uri: event.photoUrl }} style={S.timelinePhoto} resizeMode="cover" />
                 )}
               </View>
             </View>
@@ -398,46 +296,41 @@ export default function ProjectDetailScreen() {
   // ─── Tab: Team ────────────────────────────────────────────────────────────
 
   const renderTeam = () => (
-    <View style={{ flex: 1 }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 }}>
+    <View style={S.flex1}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={S.teamScroll}>
         {/* Stats row */}
-        <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
+        <View style={S.statsRow}>
           {[
             { label: t("project.members"),    value: team.length,                          icon: "group",               color: colors.primary },
             { label: t("project.activeToday"), value: team.filter((m) => m.online).length, icon: "fiber-manual-record", color: colors.success },
           ].map((stat) => (
-            <View key={stat.label} style={[styles.statCard, cardSmElevation, { flex: 1 }]}>
+            <View key={stat.label} style={[S.statCard, cardSmElevation, S.flex1]}>
               <MaterialIcons name={stat.icon as any} size={22} color={stat.color} />
-              <Text style={{ color: colors.foreground, fontSize: 22, fontWeight: "800", marginTop: 6 }}>{stat.value}</Text>
-              <Text style={{ color: colors.muted, fontSize: 12 }}>{stat.label}</Text>
+              <Text style={[S.statValue, { color: colors.foreground }]}>{stat.value}</Text>
+              <Text style={[S.statLabel, { color: colors.muted }]}>{stat.label}</Text>
             </View>
           ))}
         </View>
 
         {/* Members list */}
         {team.map((member) => (
-          <View key={member.id} style={[styles.cardBase, cardElevation, { marginBottom: 12, flexDirection: "row", alignItems: "center" }]}>
-            {/* Avatar */}
-            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: member.color + "25", alignItems: "center", justifyContent: "center", marginRight: 14 }}>
-              <Text style={{ color: member.color, fontSize: 16, fontWeight: "800" }}>{member.initials}</Text>
+          <View key={member.id} style={[S.cardBase, cardElevation, S.memberCard]}>
+            <View style={[S.memberAvatar, { backgroundColor: member.color + "25" }]}>
+              <Text style={[S.memberInitials, { color: member.color }]}>{member.initials}</Text>
             </View>
-            {/* Info */}
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <Text style={{ color: colors.foreground, fontSize: 15, fontWeight: "700" }}>{member.name}</Text>
-                {member.online && (
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
-                )}
+            <View style={S.flex1}>
+              <View style={S.memberNameRow}>
+                <Text style={[S.memberName, { color: colors.foreground }]}>{member.name}</Text>
+                {member.online && <View style={[S.onlineDot, { backgroundColor: colors.success }]} />}
               </View>
-              <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600", marginTop: 2 }}>{member.role}</Text>
-              <Text style={{ color: colors.muted, fontSize: 11, marginTop: 2 }}>
+              <Text style={[S.memberRole, { color: colors.primary }]}>{member.role}</Text>
+              <Text style={[S.memberActivity, { color: colors.muted }]}>
                 {t("project.active")}: {member.lastActivity}
               </Text>
             </View>
-            {/* Actions */}
             <TouchableOpacity
               onPress={() => Alert.alert(t("project.messageTitle"), t("project.messageTo", { name: member.name }))}
-              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary + "15", alignItems: "center", justifyContent: "center" }}
+              style={[S.chatBtn, { backgroundColor: colors.primary + "15" }]}
             >
               <MaterialIcons name="chat" size={18} color={colors.primary} />
             </TouchableOpacity>
@@ -445,11 +338,7 @@ export default function ProjectDetailScreen() {
         ))}
       </ScrollView>
 
-      {/* FAB */}
-      <TouchableOpacity
-        onPress={openInviteModal}
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-      >
+      <TouchableOpacity onPress={openInviteModal} style={[S.fab, { backgroundColor: colors.primary }]}>
         <MaterialIcons name="person-add" size={26} color="#FFF" />
       </TouchableOpacity>
     </View>
@@ -460,60 +349,51 @@ export default function ProjectDetailScreen() {
   const sortedNotes = [...notes].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
   const renderNotes = () => (
-    <View style={{ flex: 1 }}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 }}>
+    <View style={S.flex1}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={S.notesScroll}>
         {sortedNotes.length === 0 && (
-          <View style={{ alignItems: "center", paddingVertical: 48 }}>
+          <View style={S.emptyState}>
             <MaterialIcons name="notes" size={48} color={colors.border} />
-            <Text style={{ color: colors.muted, marginTop: 12, fontSize: 15 }}>{t("project.noNotes")}</Text>
+            <Text style={[S.emptyStateText, { color: colors.muted }]}>{t("project.noNotes")}</Text>
           </View>
         )}
         {sortedNotes.map((note) => (
           <View
             key={note.id}
             style={[
-              styles.cardBase,
+              S.cardBase,
               cardElevation,
-              {
-                borderColor: note.pinned ? colors.warning : (cardElevation as any).borderColor,
-                borderWidth: note.pinned ? 1.5 : (cardElevation as any).borderWidth ?? 0,
-                marginBottom: 12,
-              },
+              S.noteCard,
+              { borderColor: note.pinned ? colors.warning : (cardElevation as any).borderColor, borderWidth: note.pinned ? 1.5 : (cardElevation as any).borderWidth ?? 0 },
             ]}
           >
             {note.pinned && (
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 8 }}>
+              <View style={S.pinnedRow}>
                 <MaterialIcons name="push-pin" size={12} color={colors.warning} />
-                <Text style={{ color: colors.warning, fontSize: 11, fontWeight: "700" }}>{t("project.pinned")}</Text>
+                <Text style={[S.pinnedText, { color: colors.warning }]}>{t("project.pinned")}</Text>
               </View>
             )}
-            {/* Author row */}
-            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
-              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: note.authorColor + "25", alignItems: "center", justifyContent: "center", marginRight: 10 }}>
-                <Text style={{ color: note.authorColor, fontSize: 12, fontWeight: "800" }}>{note.initials}</Text>
+            <View style={S.noteAuthorRow}>
+              <View style={[S.noteAuthorAvatar, { backgroundColor: note.authorColor + "25" }]}>
+                <Text style={[S.noteAuthorInitials, { color: note.authorColor }]}>{note.initials}</Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "700" }}>{note.author}</Text>
-                <Text style={{ color: colors.muted, fontSize: 11 }}>{note.date}</Text>
+              <View style={S.flex1}>
+                <Text style={[S.noteAuthorName, { color: colors.foreground }]}>{note.author}</Text>
+                <Text style={[S.noteDate, { color: colors.muted }]}>{note.date}</Text>
               </View>
-              {/* Actions */}
-              <TouchableOpacity onPress={() => togglePin(note.id)} style={{ padding: 6 }}>
+              <TouchableOpacity onPress={() => togglePin(note.id)} style={S.noteAction}>
                 <MaterialIcons name="push-pin" size={18} color={note.pinned ? colors.warning : colors.muted} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => deleteNote(note.id)} style={{ padding: 6 }}>
+              <TouchableOpacity onPress={() => deleteNote(note.id)} style={S.noteAction}>
                 <MaterialIcons name="delete-outline" size={18} color={colors.error} />
               </TouchableOpacity>
             </View>
-            <Text style={{ color: colors.foreground, fontSize: 14, lineHeight: 20 }}>{note.content}</Text>
+            <Text style={[S.noteContent, { color: colors.foreground }]}>{note.content}</Text>
           </View>
         ))}
       </ScrollView>
 
-      {/* FAB */}
-      <TouchableOpacity
-        onPress={() => openNoteModal()}
-        style={[styles.fab, { backgroundColor: colors.primary }]}
-      >
+      <TouchableOpacity onPress={() => openNoteModal()} style={[S.fab, { backgroundColor: colors.primary }]}>
         <MaterialIcons name="add" size={28} color="#FFF" />
       </TouchableOpacity>
     </View>
@@ -523,35 +403,32 @@ export default function ProjectDetailScreen() {
 
   return (
     <ScreenContainer className="p-0">
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={[S.flex1, { backgroundColor: colors.background }]}>
 
         {/* ── Header ── */}
-        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <View style={[S.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={() => router.back()} style={S.backBtn}>
             <MaterialIcons name="arrow-back" size={22} color={colors.foreground} />
           </TouchableOpacity>
-          <View style={{ flex: 1, marginHorizontal: 12 }}>
-            <Text style={{ color: colors.foreground, fontSize: 17, fontWeight: "700" }} numberOfLines={1}>
+          <View style={S.headerTitleWrapper}>
+            <Text style={[S.headerTitle, { color: colors.foreground }]} numberOfLines={1}>
               {project.name}
             </Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+            <View style={S.headerLocationRow}>
               <MaterialIcons name="location-on" size={12} color={colors.muted} />
-              <Text style={{ color: colors.muted, fontSize: 12 }} numberOfLines={1}>{project.location}</Text>
+              <Text style={[S.headerLocation, { color: colors.muted }]} numberOfLines={1}>{project.location}</Text>
             </View>
           </View>
-          <View style={{ flexDirection: "row", gap: 8 }}>
+          <View style={S.headerActions}>
             <TouchableOpacity
               onPress={handleAddPhoto}
-              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary + "15", alignItems: "center", justifyContent: "center" }}
+              style={[S.headerActionBtn, { backgroundColor: colors.primary + "15" }]}
             >
               <MaterialIcons name="add-a-photo" size={18} color={colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => router.push({
-                pathname: "/modals/project-settings",
-                params: { projectId: project.id, projectName: project.name, projectLocation: project.location },
-              })}
-              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}
+              onPress={() => router.push({ pathname: "/modals/project-settings", params: { projectId: project.id, projectName: project.name, projectLocation: project.location } })}
+              style={[S.headerActionBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}
             >
               <MaterialIcons name="more-vert" size={20} color={colors.foreground} />
             </TouchableOpacity>
@@ -559,33 +436,25 @@ export default function ProjectDetailScreen() {
         </View>
 
         {/* ── Hero card ── */}
-        <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 }}>
-          <View style={[styles.heroCard, cardElevation]}>
-            <Image source={{ uri: project.thumbnail }} style={styles.heroImg} resizeMode="cover" />
-            <View style={{ padding: 14 }}>
-              {/* Progress */}
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>
-                  {t("project.projectProgress")}
-                </Text>
-                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "800" }}>{project.progress}%</Text>
+        <View style={S.heroWrapper}>
+          <View style={[S.heroCard, cardElevation]}>
+            <Image source={{ uri: project.thumbnail }} style={S.heroImg} resizeMode="cover" />
+            <View style={S.heroBody}>
+              <View style={S.progressLabelRow}>
+                <Text style={[S.progressLabel, { color: colors.foreground }]}>{t("project.projectProgress")}</Text>
+                <Text style={[S.progressValue, { color: colors.primary }]}>{project.progress}%</Text>
               </View>
-              <View style={{ height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: "hidden" }}>
-                <View style={{ height: "100%", width: `${project.progress}%`, backgroundColor: colors.primary, borderRadius: 3 }} />
+              <View style={[S.progressTrack, { backgroundColor: colors.border }]}>
+                <View style={[S.progressFill, { width: `${project.progress}%`, backgroundColor: colors.primary }]} />
               </View>
-              {/* Dates */}
-              <View style={{ flexDirection: "row", gap: 16, marginTop: 10 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <View style={S.datesRow}>
+                <View style={S.dateItem}>
                   <MaterialIcons name="event" size={13} color={colors.muted} />
-                  <Text style={{ color: colors.muted, fontSize: 12 }}>
-                    {t("project.start")}: {project.startDate}
-                  </Text>
+                  <Text style={[S.dateText, { color: colors.muted }]}>{t("project.start")}: {project.startDate}</Text>
                 </View>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <View style={S.dateItem}>
                   <MaterialIcons name="event-available" size={13} color={colors.muted} />
-                  <Text style={{ color: colors.muted, fontSize: 12 }}>
-                    {t("project.end")}: {project.endDate}
-                  </Text>
+                  <Text style={[S.dateText, { color: colors.muted }]}>{t("project.end")}: {project.endDate}</Text>
                 </View>
               </View>
             </View>
@@ -593,17 +462,17 @@ export default function ProjectDetailScreen() {
         </View>
 
         {/* ── Tabs ── */}
-        <View style={[styles.tabBar, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <View style={[S.tabBar, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
           {TABS.map((tab) => {
             const active = activeTab === tab.id;
             return (
               <TouchableOpacity
                 key={tab.id}
                 onPress={() => switchTab(tab.id)}
-                style={[styles.tabItem, active && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
+                style={[S.tabItem, active && { borderBottomColor: colors.primary, borderBottomWidth: 2 }]}
               >
                 <MaterialIcons name={tab.icon as any} size={20} color={active ? colors.primary : colors.muted} />
-                <Text style={{ color: active ? colors.primary : colors.muted, fontSize: 12, fontWeight: active ? "700" : "500", marginTop: 2 }}>
+                <Text style={[S.tabLabel, { color: active ? colors.primary : colors.muted, fontWeight: active ? "700" : "500" }]}>
                   {t(tab.labelKey)}
                 </Text>
               </TouchableOpacity>
@@ -612,7 +481,7 @@ export default function ProjectDetailScreen() {
         </View>
 
         {/* ── Tab content ── */}
-        <View style={{ flex: 1 }}>
+        <View style={S.flex1}>
           {activeTab === "gallery"  && renderGallery()}
           {activeTab === "timeline" && renderTimeline()}
           {activeTab === "team"     && renderTeam()}
@@ -626,42 +495,105 @@ export default function ProjectDetailScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  backBtn: {
-    width: 36, height: 36, borderRadius: 18,
-    alignItems: "center", justifyContent: "center",
-  },
-  heroCard: {
-    borderRadius: 20, borderWidth: 1, overflow: "hidden",
-  },
-  heroImg: { width: "100%", height: 140 },
-  tabBar: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    marginTop: 8,
-  },
-  tabItem: {
-    flex: 1, alignItems: "center", paddingVertical: 10,
-    borderBottomWidth: 2, borderBottomColor: "transparent",
-  },
-  cardBase: {
-    borderRadius: 16, padding: 14,
-  },
-  statCard: {
-    borderRadius: 16, padding: 14,
-    alignItems: "center",
-  },
-  tag: {
-    paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: 20, borderWidth: 1,
-  },
+const S = StyleSheet.create({
+  // Layout
+  flex1:                { flex: 1 },
+
+  // Header
+  header:               { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  backBtn:              { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  headerTitleWrapper:   { flex: 1, marginHorizontal: 12 },
+  headerTitle:          { fontSize: 17, fontWeight: "700" },
+  headerLocationRow:    { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
+  headerLocation:       { fontSize: 12 },
+  headerActions:        { flexDirection: "row", gap: 8 },
+  headerActionBtn:      { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+
+  // Hero
+  heroWrapper:          { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
+  heroCard:             { borderRadius: 20, borderWidth: 1, overflow: "hidden" },
+  heroImg:              { width: "100%", height: 140 },
+  heroBody:             { padding: 14 },
+  progressLabelRow:     { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  progressLabel:        { fontSize: 13, fontWeight: "600" },
+  progressValue:        { fontSize: 13, fontWeight: "800" },
+  progressTrack:        { height: 6, borderRadius: 3, overflow: "hidden" },
+  progressFill:         { height: "100%", borderRadius: 3 },
+  datesRow:             { flexDirection: "row", gap: 16, marginTop: 10 },
+  dateItem:             { flexDirection: "row", alignItems: "center", gap: 4 },
+  dateText:             { fontSize: 12 },
+
+  // Tabs
+  tabBar:               { flexDirection: "row", borderBottomWidth: 1, marginTop: 8 },
+  tabItem:              { flex: 1, alignItems: "center", paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: "transparent" },
+  tabLabel:             { fontSize: 12, marginTop: 2 },
+
+  // Shared card
+  cardBase:             { borderRadius: 16, padding: 14 },
+
+  // Gallery
+  galleryScroll:        { paddingBottom: 32 },
+  tagScroll:            { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
+  tag:                  { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
+  tagText:              { fontSize: 12, fontWeight: "600" },
+  photoCountRow:        { paddingHorizontal: 16, marginBottom: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  photoCountText:       { fontSize: 13 },
+  addPhotoBtn:          { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  addPhotoBtnText:      { fontSize: 13, fontWeight: "700" },
+  gridWrapper:          { paddingHorizontal: 16 },
+  grid:                 { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  gridItem:             { borderRadius: 16, overflow: "hidden" },
+  gridItemImg:          { width: "100%", height: 150 },
+  gridItemOverlay:      { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(0,0,0,0.55)", padding: 8 },
+  gridItemCaption:      { color: "#FFF", fontSize: 12, fontWeight: "600" },
+  gridItemDate:         { color: "rgba(255,255,255,0.7)", fontSize: 10, marginTop: 2 },
+  gridItemEditBtn:      { position: "absolute", top: 8, right: 8, backgroundColor: "rgba(0,0,0,0.5)", borderRadius: 20, padding: 6 },
+  emptyState:           { alignItems: "center", paddingVertical: 48 },
+  emptyStateText:       { marginTop: 12, fontSize: 15 },
+
+  // Timeline
+  timelineScroll:       { paddingHorizontal: 16, paddingBottom: 32, paddingTop: 8 },
+  timelineRow:          { flexDirection: "row", gap: 12 },
+  timelineIconCol:      { alignItems: "center", width: 36 },
+  timelineIconBg:       { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", zIndex: 1 },
+  timelineLine:         { width: 2, flex: 1, marginTop: 4 },
+  timelineContent:      { flex: 1, paddingBottom: 20 },
+  timelineContentLast:  { paddingBottom: 0 },
+  timelineDate:         { fontSize: 11, marginBottom: 4 },
+  timelineTitle:        { fontSize: 14, fontWeight: "700", marginBottom: 4 },
+  timelineDesc:         { fontSize: 13, lineHeight: 18 },
+  timelinePhoto:        { width: "100%", height: 120, borderRadius: 10, marginTop: 10 },
+
+  // Team
+  teamScroll:           { paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 },
+  statsRow:             { flexDirection: "row", gap: 12, marginBottom: 20 },
+  statCard:             { borderRadius: 16, padding: 14, alignItems: "center" },
+  statValue:            { fontSize: 22, fontWeight: "800", marginTop: 6 },
+  statLabel:            { fontSize: 12 },
+  memberCard:           { marginBottom: 12, flexDirection: "row", alignItems: "center" },
+  memberAvatar:         { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", marginRight: 14 },
+  memberInitials:       { fontSize: 16, fontWeight: "800" },
+  memberNameRow:        { flexDirection: "row", alignItems: "center", gap: 6 },
+  memberName:           { fontSize: 15, fontWeight: "700" },
+  onlineDot:            { width: 8, height: 8, borderRadius: 4 },
+  memberRole:           { fontSize: 12, fontWeight: "600", marginTop: 2 },
+  memberActivity:       { fontSize: 11, marginTop: 2 },
+  chatBtn:              { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+
+  // Notes
+  notesScroll:          { paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 },
+  noteCard:             { marginBottom: 12 },
+  pinnedRow:            { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 8 },
+  pinnedText:           { fontSize: 11, fontWeight: "700" },
+  noteAuthorRow:        { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  noteAuthorAvatar:     { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", marginRight: 10 },
+  noteAuthorInitials:   { fontSize: 12, fontWeight: "800" },
+  noteAuthorName:       { fontSize: 13, fontWeight: "700" },
+  noteDate:             { fontSize: 11 },
+  noteAction:           { padding: 6 },
+  noteContent:          { fontSize: 14, lineHeight: 20 },
+
+  // FAB
   fab: {
     position: "absolute", bottom: 24, right: 20,
     width: 56, height: 56, borderRadius: 28,

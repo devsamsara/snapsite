@@ -192,7 +192,7 @@ export default function InviteMemberModal() {
                         onPress={handleCancel}
                         variant="ghost"
                         size="md"
-                        style={{flex: 1}}
+                        style={S.flex1}
                     />
                     <Button
                         title={t('modals.inviteMember.invite')}
@@ -200,7 +200,7 @@ export default function InviteMemberModal() {
                         variant="primary"
                         size="md"
                         leftIcon="person-add"
-                        style={{flex: 2}}
+                        style={S.flex2}
                     />
                 </ModalFooter>
             </ModalRoot>
@@ -273,4 +273,6 @@ const S = StyleSheet.create({
         fontSize: 13,
         lineHeight: 18,
     },
+  flex2: { flex: 2 },
+  flex1: { flex: 1 },
 });

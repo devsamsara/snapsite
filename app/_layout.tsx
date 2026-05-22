@@ -4,7 +4,7 @@ import {Stack} from "expo-router";
 import {StatusBar} from "expo-status-bar";
 import {useEffect, useMemo, useState} from "react";
 import {GestureHandlerRootView} from "react-native-gesture-handler";
-import {Platform, useColorScheme} from "react-native";
+import {Platform, StyleSheet, useColorScheme} from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import {ThemeProvider} from "@/lib/theme-provider";
 import {AuthProvider} from "@/lib/auth-context";
@@ -60,7 +60,7 @@ export default function RootLayout() {
     if (!i18nReady) return null;
 
     const content = (
-        <GestureHandlerRootView style={{flex: 1}}>
+        <GestureHandlerRootView style={S.flex1}>
             <ApolloProvider client={apolloClient}>
                 <AuthProvider>
                         <Stack screenOptions={{headerShown: false}}>
@@ -290,3 +290,7 @@ export default function RootLayout() {
         </ThemeProvider>
     );
 }
+
+const S = StyleSheet.create({
+    flex1: { flex: 1 },
+});

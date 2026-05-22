@@ -192,7 +192,7 @@ const CameraScreen: React.FC = () => {
                   </TouchableOpacity>
 
                   {/* Placeholder to maintain spacing */}
-                  <View style={{ width: 50 }} />
+                  <View style={styles.spacer} />
                 </View>
                 
                 {/* Mode Selector */}
@@ -333,6 +333,9 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 17,
     fontWeight: '600',
+  },
+  spacer: {
+    width: 50,
   },
 });
 

@@ -1,4 +1,4 @@
-import { View, TextInput, TouchableOpacity } from "react-native";
+import { View, TextInput, StyleSheet } from "react-native";
 import { IconSymbol } from "./ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 
@@ -22,18 +22,7 @@ export function SearchBar({
   const colors = useColors();
 
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 12,
-        backgroundColor: colors.surface,
-        borderWidth: 1,
-        borderColor: colors.border,
-      }}
-    >
+    <View style={[S.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       <IconSymbol name="magnifyingglass" size={18} color={colors.muted} />
       <TextInput
         value={value}
@@ -43,14 +32,25 @@ export function SearchBar({
         placeholder={placeholder}
         placeholderTextColor={colors.muted}
         editable={editable}
-        style={{
-          flex: 1,
-          marginLeft: 12,
-          fontSize: 15,
-          color: colors.foreground,
-          paddingVertical: 0,
-        }}
+        style={[S.input, { color: colors.foreground }]}
       />
     </View>
   );
 }
+
+const S = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  input: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 15,
+    paddingVertical: 0,
+  },
+});

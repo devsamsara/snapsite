@@ -138,7 +138,7 @@ export default function EditProjectModal() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={S.flex1}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
     >
@@ -219,7 +219,7 @@ export default function EditProjectModal() {
 
             {/* ── Dates ── */}
             <View style={S.dateRow}>
-              <View style={{ flex: 1 }}>
+              <View style={S.flex1}>
                 <AppInput
                   name="startDate"
                   control={control}
@@ -230,7 +230,7 @@ export default function EditProjectModal() {
                   maxLength={10}
                 />
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={S.flex1}>
                 <AppInput
                   name="endDate"
                   control={control}
@@ -319,4 +319,5 @@ const S = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
+  flex1: { flex: 1 },
 });

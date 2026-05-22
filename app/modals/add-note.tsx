@@ -51,7 +51,7 @@ export default function AddNoteModal() {
 
     return (
         <KeyboardAvoidingView
-            style={{flex: 1}}
+            style={S.flex1}
             behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
             <ModalRoot>
@@ -64,7 +64,7 @@ export default function AddNoteModal() {
                 />
 
                 {/* ── Body ── */}
-                <ModalBody style={{flex: 1, height:S.input.minHeight* 1.7}}>
+                <ModalBody style={S.modalBody}>
                     <AppInput
                         name="note"
                         control={control}
@@ -87,10 +87,10 @@ export default function AddNoteModal() {
 
                 {/* ── Footer ── */}
                 <ModalFooter row>
-                    <View style={{flex: 1}}>
+                    <View style={S.flex1}>
                         <Button title={t('common.cancel')} onPress={handleCancel} variant="secondary" size="md"/>
                     </View>
-                    <View style={{flex: 1}}>
+                    <View style={S.flex1}>
                         <Button
                             title={t('modals.addNote.save')}
                             onPress={handleSave}
@@ -109,6 +109,8 @@ export default function AddNoteModal() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const S = StyleSheet.create({
+    flex1:     { flex: 1 },
+    modalBody: { flex: 1, height: 140 * 1.7 },
     input: {
         borderRadius: 12,
         padding: 14, fontSize: 15,

@@ -2,6 +2,7 @@ import {
   FlatList,
   Image,
   ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -67,31 +68,12 @@ export default function HomeScreen() {
     transform: [{ scale: enterScale.value }],
   }));
 
-  const handleCreateProject = () => {
-    // TODO: Navigate to create project screen
-  };
-
-  const handleSettingsTap = () => {
-    router.push('/settings');
-  };
-
-  const handleProjectTap = (projectId: string) => {
-    router.push(`/project/${projectId}`);
-  };
-
-  const handleImageTap = (imageId: string) => {
-    // TODO: Navigate to image detail screen
-  };
-
-  const handleLocationTap = (locationId: string) => {
-    // TODO: Navigate to location detail screen
-  };
-  const handleInviteTap = () => {
-    router.push('/modals/invite-global');
-  };
-  const handleAvatarsTap = () => {
-    router.push('/modals/team-members');
-  };
+  const handleSettingsTap = () => router.push('/settings');
+  const handleProjectTap = (projectId: string) => router.push(`/project/${projectId}`);
+  const handleImageTap = (_imageId: string) => { /* TODO */ };
+  const handleLocationTap = (_locationId: string) => { /* TODO */ };
+  const handleInviteTap = () => router.push('/modals/invite-global');
+  const handleAvatarsTap = () => router.push('/modals/team-members');
 
   const EMPTY_ICONS: Record<'projects' | 'images' | 'locations', string> = {
     projects: 'folder.badge.plus',
@@ -103,50 +85,41 @@ export default function HomeScreen() {
     const titleKey = `home.empty${id.charAt(0).toUpperCase() + id.slice(1)}` as const;
     const hintKey  = `home.empty${id.charAt(0).toUpperCase() + id.slice(1)}Hint` as const;
     return (
-      <View className="flex-1 items-center justify-center py-12 px-6">
+      <View style={S.emptyContainer}>
         <IconSymbol name={EMPTY_ICONS[id] as any} size={48} color={colors.border} />
-        <Text className="text-lg font-semibold text-foreground mt-4">
-          {t(titleKey)}
-        </Text>
-        <Text className="text-sm text-muted text-center mt-2">
-          {t(hintKey)}
-        </Text>
+        <Text className="text-lg font-semibold text-foreground mt-4">{t(titleKey)}</Text>
+        <Text className="text-sm text-muted text-center mt-2">{t(hintKey)}</Text>
       </View>
     );
   };
 
   const renderProjectCard = ({ item }: { item: RecentProject }) => (
-    <TouchableOpacity
-      onPress={() => handleProjectTap(item.id)}
-      style={{ marginRight: 16, width: 300 }}
-    >
-      <View style={[{ borderRadius: 16, padding: 16 }, cardElevation]}>
+    <TouchableOpacity onPress={() => handleProjectTap(item.id)} style={S.projectCardWrapper}>
+      <View style={[S.projectCard, cardElevation]}>
         {/* Project Header */}
-        <View className="flex-row justify-between items-start mb-3">
-          <View className="flex-1">
-            <Text
-              className="text-lg font-semibold text-foreground"
-              numberOfLines={1}
-            >
+        <View style={S.projectCardHeader}>
+          <View style={S.flex1}>
+            <Text className="text-lg font-semibold text-foreground" numberOfLines={1}>
               {item.name}
             </Text>
             <Text className="text-sm text-muted mt-1">{item.location}</Text>
           </View>
           <View
-            className="px-3 py-1 rounded-full"
-            style={{
-              backgroundColor:
-                item.status === 'Completed'
-                  ? colors.success + '20'
-                  : colors.primary + '20',
-            }}
+            style={[
+              S.statusBadge,
+              {
+                backgroundColor:
+                  item.status === 'Completed'
+                    ? colors.success + '20'
+                    : colors.primary + '20',
+              },
+            ]}
           >
             <Text
-              className="text-xs font-semibold"
-              style={{
-                color:
-                  item.status === 'Completed' ? colors.success : colors.primary,
-              }}
+              style={[
+                S.statusBadgeText,
+                { color: item.status === 'Completed' ? colors.success : colors.primary },
+              ]}
             >
               {item.status}
             </Text>
@@ -154,85 +127,54 @@ export default function HomeScreen() {
         </View>
 
         {/* Progress Bar */}
-        <View className="mb-3">
-          <View className="flex-row justify-between mb-2">
+        <View style={S.progressSection}>
+          <View style={S.progressLabelRow}>
             <Text className="text-xs text-muted">{t('home.progress')}</Text>
-            <Text className="text-xs font-semibold text-foreground">
-              {item.progress}%
-            </Text>
+            <Text className="text-xs font-semibold text-foreground">{item.progress}%</Text>
           </View>
-          <View
-            className="h-2 rounded-full overflow-hidden"
-            style={{ backgroundColor: colors.border }}
-          >
+          <View style={[S.progressTrack, { backgroundColor: colors.border }]}>
             <View
-              className="h-full rounded-full"
-              style={{
-                width: `${item.progress}%`,
-                backgroundColor: colors.primary,
-              }}
+              style={[
+                S.progressFill,
+                { width: `${item.progress}%`, backgroundColor: colors.primary },
+              ]}
             />
           </View>
         </View>
 
         {/* Documents and Comments */}
-        <View className="flex-row items-center mb-3" style={{ gap: 12 }}>
-          <View className="flex-row items-center">
+        <View style={S.metaRow}>
+          <View style={S.metaItem}>
             <IconSymbol name="doc.fill" size={14} color={colors.muted} />
-            <Text className="text-xs text-muted" style={{ marginLeft: 6 }}>
-              {item.documentsCount} {t('home.documents')}
-            </Text>
+            <Text style={S.metaText}>{item.documentsCount} {t('home.documents')}</Text>
           </View>
-          <View className="flex-row items-center">
-            <IconSymbol
-              name="bubble.left.fill"
-              size={14}
-              color={colors.muted}
-            />
-            <Text className="text-xs text-muted" style={{ marginLeft: 6 }}>
-              {item.commentsCount} {t('home.comments')}
-            </Text>
+          <View style={S.metaItem}>
+            <IconSymbol name="bubble.left.fill" size={14} color={colors.muted} />
+            <Text style={S.metaText}>{item.commentsCount} {t('home.comments')}</Text>
           </View>
         </View>
 
         {/* Footer: Team Members and Date */}
-        <View className="flex-row justify-between items-center">
-          {/* Team Avatars */}
-          <View className="flex-row">
-            {item.members
-              .slice(0, 3)
-              .map((member: Maybe<UserSummary>, index: number) => {
-                return (
-                  member && (
-                    <View
-                      key={index}
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: 12,
-                        backgroundColor: colors.primary,
-                        marginLeft: index > 0 ? -6 : 0,
-                        borderWidth: 2,
-                        borderColor: colors.surface,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 10,
-                          fontWeight: '600',
-                          color: '#FFFFFF',
-                        }}
-                      >
-                        {member.name}
-                      </Text>
-                    </View>
-                  )
-                );
-              })}
+        <View style={S.projectCardFooter}>
+          <View style={S.avatarRow}>
+            {item.members.slice(0, 3).map((member: Maybe<UserSummary>, index: number) =>
+              member && (
+                <View
+                  key={index}
+                  style={[
+                    S.memberAvatar,
+                    {
+                      backgroundColor: colors.primary,
+                      marginLeft: index > 0 ? -6 : 0,
+                      borderColor: colors.surface,
+                    },
+                  ]}
+                >
+                  <Text style={S.memberAvatarText}>{member.name}</Text>
+                </View>
+              )
+            )}
           </View>
-          {/* Date */}
           <Text className="text-xs text-muted">{item.createdAt}</Text>
         </View>
       </View>
@@ -240,28 +182,10 @@ export default function HomeScreen() {
   );
 
   const renderImageCard = ({ item }: { item: RecentImage }) => (
-    <TouchableOpacity
-      onPress={() => handleImageTap(item.id)}
-      style={{ marginRight: 12 }}
-    >
-      <View className="rounded-xl overflow-hidden">
-        <Image
-          source={{ uri: item.url }}
-          style={{ width: 140, height: 140 }}
-          resizeMode="cover"
-        />
-        {/* Overlay with project name */}
-        <View
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
-            paddingVertical: 6,
-            paddingHorizontal: 8,
-          }}
-        >
+    <TouchableOpacity onPress={() => handleImageTap(item.id)} style={S.imageCardWrapper}>
+      <View style={S.imageCardInner}>
+        <Image source={{ uri: item.url }} style={S.imageCardImg} resizeMode="cover" />
+        <View style={S.imageOverlay}>
           <Text className="text-white text-xs font-semibold" numberOfLines={1}>
             {item.projectName}
           </Text>
@@ -274,33 +198,22 @@ export default function HomeScreen() {
   );
 
   const renderLocationCard = ({ item }: { item: RecentLocation }) => (
-    <TouchableOpacity
-      onPress={() => handleLocationTap(item.id)}
-      style={{ marginRight: 16, width: 200 }}
-    >
-      <View style={[{ borderRadius: 16, padding: 16 }, cardElevation]}>
-        <View className="flex-row items-center mb-2">
-          <View
-            className="w-10 h-10 rounded-full items-center justify-center"
-            style={{ backgroundColor: colors.primary + '20' }}
-          >
+    <TouchableOpacity onPress={() => handleLocationTap(item.id)} style={S.locationCardWrapper}>
+      <View style={[S.locationCard, cardElevation]}>
+        <View style={S.locationCardHeader}>
+          <View style={[S.locationIconBg, { backgroundColor: colors.primary + '20' }]}>
             <IconSymbol name="location.fill" size={20} color={colors.primary} />
           </View>
-          <View className="flex-1 ml-3">
-            <Text
-              className="text-base font-semibold text-foreground"
-              numberOfLines={1}
-            >
+          <View style={S.flex1Ml3}>
+            <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
               {item.name}
             </Text>
             <Text className="text-xs text-muted mt-1">{item.lastVisit}</Text>
           </View>
         </View>
-        <View className="flex-row items-center mt-2">
+        <View style={S.locationFooter}>
           <IconSymbol name="folder.fill" size={12} color={colors.muted} />
-          <Text className="text-xs text-muted" style={{ marginLeft: 4 }}>
-            {item.projectsCount} {t('home.projects')}
-          </Text>
+          <Text style={S.locationProjectsText}>{item.projectsCount} {t('home.projects')}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -308,7 +221,7 @@ export default function HomeScreen() {
 
   if (authLoading || loading) {
     return (
-      <View className="flex-1 items-center justify-center">
+      <View style={S.loadingContainer}>
         <Text className="text-muted">{t('home.loading')}</Text>
       </View>
     );
@@ -323,130 +236,57 @@ export default function HomeScreen() {
       <ScreenContainer className="p-0">
         <Animated.View style={enterStyle} className="bg-background">
           {/* Modern Header */}
-          <View
-            style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 }}
-          >
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                marginBottom: 16,
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{ fontSize: 13, color: colors.muted, marginBottom: 6 }}
-                >
+          <View style={S.header}>
+            <View style={S.headerTop}>
+              <View style={S.flex1}>
+                <Text style={[S.workspaceLabel, { color: colors.muted }]}>
                   {t('home.workspace')}
                 </Text>
-                <Text
-                  style={{
-                    fontSize: 24,
-                    fontWeight: '700',
-                    color: colors.foreground,
-                    marginBottom: 12,
-                  }}
-                >
+                <Text style={[S.workspaceName, { color: colors.foreground }]}>
                   {data.getDashboardData.currentCompany.name}
                 </Text>
                 {/* Team Avatars */}
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <TouchableOpacity
-                    onPress={handleAvatarsTap}
-                    style={{ flexDirection: 'row', marginRight: 12 }}
-                  >
+                <View style={S.teamRow}>
+                  <TouchableOpacity onPress={handleAvatarsTap} style={S.avatarsTouchable}>
                     {[1, 2, 3, 4, 5].map(i => (
                       <View
                         key={i}
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: 16,
-                          backgroundColor: colors.primary,
-                          marginLeft: i > 1 ? -8 : 0,
-                          borderWidth: 2,
-                          borderColor: colors.background,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
+                        style={[
+                          S.headerAvatar,
+                          {
+                            backgroundColor: colors.primary,
+                            marginLeft: i > 1 ? -8 : 0,
+                            borderColor: colors.background,
+                          },
+                        ]}
                       >
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            fontWeight: '600',
-                            color: '#FFFFFF',
-                          }}
-                        >
+                        <Text style={S.headerAvatarText}>
                           {String.fromCharCode(64 + i)}
                         </Text>
                       </View>
                     ))}
                     <View
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 16,
-                        backgroundColor: colors.surface,
-                        marginLeft: -8,
-                        borderWidth: 2,
-                        borderColor: colors.background,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
+                      style={[
+                        S.headerAvatarMore,
+                        { backgroundColor: colors.surface, borderColor: colors.background },
+                      ]}
                     >
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          fontWeight: '600',
-                          color: colors.muted,
-                        }}
-                      >
-                        +7
-                      </Text>
+                      <Text style={[S.headerAvatarMoreText, { color: colors.muted }]}>+7</Text>
                     </View>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleInviteTap}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 8,
-                      backgroundColor: colors.primary,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 4,
-                    }}
+                    style={[S.inviteBtn, { backgroundColor: colors.primary }]}
                   >
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '600',
-                        color: '#FFFFFF',
-                      }}
-                    >
-                      {t('home.invite')}
-                    </Text>
+                    <Text style={S.inviteBtnText}>{t('home.invite')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
               <TouchableOpacity
                 onPress={handleSettingsTap}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: colors.surface,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginLeft: 12,
-                }}
+                style={[S.settingsBtn, { backgroundColor: colors.surface }]}
               >
-                <IconSymbol
-                  name="gearshape.fill"
-                  size={20}
-                  color={colors.foreground}
-                />
+                <IconSymbol name="gearshape.fill" size={20} color={colors.foreground} />
               </TouchableOpacity>
             </View>
 
@@ -459,94 +299,35 @@ export default function HomeScreen() {
           </View>
 
           {/* Content */}
-          <ScrollView
-            contentContainerStyle={{ paddingBottom: 120 }}
-            showsVerticalScrollIndicator={false}
-          >
+          <ScrollView contentContainerStyle={S.scrollContent} showsVerticalScrollIndicator={false}>
             {/* Project Status Section (Today) */}
-            <View style={{ marginTop: 24 }}>
-              <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
-                <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: '600',
-                    color: colors.foreground,
-                  }}
-                >
+            <View style={S.section}>
+              <View style={S.sectionTitleWrapper}>
+                <Text style={[S.sectionTitle, { color: colors.foreground }]}>
                   {t('home.today')}
                 </Text>
               </View>
-              <View
-                style={{
-                  paddingHorizontal: 16,
-                  flexDirection: 'row',
-                  flexWrap: 'wrap',
-                  gap: 12,
-                }}
-              >
+              <View style={S.statusGrid}>
                 {data.getDashboardData.projectStatusData.map(
-                  (item: Maybe<ProjectStatusData>, index: number) => {
-                    return (
-                      item && (
-                        <TouchableOpacity
-                          key={`${item.nameKey}_ ${index}`}
-                          style={[
-                            {
-                              width: '48%',
-                              aspectRatio: 1.5,
-                              borderRadius: 16,
-                              padding: 16,
-                              justifyContent: 'space-between',
-                            },
-                            cardSmElevation,
-                          ]}
-                        >
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              justifyContent: 'space-between',
-                              alignItems: 'flex-start',
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontSize: 16,
-                                fontWeight: '600',
-                                color: colors.foreground,
-                              }}
-                            >
-                              {t(item.nameKey)}
-                            </Text>
-                            <View
-                              style={{
-                                width: 24,
-                                height: 24,
-                                borderRadius: 12,
-                                backgroundColor: colors.primary + '20',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <IconSymbol
-                                name="plus"
-                                size={14}
-                                color={colors.primary}
-                              />
-                            </View>
-                          </View>
-                          <Text
-                            style={{
-                              fontSize: 24,
-                              fontWeight: '700',
-                              color: colors.foreground,
-                            }}
-                          >
-                            {item.count}
+                  (item: Maybe<ProjectStatusData>, index: number) =>
+                    item && (
+                      <TouchableOpacity
+                        key={`${item.nameKey}_${index}`}
+                        style={[S.statusCard, cardSmElevation]}
+                      >
+                        <View style={S.statusCardTop}>
+                          <Text style={[S.statusCardLabel, { color: colors.foreground }]}>
+                            {t(item.nameKey)}
                           </Text>
-                        </TouchableOpacity>
-                      )
-                    );
-                  }
+                          <View style={[S.statusIconBg, { backgroundColor: colors.primary + '20' }]}>
+                            <IconSymbol name="plus" size={14} color={colors.primary} />
+                          </View>
+                        </View>
+                        <Text style={[S.statusCardCount, { color: colors.foreground }]}>
+                          {item.count}
+                        </Text>
+                      </TouchableOpacity>
+                    )
                 )}
               </View>
             </View>
@@ -555,40 +336,24 @@ export default function HomeScreen() {
             {data.getDashboardData.recentProjects.length === 0 ? (
               renderEmptyContent('projects')
             ) : (
-              <View style={{ marginTop: 24 }}>
-                <View
-                  style={{
-                    paddingHorizontal: 16,
-                    marginBottom: 12,
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
+              <View style={S.section}>
+                <View style={S.sectionHeader}>
                   <Text className="text-lg font-semibold text-foreground">
                     {t('home.recentProjects')}
                   </Text>
                   <TouchableOpacity>
-                    <Text
-                      className="text-sm font-semibold"
-                      style={{ color: colors.primary }}
-                    >
+                    <Text style={[S.seeAllText, { color: colors.primary }]}>
                       {t('home.seeAll')}
                     </Text>
                   </TouchableOpacity>
                 </View>
-
-                {/* Horizontal Projects List */}
                 <FlatList
                   data={data.getDashboardData.recentProjects}
                   renderItem={renderProjectCard}
                   keyExtractor={item => item.id}
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 14,
-                  }}
+                  contentContainerStyle={S.horizontalListContent}
                 />
               </View>
             )}
@@ -597,40 +362,24 @@ export default function HomeScreen() {
             {data.getDashboardData.recentLocations.length === 0 ? (
               renderEmptyContent('locations')
             ) : (
-              <View style={{ marginTop: 24 }}>
-                <View
-                  style={{
-                    paddingHorizontal: 16,
-                    marginBottom: 12,
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
+              <View style={S.section}>
+                <View style={S.sectionHeader}>
                   <Text className="text-lg font-semibold text-foreground">
                     {t('home.recentLocations')}
                   </Text>
                   <TouchableOpacity>
-                    <Text
-                      className="text-sm font-semibold"
-                      style={{ color: colors.primary }}
-                    >
+                    <Text style={[S.seeAllText, { color: colors.primary }]}>
                       {t('home.seeAll')}
                     </Text>
                   </TouchableOpacity>
                 </View>
-
-                {/* Horizontal Locations List */}
                 <FlatList
                   data={data.getDashboardData.recentLocations}
                   renderItem={renderLocationCard}
                   keyExtractor={item => item.id}
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 14,
-                  }}
+                  contentContainerStyle={S.horizontalListContent}
                 />
               </View>
             )}
@@ -639,51 +388,111 @@ export default function HomeScreen() {
             {data.getDashboardData.recentImages.length === 0 ? (
               renderEmptyContent('images')
             ) : (
-              <View style={{ marginTop: 24 }}>
-                <View
-                  style={{
-                    paddingHorizontal: 16,
-                    marginBottom: 12,
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
+              <View style={S.section}>
+                <View style={S.sectionHeader}>
                   <Text className="text-lg font-semibold text-foreground">
                     {t('home.recentImages')}
                   </Text>
                   <TouchableOpacity>
-                    <Text
-                      className="text-sm font-semibold"
-                      style={{ color: colors.primary }}
-                    >
+                    <Text style={[S.seeAllText, { color: colors.primary }]}>
                       {t('home.seeAll')}
                     </Text>
                   </TouchableOpacity>
                 </View>
-
-                {/* Horizontal Images List */}
                 <FlatList
                   data={data.getDashboardData.recentImages}
                   renderItem={renderImageCard}
                   keyExtractor={item => item.id}
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 14,
-                  }}
+                  contentContainerStyle={S.horizontalListContent}
                 />
               </View>
             )}
-
-            {/* Empty State Hint */}
           </ScrollView>
 
-          {/* Floating Action Button Options */}
           <FabOptions />
         </Animated.View>
       </ScreenContainer>
     )
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const S = StyleSheet.create({
+  // Layout helpers
+  flex1: { flex: 1 },
+  flex1Ml3: { flex: 1, marginLeft: 12 },
+
+  // Loading
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+
+  // Empty state
+  emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 48, paddingHorizontal: 24 },
+
+  // Header
+  header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 },
+  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+  workspaceLabel: { fontSize: 13, marginBottom: 6 },
+  workspaceName: { fontSize: 24, fontWeight: '700', marginBottom: 12 },
+  teamRow: { flexDirection: 'row', alignItems: 'center' },
+  avatarsTouchable: { flexDirection: 'row', marginRight: 12 },
+  headerAvatar: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  headerAvatarText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
+  headerAvatarMore: { width: 32, height: 32, borderRadius: 16, marginLeft: -8, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  headerAvatarMoreText: { fontSize: 11, fontWeight: '600' },
+  inviteBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  inviteBtnText: { fontSize: 13, fontWeight: '600', color: '#FFFFFF' },
+  settingsBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginLeft: 12 },
+
+  // Scroll
+  scrollContent: { paddingBottom: 120 },
+
+  // Sections
+  section: { marginTop: 24 },
+  sectionTitleWrapper: { paddingHorizontal: 16, marginBottom: 12 },
+  sectionTitle: { fontSize: 18, fontWeight: '600' },
+  sectionHeader: { paddingHorizontal: 16, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  seeAllText: { fontSize: 14, fontWeight: '600' },
+  horizontalListContent: { paddingHorizontal: 16, paddingVertical: 14 },
+
+  // Status grid
+  statusGrid: { paddingHorizontal: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  statusCard: { width: '48%', aspectRatio: 1.5, borderRadius: 16, padding: 16, justifyContent: 'space-between' },
+  statusCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  statusCardLabel: { fontSize: 16, fontWeight: '600' },
+  statusIconBg: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  statusCardCount: { fontSize: 24, fontWeight: '700' },
+
+  // Project card
+  projectCardWrapper: { marginRight: 16, width: 300 },
+  projectCard: { borderRadius: 16, padding: 16 },
+  projectCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  statusBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999 },
+  statusBadgeText: { fontSize: 12, fontWeight: '600' },
+  progressSection: { marginBottom: 12 },
+  progressLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  progressTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 4 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  metaItem: { flexDirection: 'row', alignItems: 'center' },
+  metaText: { fontSize: 12, marginLeft: 6 },
+  projectCardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  avatarRow: { flexDirection: 'row' },
+  memberAvatar: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  memberAvatarText: { fontSize: 10, fontWeight: '600', color: '#FFFFFF' },
+
+  // Image card
+  imageCardWrapper: { marginRight: 12 },
+  imageCardInner: { borderRadius: 12, overflow: 'hidden' },
+  imageCardImg: { width: 140, height: 140 },
+  imageOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.6)', paddingVertical: 6, paddingHorizontal: 8 },
+
+  // Location card
+  locationCardWrapper: { marginRight: 16, width: 200 },
+  locationCard: { borderRadius: 16, padding: 16 },
+  locationCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  locationIconBg: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  locationFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
+  locationProjectsText: { fontSize: 12, marginLeft: 4 },
+});

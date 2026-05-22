@@ -273,7 +273,7 @@ function IllustrationCapture({ accent, accentSoft, bgColor, borderColor, isActiv
 
   return (
     <View style={styles.illBase}>
-      <View style={{ width: 220, height: 190, position: "relative" }}>
+      <View style={styles.illInner190}>
         {photos.map((p, i) => (
           <Animated.View
             key={i}
@@ -293,8 +293,8 @@ function IllustrationCapture({ accent, accentSoft, bgColor, borderColor, isActiv
               photoStyles[i],
             ]}
           >
-            <View style={{ width: "60%", height: 4, backgroundColor: accent + "50", borderRadius: 2, marginBottom: 6 }} />
-            <View style={{ width: "40%", height: 4, backgroundColor: accent + "30", borderRadius: 2 }} />
+            <View style={[styles.photoBar, styles.photoBarWide, { backgroundColor: accent + "50" }]} />
+            <View style={[styles.photoBar, styles.photoBarNarrow, { backgroundColor: accent + "30" }]} />
           </Animated.View>
         ))}
 
@@ -342,7 +342,7 @@ function IllustrationTeam({ accent, accentSoft, bgColor, borderColor, isActive }
 
   return (
     <View style={styles.illBase}>
-      <View style={{ width: 220, height: 210, position: "relative" }}>
+      <View style={styles.illInner210}>
         <View style={[styles.connLine, { top: 56, left: 106, width: 2, height: 60, backgroundColor: accent + "30" }]} />
         <View style={[styles.connLine, { top: 56, left: 56, width: 60, height: 2, backgroundColor: accent + "30", transform: [{ rotate: "35deg" }] }]} />
         <View style={[styles.connLine, { top: 56, left: 106, width: 60, height: 2, backgroundColor: accent + "30", transform: [{ rotate: "-35deg" }] }]} />
@@ -392,22 +392,22 @@ function IllustrationStart({ accent, accentSoft, bgColor, borderColor, isActive 
       <View style={[styles.ring, styles.ring2, { borderColor: accent + "28", backgroundColor: accent + "0C" }]} />
 
       <Animated.View style={[styles.projectCard, { backgroundColor: bgColor, borderColor, shadowColor: accent }, cardStyle]}>
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+        <View style={styles.projectCardHeader}>
           <View style={[styles.projectThumb, { backgroundColor: accent + "20" }]} />
-          <View style={{ flex: 1, marginLeft: 10 }}>
-            <View style={{ height: 8, width: "70%", backgroundColor: accent + "40", borderRadius: 4, marginBottom: 5 }} />
-            <View style={{ height: 6, width: "45%", backgroundColor: accent + "20", borderRadius: 3 }} />
+          <View style={styles.projectCardInfo}>
+            <View style={[styles.cardBarLg, { backgroundColor: accent + "40" }]} />
+            <View style={[styles.cardBarSm, { backgroundColor: accent + "20" }]} />
           </View>
           <View style={[styles.statusBadge, { backgroundColor: "#10B981" + "20" }]}>
-            <Text style={{ color: "#10B981", fontSize: 9, fontWeight: "700" }}>ACTIVO</Text>
+            <Text style={styles.statusText}>ACTIVO</Text>
           </View>
         </View>
-        <View style={{ height: 6, backgroundColor: borderColor, borderRadius: 3, overflow: "hidden", marginBottom: 8 }}>
-          <View style={{ height: "100%", width: "72%", backgroundColor: accent, borderRadius: 3 }} />
+        <View style={[styles.progressTrack, { backgroundColor: borderColor }]}>
+          <View style={[styles.progressFill, { backgroundColor: accent }]} />
         </View>
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <Text style={{ fontSize: 10, color: accentSoft }}>Progreso</Text>
-          <Text style={{ fontSize: 10, fontWeight: "700", color: accent }}>72%</Text>
+        <View style={styles.progressFooter}>
+          <Text style={[styles.progressLabel, { color: accentSoft }]}>Progreso</Text>
+          <Text style={[styles.progressValue, { color: accent }]}>72%</Text>
         </View>
       </Animated.View>
 
@@ -550,6 +550,23 @@ const styles = StyleSheet.create({
   checkTL: { top: 10, left: 10 },
   checkBR: { bottom: 10, right: 10 },
   checkText: { color: "#fff", fontSize: 14, fontWeight: "800" },
+
+  // Inline helpers
+  illInner190:      { width: 220, height: 190, position: "relative" },
+  illInner210:      { width: 220, height: 210, position: "relative" },
+  photoBar:         { borderRadius: 2 },
+  photoBarWide:     { width: "60%", height: 4, marginBottom: 6 },
+  photoBarNarrow:   { width: "40%", height: 4 },
+  projectCardHeader:{ flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  projectCardInfo:  { flex: 1, marginLeft: 10 },
+  cardBarLg:        { height: 8, width: "70%", borderRadius: 4, marginBottom: 5 },
+  cardBarSm:        { height: 6, width: "45%", borderRadius: 3 },
+  statusText:       { color: "#10B981", fontSize: 9, fontWeight: "700" },
+  progressTrack:    { height: 6, borderRadius: 3, overflow: "hidden", marginBottom: 8 },
+  progressFill:     { height: "100%", width: "72%", borderRadius: 3 },
+  progressFooter:   { flexDirection: "row", justifyContent: "space-between" },
+  progressLabel:    { fontSize: 10 },
+  progressValue:    { fontSize: 10, fontWeight: "700" },
 
   // Text content
   textContainer: {

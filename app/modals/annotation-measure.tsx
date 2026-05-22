@@ -68,7 +68,7 @@ export default function AnnotationMeasureModal() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={S.flex1}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ModalRoot>
@@ -149,4 +149,5 @@ const S = StyleSheet.create({
     borderRadius: 20, borderWidth: 1,
   },
   presetTxt: { fontSize: 14, fontWeight: "500" },
+  flex1: { flex: 1 },
 });

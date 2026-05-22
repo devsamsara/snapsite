@@ -1,4 +1,4 @@
-import { Text, View, TouchableOpacity, FlatList } from "react-native";
+import { Text, View, TouchableOpacity, FlatList, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { ScreenContainer } from "@/components/screen-container";
@@ -19,23 +19,21 @@ const ALL_PROJECTS = [
 ];
 
 export default function ProjectsScreen() {
-  const { t }                             = useTranslation();
-  const router                            = useRouter();
-  const colors                            = useColors();
-  const cardElevation                     = useCardStyle();
-  const [searchText, setSearchText]       = useState("");
+  const { t }                               = useTranslation();
+  const router                              = useRouter();
+  const colors                              = useColors();
+  const cardElevation                       = useCardStyle();
+  const [searchText, setSearchText]         = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
 
   const filteredProjects = ALL_PROJECTS.filter((project) => {
     const matchesSearch =
       project.name.toLowerCase().includes(searchText.toLowerCase()) ||
       project.location.toLowerCase().includes(searchText.toLowerCase());
-
     const matchesFilter =
       selectedFilter === "all" ||
       (selectedFilter === "active"    && project.status === "In Progress") ||
       (selectedFilter === "completed" && project.status === "Completed");
-
     return matchesSearch && matchesFilter;
   });
 
@@ -48,8 +46,8 @@ export default function ProjectsScreen() {
   const renderProjectCard = ({ item }: { item: typeof ALL_PROJECTS[0] }) => {
     const isCompleted = item.status === "Completed";
     return (
-      <TouchableOpacity onPress={() => router.push(`/project/${item.id}`)} style={{ marginBottom: 12 }}>
-        <View style={[{ borderRadius: 16, padding: 16 }, cardElevation]}>
+      <TouchableOpacity onPress={() => router.push(`/project/${item.id}`)} style={S.cardWrapper}>
+        <View style={[S.card, cardElevation]}>
           <View className="flex-row justify-between items-start mb-3">
             <View className="flex-1">
               <Text className="text-lg font-semibold text-foreground" numberOfLines={1}>{item.name}</Text>
@@ -84,7 +82,7 @@ export default function ProjectsScreen() {
           <View className="flex-row justify-between items-center">
             <View className="flex-row items-center">
               <IconSymbol name="photo.stack.fill" size={14} color={colors.muted} />
-              <Text className="text-xs text-muted" style={{ marginLeft: 6 }}>
+              <Text className="text-xs text-muted" style={S.photosLabel}>
                 {item.photos} {t('projects.photos')}
               </Text>
             </View>
@@ -100,11 +98,11 @@ export default function ProjectsScreen() {
       <View className="flex-1 bg-background">
         {/* Header */}
         <View className="px-4 pt-4 pb-4 border-b border-border">
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <View style={S.headerRow}>
             <Text className="text-3xl font-bold text-foreground">{t('projects.title')}</Text>
             <TouchableOpacity
               onPress={() => router.push("/create-project-location")}
-              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" }}
+              style={[S.addBtn, { backgroundColor: colors.primary }]}
             >
               <MaterialIcons name="add" size={22} color="#FFF" />
             </TouchableOpacity>
@@ -115,7 +113,7 @@ export default function ProjectsScreen() {
             placeholder={t('projects.searchPlaceholder')}
             value={searchText}
             onChangeText={setSearchText}
-            style={{ marginBottom: 12 }}
+            style={S.searchBar}
           />
 
           {/* Filter Buttons */}
@@ -146,7 +144,7 @@ export default function ProjectsScreen() {
           data={filteredProjects}
           renderItem={renderProjectCard}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }}
+          contentContainerStyle={S.listContent}
           scrollEnabled={true}
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-12">
@@ -161,3 +159,13 @@ export default function ProjectsScreen() {
     </ScreenContainer>
   );
 }
+
+const S = StyleSheet.create({
+  cardWrapper:  { marginBottom: 12 },
+  card:         { borderRadius: 16, padding: 16 },
+  photosLabel:  { marginLeft: 6 },
+  headerRow:    { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  addBtn:       { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  searchBar:    { marginBottom: 12 },
+  listContent:  { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 },
+});

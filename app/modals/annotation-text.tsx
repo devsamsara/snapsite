@@ -79,7 +79,7 @@ export default function AnnotationTextModal() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={S.flex1}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
     >
@@ -171,10 +171,10 @@ export default function AnnotationTextModal() {
 
         {/* ── Footer ── */}
         <ModalFooter row>
-          <View style={{ flex: 1 }}>
+          <View style={S.flex1}>
             <Button title={t('common.cancel')} onPress={handleCancel} variant="secondary" size="md" />
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={S.flex1}>
             <Button
               title={t('common.add')}
               onPress={handleSubmit(onConfirm)}
@@ -192,6 +192,7 @@ export default function AnnotationTextModal() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const S = StyleSheet.create({
+  flex1: { flex: 1 },
   scroll: { flex: 1 },
   preview: {
     borderRadius: 12, borderWidth: 1,

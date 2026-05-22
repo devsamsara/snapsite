@@ -198,7 +198,7 @@ export default function ProjectExportModal() {
       >
         <MaterialIcons name={icon as any} size={18} color={colors.primary} />
       </View>
-      <View style={{ flex: 1 }}>
+      <View style={S.flex1}>
         <Text style={[S.rowLabel, { color: colors.foreground }]}>{label}</Text>
         <Text style={[S.rowDesc, { color: colors.muted }]}>{desc}</Text>
       </View>
@@ -260,7 +260,7 @@ export default function ProjectExportModal() {
               <View style={[S.rowIcon, { backgroundColor: colors.primary + "14" }]}>
                 <MaterialIcons name="group" size={18} color={colors.primary} />
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={S.flex1}>
                 <Text style={[S.rowLabel, { color: colors.foreground }]}>
                   {t("projectExport.includeTeam")}
                 </Text>
@@ -420,4 +420,5 @@ const S = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
+  flex1: { flex: 1 },
 });

@@ -88,7 +88,7 @@ export default function ProjectDescriptionModal() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={S.flex1}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
     >
@@ -116,7 +116,7 @@ export default function ProjectDescriptionModal() {
               autoCapitalize="sentences"
               returnKeyType="default"
               maxLength={1000}
-              style={{ minHeight: 180, textAlignVertical: "top" } as any}
+              style={S.textarea as any}
             />
 
             {/* ── Char counter ── */}
@@ -180,4 +180,6 @@ const S = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
+  textarea: { minHeight: 180, textAlignVertical: "top" },
+  flex1: { flex: 1 },
 });

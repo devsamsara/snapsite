@@ -259,7 +259,7 @@ export default function ProjectSettingsModal() {
               >
                 <MaterialIcons name="folder" size={22} color={colors.primary} />
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={S.flex1}>
                 <Text
                   style={[S.infoName, { color: colors.foreground }]}
                   numberOfLines={1}
@@ -267,14 +267,7 @@ export default function ProjectSettingsModal() {
                   {projectName ?? t("projectSettings.defaultProject")}
                 </Text>
                 {!!projectLocation && (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4,
-                      marginTop: 2,
-                    }}
-                  >
+                  <View style={S.locationRow}>
                     <MaterialIcons
                       name="location-on"
                       size={12}
@@ -401,6 +394,9 @@ const S = StyleSheet.create({
   scrollContent: {
     paddingBottom: 32,
   },
+
+  flex1: { flex: 1 },
+  locationRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
 
   infoBox: {
     flexDirection: "row",

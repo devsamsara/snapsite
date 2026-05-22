@@ -153,7 +153,7 @@ export default function ProjectContactsModal() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={S.flex1}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
     >
@@ -293,7 +293,7 @@ export default function ProjectContactsModal() {
                           {contact.initials}
                         </Text>
                       </View>
-                      <View style={{ flex: 1 }}>
+                      <View style={S.flex1}>
                         <Text style={[S.contactName, { color: colors.foreground }]}>
                           {contact.name}
                         </Text>
@@ -469,4 +469,5 @@ const S = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
+  flex1: { flex: 1 },
 });

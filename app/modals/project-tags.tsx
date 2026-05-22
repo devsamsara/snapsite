@@ -132,7 +132,7 @@ export default function ProjectTagsModal() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={S.flex1}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
     >
@@ -151,7 +151,7 @@ export default function ProjectTagsModal() {
           >
             {/* ── Add tag input ── */}
             <View style={S.addRow}>
-              <View style={{ flex: 1 }}>
+              <View style={S.flex1}>
                 <AppInput
                   name="tag"
                   control={control}
@@ -333,4 +333,5 @@ const S = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
+  flex1: { flex: 1 },
 });
