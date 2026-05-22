@@ -466,7 +466,7 @@ export type RecentProject = {
   documentsCount: Scalars['Int']['output'];
   id: Scalars['ID']['output'];
   location: Scalars['String']['output'];
-  members: Array<User>;
+  members: Array<Maybe<UserSummary>>;
   name: Scalars['String']['output'];
   progress: Scalars['Int']['output'];
   status: Scalars['String']['output'];
@@ -588,6 +588,13 @@ export enum UserStatus {
   Inactive = 'inactive'
 }
 
+export type UserSummary = {
+  __typename?: 'UserSummary';
+  avatarUrl?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+};
+
 export type ConfirmAccountMutationVariables = Exact<{
   token: Scalars['String']['input'];
 }>;
@@ -619,7 +626,7 @@ export type RegisterMutation = { __typename?: 'Mutation', register: { __typename
 export type CurrentCompanyQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type CurrentCompanyQuery = { __typename?: 'Query', getDashboardData: { __typename?: 'DashboardData', currentCompany: { __typename?: 'Company', id: string, name: string, users: Array<{ __typename?: 'User', id: string, name: string, avatarUrl?: string | null }> }, projectStatusData: Array<{ __typename?: 'ProjectStatusData', color: string, count: number, nameKey: string } | null>, recentImages: Array<{ __typename?: 'RecentImage', date: string, id: string, projectName: string, url: string }>, recentLocations: Array<{ __typename?: 'RecentLocation', id: string, lastVisit: string, name: string, projectsCount: number }>, recentProjects: Array<{ __typename?: 'RecentProject', id: string, name: string, location: string, progress: number, status: string, documentsCount: number, createdAt: string, members: Array<{ __typename?: 'User', id: string, name: string }> }> } };
+export type CurrentCompanyQuery = { __typename?: 'Query', getDashboardData: { __typename?: 'DashboardData', currentCompany: { __typename?: 'Company', id: string, name: string, users: Array<{ __typename?: 'User', id: string, name: string, avatarUrl?: string | null }> }, projectStatusData: Array<{ __typename?: 'ProjectStatusData', color: string, count: number, nameKey: string } | null>, recentImages: Array<{ __typename?: 'RecentImage', date: string, id: string, projectName: string, url: string }>, recentLocations: Array<{ __typename?: 'RecentLocation', id: string, lastVisit: string, name: string, projectsCount: number }>, recentProjects: Array<{ __typename?: 'RecentProject', id: string, name: string, location: string, progress: number, status: string, documentsCount: number, commentsCount: number, createdAt: string, members: Array<{ __typename?: 'UserSummary', id: string, name: string } | null> }> } };
 
 export type CreateCompanyMutationVariables = Exact<{
   input: CreateCompanyInput;

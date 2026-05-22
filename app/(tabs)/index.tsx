@@ -22,136 +22,17 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { CurrentCompanyDocument, ProjectStatusData } from '@/gql/graphql';
+import {
+  CurrentCompanyDocument,
+  Maybe,
+  ProjectStatusData,
+  RecentImage,
+  RecentLocation,
+  RecentProject,
+  UserSummary,
+} from '@/gql/graphql';
 import { useQuery } from '@apollo/client/react';
 import { useAuth } from '@/lib/auth-context';
-
-// Mock data for recent projects
-const RECENT_PROJECTS = [
-  {
-    id: '1',
-    name: 'Fintech App UI',
-    location: 'Downtown, NYC',
-    progress: 67,
-    documents: 6,
-    comments: 16,
-    date: '20 Oct, 2026',
-    status: 'Progress',
-    color: '#3B82F6',
-    teamMembers: ['A', 'B', 'C'],
-  },
-  {
-    id: '2',
-    name: 'Edtech App Design',
-    location: 'Queens, NY',
-    progress: 45,
-    documents: 2,
-    comments: 8,
-    date: '22 Oct, 2026',
-    status: 'Progress',
-    color: '#10B981',
-    teamMembers: ['D', 'E', 'F'],
-  },
-  {
-    id: '3',
-    name: 'Roof Installation',
-    location: 'Brooklyn, NY',
-    progress: 100,
-    documents: 12,
-    comments: 45,
-    date: '15 Oct, 2026',
-    status: 'Completed',
-    color: '#8B5CF6',
-    teamMembers: ['G', 'H'],
-  },
-  {
-    id: '4',
-    name: 'Bridge Construction',
-    location: 'Manhattan, NY',
-    progress: 75,
-    documents: 8,
-    comments: 24,
-    date: '18 Oct, 2026',
-    status: 'Progress',
-    color: '#F59E0B',
-    teamMembers: ['I', 'J', 'K', 'L'],
-  },
-];
-// Mock data for recent images
-const RECENT_IMAGES = [
-  {
-    id: "1",
-    projectName: "Office Renovation",
-    url: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=300&h=300&fit=crop",
-    date: "2 hours ago",
-  },
-  {
-    id: "2",
-    projectName: "Parking Lot Repair",
-    url: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300&h=300&fit=crop",
-    date: "5 hours ago",
-  },
-  {
-    id: "3",
-    projectName: "Roof Installation",
-    url: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=300&h=300&fit=crop",
-    date: "Yesterday",
-  },
-  {
-    id: "4",
-    projectName: "Bridge Construction",
-    url: "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=300&h=300&fit=crop",
-    date: "Yesterday",
-  },
-  {
-    id: "5",
-    projectName: "Office Renovation",
-    url: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=300&h=300&fit=crop",
-    date: "2 days ago",
-  },
-  {
-    id: "6",
-    projectName: "Parking Lot Repair",
-    url: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=300&h=300&fit=crop",
-    date: "3 days ago",
-  },
-];
-
-// Mock data for project statuses (Today)
-const PROJECT_STATUSES = [
-  { id: '1', nameKey: 'home.statusOngoing', count: 3, color: '#8B5CF6' },
-  { id: '2', nameKey: 'home.statusPaused', count: 1, color: '#F59E0B' },
-  { id: '3', nameKey: 'home.statusComplete', count: 5, color: '#10B981' },
-  { id: '4', nameKey: 'home.statusCancel', count: 2, color: '#EF4444' },
-];
-
-// Mock data for recent locations
-const RECENT_LOCATIONS = [
-  {
-    id: '1',
-    name: 'Downtown, NYC',
-    projects: 5,
-    lastVisit: 'Today',
-  },
-  {
-    id: '2',
-    name: 'Brooklyn, NY',
-    projects: 3,
-    lastVisit: 'Yesterday',
-  },
-  {
-    id: '3',
-    name: 'Queens, NY',
-    projects: 2,
-    lastVisit: '3 days ago',
-  },
-  {
-    id: '4',
-    name: 'Manhattan, NY',
-    projects: 4,
-    lastVisit: '1 week ago',
-  },
-];
 
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -161,14 +42,10 @@ export default function HomeScreen() {
   const cardSmElevation = useCardStyleSm();
   const [searchQuery, setSearchQuery] = useState('');
   const { isLoading: authLoading } = useAuth();
-  const {data, loading, error} = useQuery(CurrentCompanyDocument, {
-    // Do NOT fire this request until AuthProvider has finished restoring
-    // the token from SecureStore. Without this guard the query races against
-    // restoreAuthToken() and goes out without the Authorization header.
+  const { data, loading, error } = useQuery(CurrentCompanyDocument, {
     skip: authLoading,
   });
 
-  // ── Entrance animation: mirrors onboarding exit (scale-down + fade-in) ──
   const enterOpacity = useSharedValue(0);
   const enterScale = useSharedValue(1.06);
 
@@ -222,9 +99,7 @@ export default function HomeScreen() {
     locations: 'map.fill',
   };
 
-  const renderEmptyContent = (
-    id: 'projects' | 'images' | 'locations'
-  ) => {
+  const renderEmptyContent = (id: 'projects' | 'images' | 'locations') => {
     const titleKey = `home.empty${id.charAt(0).toUpperCase() + id.slice(1)}` as const;
     const hintKey  = `home.empty${id.charAt(0).toUpperCase() + id.slice(1)}Hint` as const;
     return (
@@ -240,11 +115,7 @@ export default function HomeScreen() {
     );
   };
 
-  const renderProjectCard = ({
-    item,
-  }: {
-    item: (typeof RECENT_PROJECTS)[0];
-  }) => (
+  const renderProjectCard = ({ item }: { item: RecentProject }) => (
     <TouchableOpacity
       onPress={() => handleProjectTap(item.id)}
       style={{ marginRight: 16, width: 300 }}
@@ -309,7 +180,7 @@ export default function HomeScreen() {
           <View className="flex-row items-center">
             <IconSymbol name="doc.fill" size={14} color={colors.muted} />
             <Text className="text-xs text-muted" style={{ marginLeft: 6 }}>
-              {item.documents} {t('home.documents')}
+              {item.documentsCount} {t('home.documents')}
             </Text>
           </View>
           <View className="flex-row items-center">
@@ -319,7 +190,7 @@ export default function HomeScreen() {
               color={colors.muted}
             />
             <Text className="text-xs text-muted" style={{ marginLeft: 6 }}>
-              {item.comments} {t('home.comments')}
+              {item.commentsCount} {t('home.comments')}
             </Text>
           </View>
         </View>
@@ -328,37 +199,47 @@ export default function HomeScreen() {
         <View className="flex-row justify-between items-center">
           {/* Team Avatars */}
           <View className="flex-row">
-            {item.teamMembers.slice(0, 3).map((member, index) => (
-              <View
-                key={index}
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 12,
-                  backgroundColor: colors.primary,
-                  marginLeft: index > 0 ? -6 : 0,
-                  borderWidth: 2,
-                  borderColor: colors.surface,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text
-                  style={{ fontSize: 10, fontWeight: '600', color: '#FFFFFF' }}
-                >
-                  {member}
-                </Text>
-              </View>
-            ))}
+            {item.members
+              .slice(0, 3)
+              .map((member: Maybe<UserSummary>, index: number) => {
+                return (
+                  member && (
+                    <View
+                      key={index}
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 12,
+                        backgroundColor: colors.primary,
+                        marginLeft: index > 0 ? -6 : 0,
+                        borderWidth: 2,
+                        borderColor: colors.surface,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          fontWeight: '600',
+                          color: '#FFFFFF',
+                        }}
+                      >
+                        {member.name}
+                      </Text>
+                    </View>
+                  )
+                );
+              })}
           </View>
           {/* Date */}
-          <Text className="text-xs text-muted">{item.date}</Text>
+          <Text className="text-xs text-muted">{item.createdAt}</Text>
         </View>
       </View>
     </TouchableOpacity>
   );
 
-  const renderImageCard = ({ item }: { item: (typeof RECENT_IMAGES)[0] }) => (
+  const renderImageCard = ({ item }: { item: RecentImage }) => (
     <TouchableOpacity
       onPress={() => handleImageTap(item.id)}
       style={{ marginRight: 12 }}
@@ -392,11 +273,7 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
-  const renderLocationCard = ({
-    item,
-  }: {
-    item: (typeof RECENT_LOCATIONS)[0];
-  }) => (
+  const renderLocationCard = ({ item }: { item: RecentLocation }) => (
     <TouchableOpacity
       onPress={() => handleLocationTap(item.id)}
       style={{ marginRight: 16, width: 200 }}
@@ -422,7 +299,7 @@ export default function HomeScreen() {
         <View className="flex-row items-center mt-2">
           <IconSymbol name="folder.fill" size={12} color={colors.muted} />
           <Text className="text-xs text-muted" style={{ marginLeft: 4 }}>
-            {item.projects} {t('home.projects')}
+            {item.projectsCount} {t('home.projects')}
           </Text>
         </View>
       </View>
@@ -471,7 +348,7 @@ export default function HomeScreen() {
                     marginBottom: 12,
                   }}
                 >
-                  {t('home.workspaceName')}
+                  {data.getDashboardData.currentCompany.name}
                 </Text>
                 {/* Team Avatars */}
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -608,70 +485,74 @@ export default function HomeScreen() {
                 }}
               >
                 {data.getDashboardData.projectStatusData.map(
-                  (status: any, index: number) => (
-                    <TouchableOpacity
-                      key={`${status.keyname}_ ${index}`}
-                      style={[
-                        {
-                          width: '48%',
-                          aspectRatio: 1.5,
-                          borderRadius: 16,
-                          padding: 16,
-                          justifyContent: 'space-between',
-                        },
-                        cardSmElevation,
-                      ]}
-                    >
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 16,
-                            fontWeight: '600',
-                            color: colors.foreground,
-                          }}
+                  (item: Maybe<ProjectStatusData>, index: number) => {
+                    return (
+                      item && (
+                        <TouchableOpacity
+                          key={`${item.nameKey}_ ${index}`}
+                          style={[
+                            {
+                              width: '48%',
+                              aspectRatio: 1.5,
+                              borderRadius: 16,
+                              padding: 16,
+                              justifyContent: 'space-between',
+                            },
+                            cardSmElevation,
+                          ]}
                         >
-                          {t(status.nameKey)}
-                        </Text>
-                        <View
-                          style={{
-                            width: 24,
-                            height: 24,
-                            borderRadius: 12,
-                            backgroundColor: colors.primary + '20',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <IconSymbol
-                            name="plus"
-                            size={14}
-                            color={colors.primary}
-                          />
-                        </View>
-                      </View>
-                      <Text
-                        style={{
-                          fontSize: 24,
-                          fontWeight: '700',
-                          color: colors.foreground,
-                        }}
-                      >
-                        {status.count}
-                      </Text>
-                    </TouchableOpacity>
-                  )
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              justifyContent: 'space-between',
+                              alignItems: 'flex-start',
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 16,
+                                fontWeight: '600',
+                                color: colors.foreground,
+                              }}
+                            >
+                              {t(item.nameKey)}
+                            </Text>
+                            <View
+                              style={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: 12,
+                                backgroundColor: colors.primary + '20',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <IconSymbol
+                                name="plus"
+                                size={14}
+                                color={colors.primary}
+                              />
+                            </View>
+                          </View>
+                          <Text
+                            style={{
+                              fontSize: 24,
+                              fontWeight: '700',
+                              color: colors.foreground,
+                            }}
+                          >
+                            {item.count}
+                          </Text>
+                        </TouchableOpacity>
+                      )
+                    );
+                  }
                 )}
               </View>
             </View>
 
             {/* Recent Projects Section */}
-            {RECENT_PROJECTS.length === 0 ? (
+            {data.getDashboardData.recentProjects.length === 0 ? (
               renderEmptyContent('projects')
             ) : (
               <View style={{ marginTop: 24 }}>
@@ -699,7 +580,7 @@ export default function HomeScreen() {
 
                 {/* Horizontal Projects List */}
                 <FlatList
-                  data={RECENT_PROJECTS}
+                  data={data.getDashboardData.recentProjects}
                   renderItem={renderProjectCard}
                   keyExtractor={item => item.id}
                   horizontal
@@ -713,7 +594,7 @@ export default function HomeScreen() {
             )}
 
             {/* Recent Locations Section */}
-            {RECENT_LOCATIONS.length === 0 ? (
+            {data.getDashboardData.recentLocations.length === 0 ? (
               renderEmptyContent('locations')
             ) : (
               <View style={{ marginTop: 24 }}>
@@ -741,7 +622,7 @@ export default function HomeScreen() {
 
                 {/* Horizontal Locations List */}
                 <FlatList
-                  data={RECENT_LOCATIONS}
+                  data={data.getDashboardData.recentLocations}
                   renderItem={renderLocationCard}
                   keyExtractor={item => item.id}
                   horizontal
@@ -755,7 +636,7 @@ export default function HomeScreen() {
             )}
 
             {/* Recent Images Section */}
-            {RECENT_IMAGES.length === 0 ? (
+            {data.getDashboardData.recentImages.length === 0 ? (
               renderEmptyContent('images')
             ) : (
               <View style={{ marginTop: 24 }}>
@@ -783,7 +664,7 @@ export default function HomeScreen() {
 
                 {/* Horizontal Images List */}
                 <FlatList
-                  data={RECENT_IMAGES}
+                  data={data.getDashboardData.recentImages}
                   renderItem={renderImageCard}
                   keyExtractor={item => item.id}
                   horizontal
