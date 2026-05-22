@@ -216,6 +216,12 @@ export default function HomeScreen() {
     router.push('/modals/team-members');
   };
 
+  const EMPTY_ICONS: Record<'projects' | 'images' | 'locations', string> = {
+    projects: 'folder.badge.plus',
+    images:   'photo.on.rectangle.angled',
+    locations: 'map.fill',
+  };
+
   const renderEmptyContent = (
     id: 'projects' | 'images' | 'locations'
   ) => {
@@ -223,7 +229,7 @@ export default function HomeScreen() {
     const hintKey  = `home.empty${id.charAt(0).toUpperCase() + id.slice(1)}Hint` as const;
     return (
       <View className="flex-1 items-center justify-center py-12 px-6">
-        <IconSymbol name="photo.stack.fill" size={48} color={colors.border} />
+        <IconSymbol name={EMPTY_ICONS[id] as any} size={48} color={colors.border} />
         <Text className="text-lg font-semibold text-foreground mt-4">
           {t(titleKey)}
         </Text>
