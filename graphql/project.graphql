@@ -1,0 +1,23 @@
+query GetMyProjects {
+    getMyProjects {
+        createdAt
+        description
+        id
+        location
+        name
+        progress
+        startDate
+        thumbnail
+    }
+}
+
+mutation CreateProject($input: CreateProjectInput!) {
+    createProject(input: $input) {
+        id
+        location
+        longitude
+        latitude
+        name
+        thumbnail
+    }
+}

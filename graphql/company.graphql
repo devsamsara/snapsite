@@ -46,6 +46,25 @@ query CurrentCompany {
   }
 }
 
+query Members {
+  getCompanyMembers {
+    members {
+      id
+      isOnline
+      name
+      role
+      projects {
+        id
+        name
+        progress
+        status
+      }
+    }
+    onlineCount
+    totalProjects
+  }
+}
+
 # =============================================================================
 # MUTATIONS
 # =============================================================================

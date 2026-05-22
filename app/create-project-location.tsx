@@ -101,6 +101,7 @@ export default function CreateProjectLocationScreen() {
         latitudeDelta: 0.005,
         longitudeDelta: 0.005,
       };
+
       setRegion(newRegion);
       setSelectedLocation({
         latitude: currentLocation.coords.latitude,
@@ -116,7 +117,8 @@ export default function CreateProjectLocationScreen() {
       const result = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
       if (result.length > 0) {
         const addr = result[0];
-        const fullAddress = `${addr.street || ''} ${addr.streetNumber || ''}`;
+        const fullAddress = `${addr.street || ''} ${addr.streetNumber || ''}, ${addr.postalCode || ''}`;
+        console.log(fullAddress);
         setAddress(fullAddress.trim() || t('createProject.unknownLocation'));
         setCity(addr.city || addr.subregion || '');
         setPostalCode(addr.postalCode || '');

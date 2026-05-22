@@ -171,7 +171,7 @@ export default function HomeScreen() {
                     },
                   ]}
                 >
-                  <Text style={S.memberAvatarText}>{member.name}</Text>
+                  <Text style={S.memberAvatarText}>{member.name.at(0)}</Text>
                 </View>
               )
             )}
