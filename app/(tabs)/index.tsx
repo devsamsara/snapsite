@@ -34,6 +34,7 @@ import {
 } from '@/gql/graphql';
 import { useQuery } from '@apollo/client/react';
 import { useAuth } from '@/lib/auth-context';
+import { HomeSkeleton } from '@/components/home-skeleton';
 
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -220,11 +221,7 @@ export default function HomeScreen() {
   );
 
   if (authLoading || loading) {
-    return (
-      <View style={S.loadingContainer}>
-        <Text className="text-muted">{t('home.loading')}</Text>
-      </View>
-    );
+    return <HomeSkeleton />;
   }
 
   if (error) {
@@ -423,9 +420,6 @@ const S = StyleSheet.create({
   // Layout helpers
   flex1: { flex: 1 },
   flex1Ml3: { flex: 1, marginLeft: 12 },
-
-  // Loading
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   // Empty state
   emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 48, paddingHorizontal: 24 },
