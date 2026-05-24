@@ -215,8 +215,8 @@ export function AppAlertProvider({ children }: { children?: React.ReactNode }) {
           >
             {/* ── Icono de tipo ── */}
             {typeConf && (
-              <View style={[S.iconWrap, { backgroundColor: iconColor + '18' }]}>
-                <MaterialIcons name={typeConf.icon} size={28} color={iconColor} />
+              <View style={S.iconWrap}>
+                <MaterialIcons name={typeConf.icon} size={32} color={iconColor} />
               </View>
             )}
 
@@ -380,14 +380,13 @@ const S = StyleSheet.create({
     // Elevación Android
     elevation: 12,
   },
-  // Icono de tipo
+  // Icono de tipo — solo el icono, sin fondo relleno
   iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   // Textos
   title: {
