@@ -712,5 +712,8 @@
     "client": "Cliente",
     "technician": "Técnico",
     "viewer": "Observador"
+  },
+  "locationMap": {
+    "openInMaps": "Abrir en Maps"
   }
 }

@@ -26,6 +26,8 @@ query CurrentCompany {
     recentLocations {
       id
       lastVisit
+      latitude
+      longitude
       name
       projectsCount
     }

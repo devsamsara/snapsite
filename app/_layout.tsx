@@ -263,6 +263,13 @@ export default function RootLayout() {
                                     contentStyle: {backgroundColor: sheetBg},
                                 }}
                             />
+                            <Stack.Screen
+                                name="location-map"
+                                options={{
+                                    headerShown: false,
+                                    animation: 'slide_from_right',
+                                }}
+                            />
                         </Stack>
                         <StatusBar style="auto"/>
                 </AuthProvider>

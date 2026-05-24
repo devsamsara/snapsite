@@ -72,7 +72,19 @@ export default function HomeScreen() {
   const handleSettingsTap = () => router.push('/settings');
   const handleProjectTap = (projectId: string) => router.push(`/project/${projectId}`);
   const handleImageTap = (_imageId: string) => { /* TODO */ };
-  const handleLocationTap = (_locationId: string) => { /* TODO */ };
+  const handleLocationTap = (item: RecentLocation) => {
+    router.push({
+      pathname: '/location-map',
+      params: {
+        id: item.id,
+        name: item.name,
+        lastVisit: item.lastVisit,
+        projectsCount: String(item.projectsCount),
+        latitude: item.latitude != null ? String(item.latitude) : '',
+        longitude: item.longitude != null ? String(item.longitude) : '',
+      },
+    });
+  };
   const handleInviteTap = () => router.push('/modals/invite-global');
   const handleAvatarsTap = () => router.push('/modals/team-members');
 
@@ -199,7 +211,7 @@ export default function HomeScreen() {
   );
 
   const renderLocationCard = ({ item }: { item: RecentLocation }) => (
-    <TouchableOpacity onPress={() => handleLocationTap(item.id)} style={S.locationCardWrapper}>
+    <TouchableOpacity onPress={() => handleLocationTap(item)} style={S.locationCardWrapper}>
       <View style={[S.locationCard, cardElevation]}>
         <View style={S.locationCardHeader}>
           <View style={[S.locationIconBg, { backgroundColor: colors.primary + '20' }]}>
