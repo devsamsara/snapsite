@@ -374,7 +374,7 @@ export type Project = {
   photos: Array<Photo>;
   progress: Scalars['Int']['output'];
   startDate: Scalars['String']['output'];
-  status: Scalars['String']['output'];
+  status: ProjectStatus;
   thumbnail?: Maybe<Scalars['String']['output']>;
   timeline: Array<TimelineEvent>;
   updatedAt: Scalars['String']['output'];
@@ -386,6 +386,14 @@ export type ProjectFiltersInput = {
   query?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
 };
+
+export enum ProjectStatus {
+  Active = 'active',
+  Canceled = 'canceled',
+  Completed = 'completed',
+  Ongoing = 'ongoing',
+  Paused = 'paused'
+}
 
 export type ProjectStatusData = {
   __typename?: 'ProjectStatusData';
@@ -604,8 +612,11 @@ export type UserFiltersInput = {
 
 export enum UserRole {
   Admin = 'admin',
+  Client = 'client',
   Root = 'root',
-  User = 'user'
+  Technician = 'technician',
+  User = 'user',
+  Viewer = 'viewer'
 }
 
 export enum UserStatus {
@@ -647,7 +658,7 @@ export type RegisterMutationVariables = Exact<{
 }>;
 
 
-export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'AuthPayload', refreshToken: string, token: string, user: { __typename?: 'User', avatarUrl?: string | null, createdAt: string, id: string, email: string, lastName?: string | null, name: string, nickname?: string | null, phone?: string | null, role: UserRole, status: UserStatus, updatedAt: string, company?: { __typename?: 'Company', id: string, name: string } | null, projects?: Array<{ __typename?: 'Project', createdAt: string, description: string, endDate?: string | null, id: string, latitude?: number | null, location: string, longitude?: number | null, name: string, progress: number, startDate: string, status: string, thumbnail?: string | null, members: Array<{ __typename?: 'User', id: string, email: string, name: string, lastName?: string | null }>, notes: Array<{ __typename?: 'Note', author: { __typename?: 'User', company?: { __typename?: 'Company', id: string, name: string } | null } }>, photos: Array<{ __typename?: 'Photo', id: string, url: string, createdAt: string }>, timeline: Array<{ __typename?: 'TimelineEvent', id: string, description: string, createdAt: string, photoUrl?: string | null, title: string, type: TimelineEventType, updatedAt: string, project: { __typename?: 'Project', id: string, description: string } }> } | null> | null } } };
+export type RegisterMutation = { __typename?: 'Mutation', register: { __typename?: 'AuthPayload', refreshToken: string, token: string, user: { __typename?: 'User', avatarUrl?: string | null, createdAt: string, id: string, email: string, lastName?: string | null, name: string, nickname?: string | null, phone?: string | null, role: UserRole, status: UserStatus, updatedAt: string, company?: { __typename?: 'Company', id: string, name: string } | null, projects?: Array<{ __typename?: 'Project', createdAt: string, description: string, endDate?: string | null, id: string, latitude?: number | null, location: string, longitude?: number | null, name: string, progress: number, startDate: string, status: ProjectStatus, thumbnail?: string | null, members: Array<{ __typename?: 'User', id: string, email: string, name: string, lastName?: string | null }>, notes: Array<{ __typename?: 'Note', author: { __typename?: 'User', company?: { __typename?: 'Company', id: string, name: string } | null } }>, photos: Array<{ __typename?: 'Photo', id: string, url: string, createdAt: string }>, timeline: Array<{ __typename?: 'TimelineEvent', id: string, description: string, createdAt: string, photoUrl?: string | null, title: string, type: TimelineEventType, updatedAt: string, project: { __typename?: 'Project', id: string, description: string } }> } | null> | null } } };
 
 export type CurrentCompanyQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -681,7 +692,7 @@ export type CreateProjectMutation = { __typename?: 'Mutation', createProject: { 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MeQuery = { __typename?: 'Query', me: { __typename?: 'User', avatarUrl?: string | null, createdAt: string, id: string, email: string, lastName?: string | null, name: string, nickname?: string | null, phone?: string | null, role: UserRole, status: UserStatus, updatedAt: string, company?: { __typename?: 'Company', id: string, name: string } | null, projects?: Array<{ __typename?: 'Project', createdAt: string, description: string, endDate?: string | null, id: string, latitude?: number | null, location: string, longitude?: number | null, name: string, progress: number, startDate: string, status: string, thumbnail?: string | null, members: Array<{ __typename?: 'User', id: string, email: string, name: string, lastName?: string | null }>, notes: Array<{ __typename?: 'Note', author: { __typename?: 'User', company?: { __typename?: 'Company', id: string, name: string } | null } }>, photos: Array<{ __typename?: 'Photo', id: string, url: string, createdAt: string }>, timeline: Array<{ __typename?: 'TimelineEvent', id: string, description: string, createdAt: string, photoUrl?: string | null, title: string, type: TimelineEventType, updatedAt: string, project: { __typename?: 'Project', id: string, description: string } }> } | null> | null } };
+export type MeQuery = { __typename?: 'Query', me: { __typename?: 'User', avatarUrl?: string | null, createdAt: string, id: string, email: string, lastName?: string | null, name: string, nickname?: string | null, phone?: string | null, role: UserRole, status: UserStatus, updatedAt: string, company?: { __typename?: 'Company', id: string, name: string } | null, projects?: Array<{ __typename?: 'Project', createdAt: string, description: string, endDate?: string | null, id: string, latitude?: number | null, location: string, longitude?: number | null, name: string, progress: number, startDate: string, status: ProjectStatus, thumbnail?: string | null, members: Array<{ __typename?: 'User', id: string, email: string, name: string, lastName?: string | null }>, notes: Array<{ __typename?: 'Note', author: { __typename?: 'User', company?: { __typename?: 'Company', id: string, name: string } | null } }>, photos: Array<{ __typename?: 'Photo', id: string, url: string, createdAt: string }>, timeline: Array<{ __typename?: 'TimelineEvent', id: string, description: string, createdAt: string, photoUrl?: string | null, title: string, type: TimelineEventType, updatedAt: string, project: { __typename?: 'Project', id: string, description: string } }> } | null> | null } };
 
 export type DeleteUserMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -703,4 +714,4 @@ export type UpdateUserMutationVariables = Exact<{
 }>;
 
 
-export type UpdateUserMutation = { __typename?: 'Mutation', updateUser: { __typename?: 'User', avatarUrl?: string | null, createdAt: string, id: string, email: string, lastName?: string | null, name: string, nickname?: string | null, phone?: string | null, role: UserRole, status: UserStatus, updatedAt: string, company?: { __typename?: 'Company', id: string, name: string, users: Array<{ __typename?: 'User', id: string, name: string }> } | null, projects?: Array<{ __typename?: 'Project', createdAt: string, description: string, endDate?: string | null, id: string, latitude?: number | null, location: string, longitude?: number | null, name: string, progress: number, startDate: string, status: string, thumbnail?: string | null, members: Array<{ __typename?: 'User', id: string, email: string, name: string, lastName?: string | null }>, notes: Array<{ __typename?: 'Note', author: { __typename?: 'User', company?: { __typename?: 'Company', id: string, name: string } | null } }>, photos: Array<{ __typename?: 'Photo', id: string, url: string, createdAt: string }>, timeline: Array<{ __typename?: 'TimelineEvent', id: string, description: string, createdAt: string, photoUrl?: string | null, title: string, type: TimelineEventType, updatedAt: string, project: { __typename?: 'Project', id: string, description: string } }> } | null> | null } };
+export type UpdateUserMutation = { __typename?: 'Mutation', updateUser: { __typename?: 'User', avatarUrl?: string | null, createdAt: string, id: string, email: string, lastName?: string | null, name: string, nickname?: string | null, phone?: string | null, role: UserRole, status: UserStatus, updatedAt: string, company?: { __typename?: 'Company', id: string, name: string, users: Array<{ __typename?: 'User', id: string, name: string }> } | null, projects?: Array<{ __typename?: 'Project', createdAt: string, description: string, endDate?: string | null, id: string, latitude?: number | null, location: string, longitude?: number | null, name: string, progress: number, startDate: string, status: ProjectStatus, thumbnail?: string | null, members: Array<{ __typename?: 'User', id: string, email: string, name: string, lastName?: string | null }>, notes: Array<{ __typename?: 'Note', author: { __typename?: 'User', company?: { __typename?: 'Company', id: string, name: string } | null } }>, photos: Array<{ __typename?: 'Photo', id: string, url: string, createdAt: string }>, timeline: Array<{ __typename?: 'TimelineEvent', id: string, description: string, createdAt: string, photoUrl?: string | null, title: string, type: TimelineEventType, updatedAt: string, project: { __typename?: 'Project', id: string, description: string } }> } | null> | null } };

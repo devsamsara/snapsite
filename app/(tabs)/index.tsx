@@ -244,32 +244,55 @@ export default function HomeScreen() {
                 </Text>
                 {/* Team Avatars */}
                 <View style={S.teamRow}>
-                  <TouchableOpacity onPress={handleAvatarsTap} style={S.avatarsTouchable}>
-                    {[1, 2, 3, 4, 5].map(i => (
+                  <TouchableOpacity
+                    onPress={handleAvatarsTap}
+                    style={S.avatarsTouchable}
+                  >
+                    {new Array(
+                      data.getDashboardData.currentCompany.users.length
+                    )
+                      .fill(0)
+                      .slice(0,5)
+                      .map(i => (
+                        <View
+                          key={i}
+                          style={[
+                            S.headerAvatar,
+                            {
+                              backgroundColor: colors.primary,
+                              marginLeft: i > 1 ? -8 : 0,
+                              borderColor: colors.background,
+                            },
+                          ]}
+                        >
+                          <Text style={S.headerAvatarText}>
+                            {data.getDashboardData.currentCompany.users
+                              .at(i)
+                              ?.name.at(0)
+                              ?.toUpperCase()}
+                          </Text>
+                        </View>
+                      ))}
+                    {data.getDashboardData.currentCompany.users.length > 5 && (
                       <View
-                        key={i}
                         style={[
-                          S.headerAvatar,
+                          S.headerAvatarMore,
                           {
-                            backgroundColor: colors.primary,
-                            marginLeft: i > 1 ? -8 : 0,
+                            backgroundColor: colors.surface,
                             borderColor: colors.background,
                           },
                         ]}
                       >
-                        <Text style={S.headerAvatarText}>
-                          {String.fromCharCode(64 + i)}
+                        <Text
+                          style={[
+                            S.headerAvatarMoreText,
+                            { color: colors.muted },
+                          ]}
+                        >
+                          +5
                         </Text>
                       </View>
-                    ))}
-                    <View
-                      style={[
-                        S.headerAvatarMore,
-                        { backgroundColor: colors.surface, borderColor: colors.background },
-                      ]}
-                    >
-                      <Text style={[S.headerAvatarMoreText, { color: colors.muted }]}>+7</Text>
-                    </View>
+                    )}
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={handleInviteTap}
@@ -283,7 +306,11 @@ export default function HomeScreen() {
                 onPress={handleSettingsTap}
                 style={[S.settingsBtn, { backgroundColor: colors.surface }]}
               >
-                <IconSymbol name="gearshape.fill" size={20} color={colors.foreground} />
+                <IconSymbol
+                  name="gearshape.fill"
+                  size={20}
+                  color={colors.foreground}
+                />
               </TouchableOpacity>
             </View>
 
@@ -296,7 +323,10 @@ export default function HomeScreen() {
           </View>
 
           {/* Content */}
-          <ScrollView contentContainerStyle={S.scrollContent} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={S.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Project Status Section (Today) */}
             <View style={S.section}>
               <View style={S.sectionTitleWrapper}>
@@ -313,14 +343,33 @@ export default function HomeScreen() {
                         style={[S.statusCard, cardSmElevation]}
                       >
                         <View style={S.statusCardTop}>
-                          <Text style={[S.statusCardLabel, { color: colors.foreground }]}>
+                          <Text
+                            style={[
+                              S.statusCardLabel,
+                              { color: colors.foreground },
+                            ]}
+                          >
                             {t(item.nameKey)}
                           </Text>
-                          <View style={[S.statusIconBg, { backgroundColor: colors.primary + '20' }]}>
-                            <IconSymbol name="plus" size={14} color={colors.primary} />
+                          <View
+                            style={[
+                              S.statusIconBg,
+                              { backgroundColor: colors.primary + '20' },
+                            ]}
+                          >
+                            <IconSymbol
+                              name="plus"
+                              size={14}
+                              color={colors.primary}
+                            />
                           </View>
                         </View>
-                        <Text style={[S.statusCardCount, { color: colors.foreground }]}>
+                        <Text
+                          style={[
+                            S.statusCardCount,
+                            { color: colors.foreground },
+                          ]}
+                        >
                           {item.count}
                         </Text>
                       </TouchableOpacity>

@@ -1,142 +1,142 @@
-  query Me {
+query Me {
     me {
-      avatarUrl
-      company {
-        id
-        name
-      }
-      createdAt
-      id
-      email
-      lastName
-      name
-      nickname
-      phone
-      projects {
-        createdAt
-        description
-        endDate
-        id
-        latitude
-        location
-        longitude
-        name
-        members {
-          id
-          email
-          name
-          lastName
-        }
-        notes {
-          author {
-            company {
-              id
-              name
-            }
-          }
-        }
-        photos {
-          id
-          url
-          createdAt
-        }
-        progress
-        startDate
-        status
-        thumbnail
-        timeline {
-          id
-          description
-          createdAt
-          photoUrl
-          project {
+        avatarUrl
+        company {
             id
-            description
-          }
-          title
-          type
-          updatedAt
+            name
         }
-      }
-      role
-      status
-      updatedAt
+        createdAt
+        id
+        email
+        lastName
+        name
+        nickname
+        phone
+        projects {
+            createdAt
+            description
+            endDate
+            id
+            latitude
+            location
+            longitude
+            name
+            members {
+                id
+                email
+                name
+                lastName
+            }
+            notes {
+                author {
+                    company {
+                        id
+                        name
+                    }
+                }
+            }
+            photos {
+                id
+                url
+                createdAt
+            }
+            progress
+            startDate
+            status
+            thumbnail
+            timeline {
+                id
+                description
+                createdAt
+                photoUrl
+                project {
+                    id
+                    description
+                }
+                title
+                type
+                updatedAt
+            }
+        }
+        role
+        status
+        updatedAt
     }
-  }
+}
 mutation DeleteUser($id: ID!) {
     deleteUser(id: $id)
-  }
+}
 
-  mutation DeleteCompany($id: ID!) {
+mutation DeleteCompany($id: ID!) {
     deleteCompany(id: $id)
-  }
+}
 
-  mutation UpdateUser($updateUserId: ID!, $input: UpdateUserInput!) {
+mutation UpdateUser($updateUserId: ID!, $input: UpdateUserInput!) {
     updateUser(id: $updateUserId, input: $input) {
-      avatarUrl
-      company {
-        id
-        name
-        users {
-          id
-          name
-        }
-      }
-      createdAt
-      id
-      email
-      lastName
-      name
-      nickname
-      phone
-      projects {
-        createdAt
-        description
-        endDate
-        id
-        latitude
-        location
-        longitude
-        name
-        members {
-          id
-          email
-          name
-          lastName
-        }
-        notes {
-          author {
-            company {
-              id
-              name
-            }
-          }
-        }
-        photos {
-          id
-          url
-          createdAt
-        }
-        progress
-        startDate
-        status
-        thumbnail
-        timeline {
-          id
-          description
-          createdAt
-          photoUrl
-          project {
+        avatarUrl
+        company {
             id
-            description
-          }
-          title
-          type
-          updatedAt
+            name
+            users {
+                id
+                name
+            }
         }
-      }
-      role
-      status
-      updatedAt
+        createdAt
+        id
+        email
+        lastName
+        name
+        nickname
+        phone
+        projects {
+            createdAt
+            description
+            endDate
+            id
+            latitude
+            location
+            longitude
+            name
+            members {
+                id
+                email
+                name
+                lastName
+            }
+            notes {
+                author {
+                    company {
+                        id
+                        name
+                    }
+                }
+            }
+            photos {
+                id
+                url
+                createdAt
+            }
+            progress
+            startDate
+            status
+            thumbnail
+            timeline {
+                id
+                description
+                createdAt
+                photoUrl
+                project {
+                    id
+                    description
+                }
+                title
+                type
+                updatedAt
+            }
+        }
+        role
+        status
+        updatedAt
     }
-  }
+}
