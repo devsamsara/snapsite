@@ -704,5 +704,13 @@
     "inviteSent": "Invitation sent",
     "inviteSentMsg": "An invitation has been sent to {{email}}",
     "errorEmail": "Invalid email"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "root": "Owner",
+    "user": "User",
+    "client": "Client",
+    "technician": "Technician",
+    "viewer": "Viewer"
   }
 }

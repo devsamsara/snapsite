@@ -704,5 +704,13 @@
     "inviteSent": "Invitación enviada",
     "inviteSentMsg": "Se ha enviado la invitación a {{email}}",
     "errorEmail": "Email inválido"
+  },
+  "roles": {
+    "admin": "Administrador",
+    "root": "Propietario",
+    "user": "Usuario",
+    "client": "Cliente",
+    "technician": "Técnico",
+    "viewer": "Observador"
   }
 }

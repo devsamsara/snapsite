@@ -38,6 +38,7 @@ import { SearchInput } from '@/components/ui/search-input';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { GetMyProjectsDocument, UserRole } from '@/gql/graphql';
 import { useQuery } from '@apollo/client/react';
+import { InviteGlobalSkeleton } from '@/components/invite-global-skeleton';
 
 type InviteForm = { name: string; email: string };
 
@@ -80,13 +81,15 @@ const MOCK_PROJECTS = [
   },
 ];
 
-const ROLES: { key: string; value: string }[] = [
-  { key: UserRole.Admin, value: '' },
-  { key: UserRole.Root, value: '' },
-  { key: UserRole.User, value: '' },
-  { key: UserRole.Client, value: '' },
-  { key: UserRole.Technician, value: '' },
-  { key: UserRole.Viewer, value: '' },
+// Los valores de los roles se resuelven en runtime con t('roles.<key>')
+// para que cambien automáticamente según el idioma activo.
+const ROLE_KEYS = [
+  UserRole.Admin,
+  UserRole.Root,
+  UserRole.User,
+  UserRole.Client,
+  UserRole.Technician,
+  UserRole.Viewer,
 ];
 
 export default function InviteGlobalModal() {
@@ -125,7 +128,7 @@ export default function InviteGlobalModal() {
           p.name.toLowerCase().includes(projectSearch.toLowerCase()) ||
           p.location.toLowerCase().includes(projectSearch.toLowerCase())
       ),
-    [projectSearch]
+    [data, projectSearch]
   );
 
   const selectedProject = data?.getMyProjects.find(p => p.id === selectedProjectId);
@@ -167,6 +170,8 @@ export default function InviteGlobalModal() {
 
     return range ? range.color : '#9CA3AF';
   };
+  if (dataLoading) return <InviteGlobalSkeleton />;
+
   return (
     data && (
       <KeyboardAvoidingView
@@ -320,13 +325,13 @@ export default function InviteGlobalModal() {
                 {t('modals.inviteGlobal.role')}
               </Text>
               <View style={S.roles}>
-                {ROLES.map(r => {
-                  const active = selectedRole === r.key;
+                {ROLE_KEYS.map(roleKey => {
+                  const active = selectedRole === roleKey;
                   return (
                     <TouchableOpacity
-                      key={r.key}
+                      key={roleKey}
                       onPress={() => {
-                        setSelectedRole(r.key);
+                        setSelectedRole(roleKey);
                         setRoleError('');
                       }}
                       style={[
@@ -345,7 +350,7 @@ export default function InviteGlobalModal() {
                           { color: active ? '#FFF' : colors.foreground },
                         ]}
                       >
-                        {r.value}
+                        {t(`roles.${roleKey}`)}
                       </Text>
                     </TouchableOpacity>
                   );
