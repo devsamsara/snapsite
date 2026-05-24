@@ -34,6 +34,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import { ModalBody, ModalFooter, ModalHeader, ModalRoot } from "@/components/ui/modal-layout";
 import { useColors } from "@/hooks/use-colors";
+import { AppAlert } from '@/components/ui/app-alert';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -165,13 +166,13 @@ export default function ProjectExportModal() {
           UTI: "com.adobe.pdf",
         });
       } else {
-        Alert.alert(
+        AppAlert.alert(
           t("projectExport.successTitle"),
           t("projectExport.successMsg")
         );
       }
     } catch (err) {
-      Alert.alert(t("projectExport.errorTitle"), t("projectExport.errorMsg"));
+      AppAlert.alert(t("projectExport.errorTitle"), t("projectExport.errorMsg"));
     } finally {
       setIsExporting(false);
     }

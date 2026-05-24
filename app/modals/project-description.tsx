@@ -33,6 +33,7 @@ import { z } from "zod";
 import { ModalBody, ModalFooter, ModalHeader, ModalRoot } from "@/components/ui/modal-layout";
 import { AppInput } from "@/components/ui/app-input";
 import { useColors } from "@/hooks/use-colors";
+import { AppAlert } from '@/components/ui/app-alert';
 
 // ─── Zod schema ───────────────────────────────────────────────────────────────
 
@@ -75,10 +76,10 @@ export default function ProjectDescriptionModal() {
     try {
       await new Promise((r) => setTimeout(r, 700));
       // TODO: call API to update description
-      Alert.alert(t("projectDescription.successTitle"), t("projectDescription.successMsg"));
+      AppAlert.alert(t("projectDescription.successTitle"), t("projectDescription.successMsg"));
       router.back();
     } catch {
-      Alert.alert(t("common.error"), t("common.tryAgain"));
+      AppAlert.alert(t("common.error"), t("common.tryAgain"));
     } finally {
       setIsSaving(false);
     }

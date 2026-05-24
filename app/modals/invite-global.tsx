@@ -39,6 +39,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { GetMyProjectsDocument, UserRole } from '@/gql/graphql';
 import { useQuery } from '@apollo/client/react';
 import { InviteGlobalSkeleton } from '@/components/invite-global-skeleton';
+import { AppAlert } from '@/components/ui/app-alert';
 
 type InviteForm = { name: string; email: string };
 
@@ -148,7 +149,7 @@ export default function InviteGlobalModal() {
     setLoading(true);
     await new Promise(r => setTimeout(r, 900));
     setLoading(false);
-    Alert.alert(
+    AppAlert.alert(
       t('modals.inviteGlobal.successTitle'),
       t('modals.inviteGlobal.successMessage', {
         email: data.email,

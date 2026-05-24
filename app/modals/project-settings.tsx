@@ -39,6 +39,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import { ModalBody, ModalHeader, ModalRoot } from "@/components/ui/modal-layout";
 import { useColors } from "@/hooks/use-colors";
+import { AppAlert } from '@/components/ui/app-alert';
 
 // ─── ActionItem sub-component ─────────────────────────────────────────────────
 
@@ -189,7 +190,7 @@ export default function ProjectSettingsModal() {
   };
 
   const handleArchive = () => {
-    Alert.alert(
+    AppAlert.alert(
       t("projectSettings.archiveTitle"),
       t("projectSettings.archiveMsg"),
       [
@@ -207,7 +208,7 @@ export default function ProjectSettingsModal() {
   };
 
   const handleDelete = () => {
-    Alert.alert(
+    AppAlert.alert(
       t("projectSettings.deleteTitle"),
       t("projectSettings.deleteMsg", { name: projectName }),
       [

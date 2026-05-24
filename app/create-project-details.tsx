@@ -8,6 +8,7 @@ import * as z from 'zod';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColors } from '@/hooks/use-colors';
 import { AppInput } from '@/components/ui/app-input';
+import { AppAlert } from '@/components/ui/app-alert';
 
 type ProjectFormValues = {
   name: string;
@@ -69,7 +70,7 @@ export default function CreateProjectDetailsScreen() {
       }, 1500);
     } catch {
       setLoading(false);
-      Alert.alert(t('common.error'), t('createProject.errorCreate'));
+      AppAlert.alert(t('common.error'), t('createProject.errorCreate'));
     }
   };
 

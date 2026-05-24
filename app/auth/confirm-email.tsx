@@ -26,6 +26,7 @@ import { useAuth } from '@/lib/auth-context';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
+import { AppAlert } from '@/components/ui/app-alert';
 
 type FormValues = { code: string };
 
@@ -52,11 +53,11 @@ export default function ConfirmEmailScreen() {
     setLoading(true);
     try {
       await confirmEmail(data.code);
-      Alert.alert(t('common.success'), t('auth.confirmEmail.successMessage'), [
+      AppAlert.alert(t('common.success'), t('auth.confirmEmail.successMessage'), [
         { text: t('common.ok'), onPress: () => router.push('/auth/login') },
       ]);
     } catch (e: any) {
-      Alert.alert(
+      AppAlert.alert(
         t('auth.confirmEmail.errorTitle'),
         e?.message ?? t('auth.confirmEmail.errorMessage'),
       );
@@ -72,7 +73,7 @@ export default function ConfirmEmailScreen() {
     try {
       // No email param available here — show a generic success message.
       // If you need the email, pass it as a route param from register.
-      Alert.alert(t('auth.confirmEmail.resendSuccess'), '');
+      AppAlert.alert(t('auth.confirmEmail.resendSuccess'), '');
     } finally {
       setResending(false);
     }

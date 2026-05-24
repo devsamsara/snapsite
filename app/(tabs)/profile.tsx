@@ -7,6 +7,7 @@ import { useColors } from '@/hooks/use-colors';
 import { useAuth } from '@/lib/auth-context';
 import { UserRole, DeleteUserDocument, DeleteCompanyDocument } from '@/gql/graphql';
 import { apolloClient } from '@/lib/graphql-client';
+import { AppAlert } from '@/components/ui/app-alert';
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
@@ -27,14 +28,14 @@ export default function ProfileScreen() {
 
   // ─── Logout ──────────────────────────────────────────────────────────────────
   const handleLogout = () => {
-    Alert.alert(t('profile.logoutConfirmTitle'), t('profile.logoutConfirmMessage'), [
+    AppAlert.alert(t('profile.logoutConfirmTitle'), t('profile.logoutConfirmMessage'), [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('profile.logout'),
         style: 'destructive',
         onPress: async () => {
           try { await signOut(); }
-          catch { Alert.alert(t('common.error'), t('profile.logoutError')); }
+          catch { AppAlert.alert(t('common.error'), t('profile.logoutError')); }
         },
       },
     ]);
@@ -42,7 +43,7 @@ export default function ProfileScreen() {
 
   // ─── Delete company (Root role) ──────────────────────────────────────────────
   const handleDeleteCompany = () => {
-    Alert.alert(t('profile.deleteAccountConfirmTitle'), t('profile.deleteAccountConfirmMessage'), [
+    AppAlert.alert(t('profile.deleteAccountConfirmTitle'), t('profile.deleteAccountConfirmMessage'), [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('profile.deleteAccountConfirmButton'),
@@ -54,7 +55,7 @@ export default function ProfileScreen() {
             await apolloClient.mutate({ mutation: DeleteCompanyDocument, variables: { id: companyId } });
             await signOut();
           } catch {
-            Alert.alert(t('common.error'), t('profile.deleteAccountError'));
+            AppAlert.alert(t('common.error'), t('profile.deleteAccountError'));
           }
         },
       },
@@ -63,7 +64,7 @@ export default function ProfileScreen() {
 
   // ─── Leave company (Admin / User roles) ──────────────────────────────────────
   const handleLeaveCompany = () => {
-    Alert.alert(t('profile.leaveCompanyConfirmTitle'), t('profile.leaveCompanyConfirmMessage'), [
+    AppAlert.alert(t('profile.leaveCompanyConfirmTitle'), t('profile.leaveCompanyConfirmMessage'), [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('profile.leaveCompanyConfirmButton'),
@@ -75,7 +76,7 @@ export default function ProfileScreen() {
             await apolloClient.mutate({ mutation: DeleteUserDocument, variables: { id: userId } });
             await signOut();
           } catch {
-            Alert.alert(t('common.error'), t('profile.leaveCompanyError'));
+            AppAlert.alert(t('common.error'), t('profile.leaveCompanyError'));
           }
         },
       },

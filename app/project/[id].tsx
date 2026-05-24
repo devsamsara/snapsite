@@ -18,6 +18,7 @@ import { useCardStyle, useCardStyleSm } from "@/hooks/use-card-style";
 import { useState, useRef, useCallback } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Haptics from "expo-haptics";
+import { AppAlert } from '@/components/ui/app-alert';
 
 const { width: W } = Dimensions.get("window");
 
@@ -180,7 +181,7 @@ export default function ProjectDetailScreen() {
   };
 
   const deleteNote = (noteId: string) => {
-    Alert.alert(t("project.deleteNoteTitle"), t("project.deleteNoteConfirm"), [
+    AppAlert.alert(t("project.deleteNoteTitle"), t("project.deleteNoteConfirm"), [
       { text: t("common.cancel"), style: "cancel" },
       { text: t("common.delete"), style: "destructive", onPress: () => setNotes((p) => p.filter((n) => n.id !== noteId)) },
     ]);
@@ -329,7 +330,7 @@ export default function ProjectDetailScreen() {
               </Text>
             </View>
             <TouchableOpacity
-              onPress={() => Alert.alert(t("project.messageTitle"), t("project.messageTo", { name: member.name }))}
+              onPress={() => AppAlert.alert(t("project.messageTitle"), t("project.messageTo", { name: member.name }))}
               style={[S.chatBtn, { backgroundColor: colors.primary + "15" }]}
             >
               <MaterialIcons name="chat" size={18} color={colors.primary} />

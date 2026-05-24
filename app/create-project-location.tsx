@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColors } from '@/hooks/use-colors';
 import { BlurView } from 'expo-blur';
+import { AppAlert } from '@/components/ui/app-alert';
 
 const { width, height } = Dimensions.get('window');
 
@@ -80,7 +81,7 @@ export default function CreateProjectLocationScreen() {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(t('createProject.permissionDenied'), t('createProject.permissionMessage'));
+        AppAlert.alert(t('createProject.permissionDenied'), t('createProject.permissionMessage'));
         setLoading(false);
         return;
       }
@@ -238,7 +239,7 @@ export default function CreateProjectLocationScreen() {
                 if (nearbyProject) {
                   router.push('/camera-capture');
                 } else {
-                  Alert.alert(t('common.error'), t('createProject.noNearbyProject'));
+                  AppAlert.alert(t('common.error'), t('createProject.noNearbyProject'));
                 }
               }}
             >

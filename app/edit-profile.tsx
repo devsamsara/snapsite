@@ -25,6 +25,7 @@ import { useAuth } from "@/lib/auth-context";
 // ─── Component ────────────────────────────────────────────────────────────────
 import { UserRole, UpdateUserDocument, User } from '@/gql/graphql';
 import { apolloClient } from "@/lib/graphql-client";
+import { AppAlert } from '@/components/ui/app-alert';
 
 type FormValues = { name: string; email: string; phone?: string; role?: string; company?: string };
 
@@ -87,18 +88,18 @@ export default function EditProfileScreen() {
         // Update local state in AuthContext
         updateUser(response.updateUser as User);
 
-        Alert.alert(t('editProfile.successTitle'), t('editProfile.successMessage'), [
+        AppAlert.alert(t('editProfile.successTitle'), t('editProfile.successMessage'), [
           { text: t('common.ok'), onPress: () => router.back() },
         ]);
       }
     } catch (error: any) {
       console.error("[EditProfile] Save error:", error);
-      Alert.alert(t('common.error'), error.message || t('editProfile.errorSave'));
+      AppAlert.alert(t('common.error'), error.message || t('editProfile.errorSave'));
     }
   };
 
   const handleChangePhoto = () => {
-    Alert.alert(t('editProfile.changePhoto'), t('editProfile.changePhotoDesc'));
+    AppAlert.alert(t('editProfile.changePhoto'), t('editProfile.changePhotoDesc'));
   };
 
   return (

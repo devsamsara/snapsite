@@ -81,6 +81,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import * as Haptics from "expo-haptics";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AppAlert } from '@/components/ui/app-alert';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -467,16 +468,16 @@ export default function ImageEditorScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
       const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") { Alert.alert("Permiso denegado", "Se necesita acceso a la galería."); return; }
+      if (status !== "granted") { AppAlert.alert("Permiso denegado", "Se necesita acceso a la galería."); return; }
       const uri = await captureRef(viewRef, { format: "jpg", quality: 0.95 });
       await MediaLibrary.saveToLibraryAsync(uri);
-      Alert.alert("¡Guardado!", "La imagen se guardó en tu galería.", [{
+      AppAlert.alert("¡Guardado!", "La imagen se guardó en tu galería.", [{
         text: "OK",
         onPress: () => projectId
           ? router.replace({ pathname: "/project/[id]", params: { id: projectId } })
           : router.back(),
       }]);
-    } catch { Alert.alert("Error", "No se pudo guardar la imagen."); }
+    } catch { AppAlert.alert("Error", "No se pudo guardar la imagen."); }
     finally { setProc(false); }
   }, [projectId, router]);
 
@@ -520,7 +521,7 @@ export default function ImageEditorScreen() {
     }
   };
 
-  const clearAll = () => Alert.alert("Limpiar", "¿Eliminar todas las anotaciones?", [
+  const clearAll = () => AppAlert.alert("Limpiar", "¿Eliminar todas las anotaciones?", [
     { text: "Cancelar", style: "cancel" },
     { text: "Limpiar", style: "destructive", onPress: () => { setPaths([]); setTexts([]); setArrows([]); setShapes([]); setMeasures([]); setRedo([]); } },
   ]);
@@ -539,7 +540,7 @@ export default function ImageEditorScreen() {
       setTool(null);
       cT.value = 0; cL.value = 0; cR.value = 0; cB.value = 0;
       Image.getSize(r.uri, (w, h) => { setImgW(w); setImgH(h); });
-    } catch { Alert.alert("Error", "No se pudo recortar"); }
+    } catch { AppAlert.alert("Error", "No se pudo recortar"); }
     finally { setProc(false); }
   };
 

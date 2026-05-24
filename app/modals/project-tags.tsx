@@ -35,6 +35,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ModalBody, ModalFooter, ModalHeader, ModalRoot } from "@/components/ui/modal-layout";
 import { AppInput } from "@/components/ui/app-input";
 import { useColors } from "@/hooks/use-colors";
+import { AppAlert } from '@/components/ui/app-alert';
 
 // ─── Suggestions ──────────────────────────────────────────────────────────────
 
@@ -120,7 +121,7 @@ export default function ProjectTagsModal() {
       // TODO: call API to update tags
       router.back();
     } catch {
-      Alert.alert(t("common.error"), t("common.tryAgain"));
+      AppAlert.alert(t("common.error"), t("common.tryAgain"));
     } finally {
       setIsSaving(false);
     }

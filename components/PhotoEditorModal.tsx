@@ -31,6 +31,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 
 // ─── react-native-svg (reemplaza @shopify/react-native-skia) ──────────────────
 import Svg, { Path as SvgPath } from 'react-native-svg';
+import { AppAlert } from '@/components/ui/app-alert';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -128,7 +129,7 @@ const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
             // PhotoEditorModal es el editor rápido (modal); para anotaciones
             // avanzadas el usuario puede usar image-editor.tsx.
             if (paths.length > 0) {
-                Alert.alert(
+                AppAlert.alert(
                     'Nota',
                     'Para guardar con anotaciones usa el editor completo (botón "Anotar"). Guardando imagen original.',
                     [{ text: 'OK', onPress: () => onSave(currentPhotoUri) }]
@@ -138,7 +139,7 @@ const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
             onSave(currentPhotoUri);
         } catch (error) {
             console.error('Error saving:', error);
-            Alert.alert('Error', 'No se pudo guardar');
+            AppAlert.alert('Error', 'No se pudo guardar');
         }
     };
 
@@ -165,7 +166,7 @@ const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
                     break;
 
                 case 'crop':
-                    Alert.alert('Recortar', 'Usa el editor completo para recorte interactivo.');
+                    AppAlert.alert('Recortar', 'Usa el editor completo para recorte interactivo.');
                     return;
             }
 
@@ -177,7 +178,7 @@ const PhotoEditorModal: React.FC<PhotoEditorModalProps> = ({
             }
         } catch (error) {
             console.error('Error editing:', error);
-            Alert.alert('Error', 'No se pudo aplicar la edición');
+            AppAlert.alert('Error', 'No se pudo aplicar la edición');
         }
     };
 

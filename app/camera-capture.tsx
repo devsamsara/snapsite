@@ -6,6 +6,7 @@ import * as Haptics from "expo-haptics";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
+import { AppAlert } from '@/components/ui/app-alert';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -94,7 +95,7 @@ export default function CameraCaptureScreen() {
           });
         }
       } catch (error) {
-        Alert.alert("Error", "No se pudo capturar la foto. Inténtalo de nuevo.");
+        AppAlert.alert("Error", "No se pudo capturar la foto. Inténtalo de nuevo.");
       }
     }
   };

@@ -36,6 +36,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ModalBody, ModalHeader, ModalRoot } from "@/components/ui/modal-layout";
 import { AppInput } from "@/components/ui/app-input";
 import { useColors } from "@/hooks/use-colors";
+import { AppAlert } from '@/components/ui/app-alert';
 
 // ─── Zod schema ───────────────────────────────────────────────────────────────
 
@@ -86,7 +87,7 @@ export default function ProjectShareModal() {
       `${t("projectShare.title")}: ${projectName}\n${projectLink}`
     );
     Linking.openURL(`whatsapp://send?text=${msg}`).catch(() =>
-      Alert.alert(t("common.error"), t("common.tryAgain"))
+      AppAlert.alert(t("common.error"), t("common.tryAgain"))
     );
   };
 
@@ -98,7 +99,7 @@ export default function ProjectShareModal() {
       `${t("projectShare.linkDesc")}\n\n${projectLink}`
     );
     Linking.openURL(`mailto:?subject=${subject}&body=${body}`).catch(() =>
-      Alert.alert(t("common.error"), t("common.tryAgain"))
+      AppAlert.alert(t("common.error"), t("common.tryAgain"))
     );
   };
 
@@ -118,7 +119,7 @@ export default function ProjectShareModal() {
         title: projectName ?? "snapSite",
       });
     } catch {
-      Alert.alert(t("common.error"), t("common.tryAgain"));
+      AppAlert.alert(t("common.error"), t("common.tryAgain"));
     }
   };
 

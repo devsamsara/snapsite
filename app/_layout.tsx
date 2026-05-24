@@ -18,6 +18,7 @@ import {
 import {apolloClient} from "@/lib/graphql-client";
 import {initI18n} from "@/lib/i18n";
 import {ApolloProvider} from "@apollo/client/react";
+import { AppAlertProvider, AppAlertBridge } from "@/components/ui/app-alert";
 
 const DEFAULT_WEB_INSETS: EdgeInsets = {top: 0, right: 0, bottom: 0, left: 0};
 const DEFAULT_WEB_FRAME: Rect = {x: 0, y: 0, width: 0, height: 0};
@@ -61,6 +62,7 @@ export default function RootLayout() {
 
     const content = (
         <GestureHandlerRootView style={S.flex1}>
+            <AppAlertProvider>
             <ApolloProvider client={apolloClient}>
                 <AuthProvider>
                         <Stack screenOptions={{headerShown: false}}>
@@ -265,6 +267,8 @@ export default function RootLayout() {
                         <StatusBar style="auto"/>
                 </AuthProvider>
             </ApolloProvider>
+            <AppAlertBridge />
+            </AppAlertProvider>
         </GestureHandlerRootView>
     );
 

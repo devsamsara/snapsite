@@ -35,6 +35,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ModalBody, ModalFooter, ModalHeader, ModalRoot } from "@/components/ui/modal-layout";
 import { AppInput } from "@/components/ui/app-input";
 import { useColors } from "@/hooks/use-colors";
+import { AppAlert } from '@/components/ui/app-alert';
 
 // ─── Status options ───────────────────────────────────────────────────────────
 
@@ -125,10 +126,10 @@ export default function EditProjectModal() {
     try {
       // TODO: call API to update project
       await new Promise((r) => setTimeout(r, 800));
-      Alert.alert(t("editProject.successTitle"), t("editProject.successMsg"));
+      AppAlert.alert(t("editProject.successTitle"), t("editProject.successMsg"));
       router.back();
     } catch {
-      Alert.alert(t("common.error"), t("common.tryAgain"));
+      AppAlert.alert(t("common.error"), t("common.tryAgain"));
     } finally {
       setIsSaving(false);
     }

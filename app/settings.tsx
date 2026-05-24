@@ -12,6 +12,7 @@ import { useNotifications, scheduleTestNotification } from "@/hooks/use-notifica
 import { useCardStyle } from "@/hooks/use-card-style";
 import { useAuth } from "@/lib/auth-context";
 import * as Notifications from 'expo-notifications';
+import { AppAlert } from '@/components/ui/app-alert';
 
 export default function SettingsScreen() {
   const { t } = useTranslation();
@@ -44,20 +45,20 @@ export default function SettingsScreen() {
         finalStatus = status;
       }
       if (finalStatus !== 'granted') {
-        Alert.alert(t('settings.notifications.permissionRequired'), t('settings.notifications.permissionMessage'), [{ text: t('common.ok') }]);
+        AppAlert.alert(t('settings.notifications.permissionRequired'), t('settings.notifications.permissionMessage'), [{ text: t('common.ok') }]);
         return;
       }
       setPushNotifications(true);
-      Alert.alert(t('settings.notifications.enabledTitle'), t('settings.notifications.enabledMessage'), [{ text: t('common.ok'), onPress: () => scheduleTestNotification() }]);
+      AppAlert.alert(t('settings.notifications.enabledTitle'), t('settings.notifications.enabledMessage'), [{ text: t('common.ok'), onPress: () => scheduleTestNotification() }]);
     } else {
       setPushNotifications(false);
-      Alert.alert(t('settings.notifications.disabledTitle'), t('settings.notifications.disabledMessage'), [{ text: t('common.ok') }]);
+      AppAlert.alert(t('settings.notifications.disabledTitle'), t('settings.notifications.disabledMessage'), [{ text: t('common.ok') }]);
     }
   };
 
   const handleEmailNotificationsToggle = (value: boolean) => {
     setEmailNotifications(value);
-    Alert.alert(
+    AppAlert.alert(
       value ? t('settings.notifications.emailEnabledTitle') : t('settings.notifications.emailDisabledTitle'),
       value ? t('settings.notifications.emailEnabledMessage') : t('settings.notifications.emailDisabledMessage'),
       [{ text: t('common.ok') }]
@@ -65,14 +66,14 @@ export default function SettingsScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert(t('settings.logoutConfirmTitle'), t('settings.logoutConfirmMessage'), [
+    AppAlert.alert(t('settings.logoutConfirmTitle'), t('settings.logoutConfirmMessage'), [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('settings.logout'),
         style: 'destructive',
         onPress: async () => {
           try { await signOut(); }
-          catch (e: any) { Alert.alert(t('common.error'), e?.message ?? t('common.unknownError')); }
+          catch (e: any) { AppAlert.alert(t('common.error'), e?.message ?? t('common.unknownError')); }
         },
       },
     ]);

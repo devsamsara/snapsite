@@ -35,6 +35,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
 import { CreateCompanyInput } from '@/gql/graphql';
+import { AppAlert } from '@/components/ui/app-alert';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -110,7 +111,7 @@ export default function RegisterScreen() {
       await signUp(companyData);
       // signUp navigates to /onboarding automatically on success
     } catch (e: any) {
-      Alert.alert(
+      AppAlert.alert(
         t('auth.register.errorTitle'),
         e?.message ?? t('auth.register.errorMessage'),
       );

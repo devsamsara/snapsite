@@ -36,6 +36,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ModalBody, ModalHeader, ModalRoot } from "@/components/ui/modal-layout";
 import { AppInput } from "@/components/ui/app-input";
 import { useColors } from "@/hooks/use-colors";
+import { AppAlert } from '@/components/ui/app-alert';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -125,18 +126,18 @@ export default function ProjectContactsModal() {
 
   const handleCall = (phone: string) => {
     Linking.openURL(`tel:${phone}`).catch(() =>
-      Alert.alert(t("common.error"), t("common.tryAgain"))
+      AppAlert.alert(t("common.error"), t("common.tryAgain"))
     );
   };
 
   const handleEmail = (email: string) => {
     Linking.openURL(`mailto:${email}`).catch(() =>
-      Alert.alert(t("common.error"), t("common.tryAgain"))
+      AppAlert.alert(t("common.error"), t("common.tryAgain"))
     );
   };
 
   const handleRemove = (contact: Contact) => {
-    Alert.alert(
+    AppAlert.alert(
       t("projectContacts.removeConfirm"),
       t("projectContacts.removeMsg"),
       [

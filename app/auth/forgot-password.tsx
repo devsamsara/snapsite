@@ -26,6 +26,7 @@ import { useAuth } from '@/lib/auth-context';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
+import { AppAlert } from '@/components/ui/app-alert';
 
 type FormValues = { email: string };
 
@@ -54,7 +55,7 @@ export default function ForgotPasswordScreen() {
       await forgotPassword(data.email);
       setSent(true);
     } catch (e: any) {
-      Alert.alert(
+      AppAlert.alert(
         t('auth.forgotPassword.errorTitle'),
         e?.message ?? t('auth.forgotPassword.errorMessage'),
       );

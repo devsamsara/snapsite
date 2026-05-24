@@ -4,6 +4,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
+import { AppAlert } from '@/components/ui/app-alert';
 
 export default function GalleryPickerScreen() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function GalleryPickerScreen() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (status !== 'granted') {
-      Alert.alert(
+      AppAlert.alert(
         'Permiso Requerido',
         'Necesitamos acceso a tu galería para seleccionar fotos.',
         [
@@ -61,7 +62,7 @@ export default function GalleryPickerScreen() {
       }
     } catch (error) {
       console.error("Error picking image:", error);
-      Alert.alert("Error", "No se pudo seleccionar la imagen");
+      AppAlert.alert("Error", "No se pudo seleccionar la imagen");
       setIsPickerOpen(false);
       router.back();
     }

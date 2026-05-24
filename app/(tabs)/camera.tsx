@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Dimensions, Platform, Image, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, Dimensions, Platform, Image } from 'react-native';
+import { AppAlert } from '@/components/ui/app-alert';
 import { useRouter } from "expo-router";
 import { CameraView, CameraType, useCameraPermissions, FlashMode } from 'expo-camera';
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -70,7 +71,7 @@ const CameraScreen: React.FC = () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (status !== 'granted') {
-      Alert.alert('Permiso Requerido', 'Necesitamos acceso a tu galería.');
+      AppAlert.alert('Permiso Requerido', 'Necesitamos acceso a tu galería.');
       return;
     }
 
@@ -106,7 +107,7 @@ const CameraScreen: React.FC = () => {
           });
         }
       } catch (error) {
-        Alert.alert("Error", "No se pudo capturar la foto. Inténtalo de nuevo.");
+        AppAlert.alert("Error", "No se pudo capturar la foto. Inténtalo de nuevo.");
       }
     }
   };
