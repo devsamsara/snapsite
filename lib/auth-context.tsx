@@ -12,6 +12,7 @@ import {
   apolloClient,
   clearTokens,
   registerUnauthenticatedHandler,
+  REST_API_URL,
   restoreAuthToken,
   setAuthToken,
   setRefreshToken,
@@ -52,6 +53,7 @@ interface AuthContextValue {
   forgotPassword: (email: string) => Promise<void>;
   confirmEmail: (code: string) => Promise<void>;
   updateUser: (patch: Partial<User>) => void;
+  acceptInvitation: (token: string) => Promise<void>;
 }
 
 function extractMessage(error: any): string {
@@ -59,6 +61,7 @@ function extractMessage(error: any): string {
     return error.graphQLErrors[0]?.message ?? error.message;
   }
   if (error?.networkError?.message) return error.networkError.message;
+  if (error?.response?.data?.message) return error.response.data.message;
   if (error instanceof Error) return error.message;
   return 'An unexpected error occurred.';
 }
@@ -71,10 +74,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
 
-  // Ref so signOut can be called from the error link without stale closure
   const signOutRef = useRef<() => Promise<void>>();
 
-  // ─── signOut (defined early so the ref can point to it) ──────────────────────
   const signOut = useCallback(async () => {
     try {
       await clearTokens();
@@ -85,21 +86,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Keep the ref up to date
   useEffect(() => {
     signOutRef.current = signOut;
   }, [signOut]);
 
-  // ─── Register the unauthenticated handler once ────────────────────────────────
-  // The Apollo error link calls this when the refresh token is also expired
-  // so the user gets signed out cleanly without any manual intervention.
   useEffect(() => {
     registerUnauthenticatedHandler(() => {
       signOutRef.current?.();
     });
   }, []);
 
-  // ─── Restore session on launch ───────────────────────────────────────────────
   useEffect(() => {
     const restore = async () => {
       try {
@@ -149,7 +145,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     restore();
   }, []);
 
-  // ─── Route guard ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (isLoading) return;
 
@@ -173,7 +168,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, segments, isLoading]);
 
-  // ─── signIn ──────────────────────────────────────────────────────────────────
   const signIn = useCallback(async (email: string, password: string) => {
     try {
       const { data, error } = await apolloClient.mutate({
@@ -193,7 +187,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ─── signUp ──────────────────────────────────────────────────────────────────
   const signUp = useCallback(async (input: CreateCompanyInput) => {
     const { contactPassword, contactEmail, contactName, size, industry } = input;
     try {
@@ -226,7 +219,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ─── forgotPassword ──────────────────────────────────────────────────────────
   const forgotPassword = useCallback(async (email: string) => {
     try {
       await apolloClient.mutate({
@@ -238,7 +230,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ─── confirmEmail ─────────────────────────────────────────────────────────────
   const confirmEmail = useCallback(async (code: string) => {
     try {
       await apolloClient.mutate({
@@ -250,7 +241,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ─── updateUser ──────────────────────────────────────────────────────────────
   const updateUser = useCallback(async (patch: Partial<User>) => {
     setUser((prev) => {
       if (!prev) return null;
@@ -260,6 +250,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const acceptInvitation = useCallback(async (token: string) => {
+    try {
+      const response = await fetch(
+        `${REST_API_URL}/auth/accept-invitation?token=${encodeURIComponent(token)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            // 'Authorization': `Bearer ${await restoreAuthToken()}`
+          },
+        }
+      );
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to accept invitation';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          const textError = await response.text();
+          errorMessage = textError || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+    } catch (error) {
+      throw new Error(extractMessage(error));
+    }
+  }, []);
   return (
     <AuthContext.Provider
       value={{
@@ -271,6 +289,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         forgotPassword,
         confirmEmail,
         updateUser,
+        acceptInvitation,
       }}
     >
       {children}

@@ -144,11 +144,14 @@ export default function InviteGlobalModal() {
       setRoleError(t('modals.inviteGlobal.selectRole'));
       valid = false;
     }
+
     if (!valid) return;
 
     setLoading(true);
     await new Promise(r => setTimeout(r, 900));
     setLoading(false);
+
+    console.log(data)
     AppAlert.alert(
       t('modals.inviteGlobal.successTitle'),
       t('modals.inviteGlobal.successMessage', {
