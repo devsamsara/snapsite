@@ -19,8 +19,6 @@ const GRAPHQL_URL: string =
   process.env.EXPO_PUBLIC_API_URL ??
   'http://192.168.1.65:4000/api/graphql';
 
-export const REST_API_URL = GRAPHQL_URL.replace('/graphql', '');
-
 if (__DEV__ && !Constants.expoConfig?.extra?.graphqlUrl && !process.env.GRAPHQL_URL) {
   console.warn(
     '[Apollo] GRAPHQL_URL is not set. Using localhost fallback.\n' +

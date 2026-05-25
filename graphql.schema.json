@@ -127,6 +127,12 @@ export type ForgotPasswordInput = {
   email: Scalars['String']['input'];
 };
 
+export type InviteMemberInput = {
+  email: Scalars['String']['input'];
+  name: Scalars['String']['input'];
+  role?: InputMaybe<UserRole>;
+};
+
 export type LoginInput = {
   email: Scalars['String']['input'];
   password: Scalars['String']['input'];
@@ -424,6 +430,7 @@ export type Query = {
   getProjectTimeline: Array<TimelineEvent>;
   getProjects: PaginatedProjects;
   getUsers: PaginatedUsers;
+  inviteMember: Scalars['Boolean']['output'];
   me: User;
 };
 
@@ -481,6 +488,11 @@ export type QueryGetProjectsArgs = {
 
 export type QueryGetUsersArgs = {
   filters?: InputMaybe<UserFiltersInput>;
+};
+
+
+export type QueryInviteMemberArgs = {
+  input: InviteMemberInput;
 };
 
 export type RecentImage = {
@@ -684,6 +696,13 @@ export type MembersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type MembersQuery = { __typename?: 'Query', getCompanyMembers: { __typename?: 'CompanyMembersData', onlineCount: number, totalProjects: number, members: Array<{ __typename?: 'CompanyMember', id: string, isOnline: boolean, name: string, role: string, projects: Array<{ __typename?: 'MemberProject', id: string, name: string, progress: number, status: string }> }> } };
+
+export type InviteMemberQueryVariables = Exact<{
+  input: InviteMemberInput;
+}>;
+
+
+export type InviteMemberQuery = { __typename?: 'Query', inviteMember: boolean };
 
 export type CreateCompanyMutationVariables = Exact<{
   input: CreateCompanyInput;
