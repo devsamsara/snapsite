@@ -35,13 +35,22 @@ import { Button } from '@/components/ui/button';
 import { AppInput } from '@/components/ui/app-input';
 import { SearchInput } from '@/components/ui/search-input';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { GetMyProjectsDocument, UserRole } from '@/gql/graphql';
-import { useQuery } from '@apollo/client/react';
+import {
+  GetMyProjectsDocument,
+  InviteMemberDocument,
+  UserRole,
+} from '@/gql/graphql';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { InviteGlobalSkeleton } from '@/components/invite-global-skeleton';
 import { AppAlert } from '@/components/ui/app-alert';
 import { GraphQLError } from '@/components/ui/graphql-error';
 
-type InviteForm = { name: string; email: string };
+type InviteForm = {
+  name: string;
+  email: string;
+  role: UserRole;
+  projectId: string;
+};
 
 // Los valores de los roles se resuelven en runtime con t('roles.<key>')
 // para que cambien automáticamente según el idioma activo.
@@ -68,6 +77,7 @@ export default function InviteGlobalModal() {
   const [submitting, setSubmitting] = useState(false);
 
   const { data, loading: dataLoading, error, refetch } = useQuery(GetMyProjectsDocument);
+  const [inviteMember, {loading: isLoading}] = useMutation(InviteMemberDocument)
 
   const inviteSchema = z.object({
     name: z.string().min(2, t('validation.nameRequired')),
@@ -75,11 +85,18 @@ export default function InviteGlobalModal() {
       .string()
       .min(1, t('validation.required'))
       .email(t('validation.emailInvalid')),
+    role: z.enum(UserRole),
+    projectId: z.string().uuid(t('validation.emailInvalid')),
   });
 
   const { control, handleSubmit } = useForm<InviteForm>({
     resolver: zodResolver(inviteSchema),
-    defaultValues: { name: '', email: '' },
+    defaultValues: {
+      name: '',
+      email: '',
+      role: UserRole.Client,
+      projectId: '',
+    },
   });
 
   // ── Proyectos: usa los datos reales del backend, con fallback a lista vacía ──
@@ -99,7 +116,8 @@ export default function InviteGlobalModal() {
   const selectedProject = allProjects.find(p => p.id === selectedProjectId) ?? null;
 
   const onSubmit = async (formData: InviteForm) => {
-    // Validación manual de campos fuera de react-hook-form
+
+    console.log(formData)
     let valid = true;
     if (!selectedProjectId) {
       setProjectError(t('modals.inviteGlobal.selectProject'));
@@ -113,8 +131,14 @@ export default function InviteGlobalModal() {
 
     setSubmitting(true);
     try {
-      // TODO: reemplazar por la mutation real de invitación cuando esté disponible
-      await new Promise(r => setTimeout(r, 900));
+      await inviteMember({
+        variables: {
+          input: {
+           ...formData,
+
+          }
+        }
+      })
 
       AppAlert.alert(
         t('modals.inviteGlobal.successTitle'),

@@ -132,6 +132,7 @@ export type ForgotPasswordInput = {
 export type InviteMemberInput = {
   email: Scalars['String']['input'];
   name: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
   role?: InputMaybe<UserRole>;
 };
 
