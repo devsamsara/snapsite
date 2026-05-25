@@ -107,12 +107,18 @@ export default function HomeScreen() {
   };
 
   const renderProjectCard = ({ item }: { item: RecentProject }) => (
-    <TouchableOpacity onPress={() => handleProjectTap(item.id)} style={S.projectCardWrapper}>
+    <TouchableOpacity
+      onPress={() => handleProjectTap(item.id)}
+      style={S.projectCardWrapper}
+    >
       <View style={[S.projectCard, cardElevation]}>
         {/* Project Header */}
         <View style={S.projectCardHeader}>
           <View style={S.flex1}>
-            <Text className="text-lg font-semibold text-foreground" numberOfLines={1}>
+            <Text
+              className="text-lg font-semibold text-foreground"
+              numberOfLines={1}
+            >
               {item.name}
             </Text>
             <Text className="text-sm text-muted mt-1">{item.location}</Text>
@@ -131,7 +137,12 @@ export default function HomeScreen() {
             <Text
               style={[
                 S.statusBadgeText,
-                { color: item.status === 'Completed' ? colors.success : colors.primary },
+                {
+                  color:
+                    item.status === 'Completed'
+                      ? colors.success
+                      : colors.primary,
+                },
               ]}
             >
               {item.status}
@@ -143,7 +154,9 @@ export default function HomeScreen() {
         <View style={S.progressSection}>
           <View style={S.progressLabelRow}>
             <Text className="text-xs text-muted">{t('home.progress')}</Text>
-            <Text className="text-xs font-semibold text-foreground">{item.progress}%</Text>
+            <Text className="text-xs font-semibold text-foreground">
+              {item.progress}%
+            </Text>
           </View>
           <View style={[S.progressTrack, { backgroundColor: colors.border }]}>
             <View
@@ -159,33 +172,42 @@ export default function HomeScreen() {
         <View style={S.metaRow}>
           <View style={S.metaItem}>
             <IconSymbol name="doc.fill" size={14} color={colors.muted} />
-            <Text style={S.metaText}>{item.documentsCount} {t('home.documents')}</Text>
+            <Text className="text-xs text-muted" style={S.metaText}>
+              {item.documentsCount} {t('home.documents')}
+            </Text>
           </View>
           <View style={S.metaItem}>
-            <IconSymbol name="bubble.left.fill" size={14} color={colors.muted} />
-            <Text style={S.metaText}>{item.commentsCount} {t('home.comments')}</Text>
+            <IconSymbol
+              name="bubble.left.fill"
+              size={14}
+              color={colors.muted}
+            />
+            <Text className="text-xs text-muted" style={S.metaText}>
+              {item.commentsCount} {t('home.comments')}
+            </Text>
           </View>
         </View>
 
         {/* Footer: Team Members and Date */}
         <View style={S.projectCardFooter}>
           <View style={S.avatarRow}>
-            {item.members.slice(0, 3).map((member: Maybe<UserSummary>, index: number) =>
-              member && (
-                <View
-                  key={index}
-                  style={[
-                    S.memberAvatar,
-                    {
-                      backgroundColor: colors.primary,
-                      marginLeft: index > 0 ? -6 : 0,
-                      borderColor: colors.surface,
-                    },
-                  ]}
-                >
-                  <Text style={S.memberAvatarText}>{member.name.at(0)}</Text>
-                </View>
-              )
+            {item.members.slice(0, 3).map(
+              (member: Maybe<UserSummary>, index: number) =>
+                member && (
+                  <View
+                    key={index}
+                    style={[
+                      S.memberAvatar,
+                      {
+                        backgroundColor: colors.primary,
+                        marginLeft: index > 0 ? -6 : 0,
+                        borderColor: colors.surface,
+                      },
+                    ]}
+                  >
+                    <Text style={S.memberAvatarText}>{member.name.at(0)}</Text>
+                  </View>
+                )
             )}
           </View>
           <Text className="text-xs text-muted">{item.createdAt}</Text>
@@ -211,14 +233,25 @@ export default function HomeScreen() {
   );
 
   const renderLocationCard = ({ item }: { item: RecentLocation }) => (
-    <TouchableOpacity onPress={() => handleLocationTap(item)} style={S.locationCardWrapper}>
+    <TouchableOpacity
+      onPress={() => handleLocationTap(item)}
+      style={S.locationCardWrapper}
+    >
       <View style={[S.locationCard, cardElevation]}>
         <View style={S.locationCardHeader}>
-          <View style={[S.locationIconBg, { backgroundColor: colors.primary + '20' }]}>
+          <View
+            style={[
+              S.locationIconBg,
+              { backgroundColor: colors.primary + '20' },
+            ]}
+          >
             <IconSymbol name="location.fill" size={20} color={colors.primary} />
           </View>
           <View style={S.flex1Ml3}>
-            <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
+            <Text
+              className="text-base font-semibold text-foreground"
+              numberOfLines={1}
+            >
               {item.name}
             </Text>
             <Text className="text-xs text-muted mt-1">{item.lastVisit}</Text>
@@ -226,7 +259,9 @@ export default function HomeScreen() {
         </View>
         <View style={S.locationFooter}>
           <IconSymbol name="folder.fill" size={12} color={colors.muted} />
-          <Text style={S.locationProjectsText}>{item.projectsCount} {t('home.projects')}</Text>
+          <Text className="text-xs text-muted" style={S.locationProjectsText}>
+            {item.projectsCount} {t('home.projects')}
+          </Text>
         </View>
       </View>
     </TouchableOpacity>

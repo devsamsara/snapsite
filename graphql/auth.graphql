@@ -99,3 +99,24 @@ mutation Register($input: RegisterInput!) {
         }
     }
 }
+
+mutation RefreshToken($token: String!) {
+    refreshToken(token: $token) {
+        refreshToken
+        token
+        user {
+            id
+            email
+            name
+            lastName
+            nickname
+            avatarUrl
+            role
+            status
+            company {
+                id
+                name
+            }
+        }
+    }
+}
