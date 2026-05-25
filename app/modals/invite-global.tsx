@@ -40,7 +40,7 @@ import {
   InviteMemberDocument,
   UserRole,
 } from '@/gql/graphql';
-import { useMutation, useQuery } from '@apollo/client/react';
+import { useLazyQuery, useQuery } from '@apollo/client/react';
 import { InviteGlobalSkeleton } from '@/components/invite-global-skeleton';
 import { AppAlert } from '@/components/ui/app-alert';
 import { GraphQLError } from '@/components/ui/graphql-error';
@@ -77,7 +77,7 @@ export default function InviteGlobalModal() {
   const [submitting, setSubmitting] = useState(false);
 
   const { data, loading: dataLoading, error, refetch } = useQuery(GetMyProjectsDocument);
-  const [inviteMember, {loading: isLoading}] = useMutation(InviteMemberDocument)
+  const [inviteMember, { loading: isLoading }] = useLazyQuery(InviteMemberDocument)
 
   const inviteSchema = z.object({
     name: z.string().min(2, t('validation.nameRequired')),
@@ -85,8 +85,8 @@ export default function InviteGlobalModal() {
       .string()
       .min(1, t('validation.required'))
       .email(t('validation.emailInvalid')),
-    role: z.enum(UserRole),
-    projectId: z.string().uuid(t('validation.emailInvalid')),
+    role: z.nativeEnum(UserRole).optional(),
+    projectId: z.string().optional(),
   });
 
   const { control, handleSubmit } = useForm<InviteForm>({
@@ -116,8 +116,7 @@ export default function InviteGlobalModal() {
   const selectedProject = allProjects.find(p => p.id === selectedProjectId) ?? null;
 
   const onSubmit = async (formData: InviteForm) => {
-
-    console.log(formData)
+    // Validación manual de los campos fuera de react-hook-form
     let valid = true;
     if (!selectedProjectId) {
       setProjectError(t('modals.inviteGlobal.selectProject'));
@@ -131,14 +130,17 @@ export default function InviteGlobalModal() {
 
     setSubmitting(true);
     try {
-      await inviteMember({
+      const { error: mutError } = await inviteMember({
         variables: {
           input: {
-           ...formData,
-
-          }
-        }
-      })
+            name: formData.name,
+            email: formData.email,
+            projectId: selectedProjectId!,
+            role: selectedRole as UserRole,
+          },
+        },
+      });
+      if (mutError) throw mutError;
 
       AppAlert.alert(
         t('modals.inviteGlobal.successTitle'),
