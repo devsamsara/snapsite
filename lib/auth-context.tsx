@@ -1,8 +1,21 @@
-import React, { createContext, useCallback, useContext, useEffect, useState, } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
-import { apolloClient, restoreAuthToken, setAuthToken, } from '@/lib/graphql-client';
+import {
+  apolloClient,
+  clearTokens,
+  registerUnauthenticatedHandler,
+  restoreAuthToken,
+  setAuthToken,
+  setRefreshToken,
+} from '@/lib/graphql-client';
 import {
   Company,
   ConfirmAccountDocument,
@@ -58,13 +71,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
 
-  // ─── Restore session on launch ──────────────────────────────────────────────
+  // Ref so signOut can be called from the error link without stale closure
+  const signOutRef = useRef<() => Promise<void>>();
+
+  // ─── signOut (defined early so the ref can point to it) ──────────────────────
+  const signOut = useCallback(async () => {
+    try {
+      await clearTokens();
+      await AsyncStorage.removeItem(AUTH_USER_KEY);
+      await apolloClient.clearStore();
+    } finally {
+      setUser(null);
+    }
+  }, []);
+
+  // Keep the ref up to date
+  useEffect(() => {
+    signOutRef.current = signOut;
+  }, [signOut]);
+
+  // ─── Register the unauthenticated handler once ────────────────────────────────
+  // The Apollo error link calls this when the refresh token is also expired
+  // so the user gets signed out cleanly without any manual intervention.
+  useEffect(() => {
+    registerUnauthenticatedHandler(() => {
+      signOutRef.current?.();
+    });
+  }, []);
+
+  // ─── Restore session on launch ───────────────────────────────────────────────
   useEffect(() => {
     const restore = async () => {
       try {
-        // 1. Restore token
+        // 1. Restore both tokens from SecureStore
         const token = await restoreAuthToken();
-        
+
         // 2. Restore user from cache immediately for instant UI
         const cachedUser = await AsyncStorage.getItem(AUTH_USER_KEY);
         if (cachedUser) {
@@ -72,11 +113,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (token) {
-          // 3. Validate/Refresh user data in background
-          const { data, error } = await apolloClient.query({
-            query: MeDocument,
-            fetchPolicy: 'network-only',
-          }).catch(err => ({ data: null, error: err }));
+          // 3. Validate/refresh user data in background
+          const { data, error } = await apolloClient
+            .query({ query: MeDocument, fetchPolicy: 'network-only' })
+            .catch((err) => ({ data: null, error: err }));
 
           if (data?.me) {
             const freshUser = data.me as User;
@@ -84,17 +124,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(freshUser));
           } else if (error) {
             const isAuthError = error.graphQLErrors?.some(
-              (ge: any) => ge.extensions?.code === 'UNAUTHENTICATED' || ge.message.includes('unauthorized')
+              (ge: any) =>
+                ge.extensions?.code === 'UNAUTHENTICATED' ||
+                ge.message?.toLowerCase().includes('unauthorized')
             );
-            
             if (isAuthError) {
-              await setAuthToken(null);
+              // The error link will have already attempted a refresh.
+              // If we still get here it means the refresh also failed → sign out.
+              await clearTokens();
               await AsyncStorage.removeItem(AUTH_USER_KEY);
               setUser(null);
             }
           }
         } else {
-          // No token, ensure no user
           setUser(null);
           await AsyncStorage.removeItem(AUTH_USER_KEY);
         }
@@ -107,25 +149,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     restore();
   }, []);
 
-  // ─── Route guard ────────────────────────────────────────────────────────────
+  // ─── Route guard ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === 'auth';
-    const inOnboarding = segments[0] === 'onboarding';
-    // modals/terms-modal and modals/privacy-modal must be accessible
-    // without a session (reachable from the register screen)
+    const inAuthGroup   = segments[0] === 'auth';
+    const inOnboarding  = segments[0] === 'onboarding';
     const inPublicModal =
       segments[0] === 'modals' &&
       (segments[1] === 'terms-modal' || segments[1] === 'privacy-modal');
     const isPublic = inAuthGroup || inOnboarding || inPublicModal;
 
     if (!user && !isPublic) {
-      // Not authenticated and not on a public screen → go to login
       router.replace('/auth/login');
     } else if (user && inAuthGroup) {
-      // Authenticated and still on auth screen
-      // Check if onboarding is needed
       AsyncStorage.getItem(ONBOARDING_DONE_KEY).then((done) => {
         if (done === 'true') {
           router.replace('/(tabs)');
@@ -136,28 +173,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, segments, isLoading]);
 
-  // ─── signIn ─────────────────────────────────────────────────────────────────
+  // ─── signIn ──────────────────────────────────────────────────────────────────
   const signIn = useCallback(async (email: string, password: string) => {
     try {
-      const input = email.trim().toLowerCase();
-
-      // ── Real GraphQL login ────────────────────────────────────────────────
       const { data, error } = await apolloClient.mutate({
         mutation: LoginDocument,
-        variables: {
-          input: {
-            email: input,
-            password,
-          },
-        },
+        variables: { input: { email: email.trim().toLowerCase(), password } },
       });
 
-      if (error || !data) {
-        throw new Error(error?.message);
-      }
+      if (error || !data) throw new Error(error?.message);
 
-      const { token, user: userData } = data.login;
+      const { token, refreshToken, user: userData } = data.login;
       await setAuthToken(token);
+      await setRefreshToken(refreshToken ?? null);
       await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
       setUser(userData as User);
     } catch (error) {
@@ -165,69 +193,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ─── signUp ─────────────────────────────────────────────────────────────────
-  const signUp = useCallback(
-    async (input: CreateCompanyInput) => {
-      const {contactPassword, contactEmail, contactName, size, industry} = input;
-      try {
-        const { data, error } = await apolloClient.mutate({
-          mutation: CreateCompanyDocument,
-          variables: {
-            input: {
-              contactPassword,
-              contactEmail: contactEmail.trim().toLowerCase(),
-              contactName: contactName.trim(),
-              name: contactName.trim(),
-              size,
-              industry,
-            },
-          },
-        });
-
-        if(!data || error) {
-          throw new Error('An unexpected error occurred.');
-        }
-        const { user, token } = data.createCompany;
-        await setAuthToken(token);
-        await AsyncStorage.removeItem(ONBOARDING_DONE_KEY);
-        await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-        setUser(user as User);
-        router.replace('/onboarding');
-      } catch (error) {
-        throw new Error(extractMessage(error));
-      }
-    },
-    []
-  );
-
-  // ─── signOut ────────────────────────────────────────────────────────────────
-  const signOut = useCallback(async () => {
+  // ─── signUp ──────────────────────────────────────────────────────────────────
+  const signUp = useCallback(async (input: CreateCompanyInput) => {
+    const { contactPassword, contactEmail, contactName, size, industry } = input;
     try {
-      await setAuthToken(null);
-      await AsyncStorage.removeItem(AUTH_USER_KEY);
-      await apolloClient.clearStore();
-    } finally {
-      setUser(null);
+      const { data, error } = await apolloClient.mutate({
+        mutation: CreateCompanyDocument,
+        variables: {
+          input: {
+            contactPassword,
+            contactEmail: contactEmail.trim().toLowerCase(),
+            contactName: contactName.trim(),
+            name: contactName.trim(),
+            size,
+            industry,
+          },
+        },
+      });
+
+      if (!data || error) throw new Error('An unexpected error occurred.');
+
+      const { user: userData, token } = data.createCompany;
+      // CreateCompany doesn't return a refreshToken — that's fine,
+      // the user will get one on their next login after email confirmation.
+      await setAuthToken(token);
+      await AsyncStorage.removeItem(ONBOARDING_DONE_KEY);
+      await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
+      setUser(userData as User);
+      router.replace('/onboarding');
+    } catch (error) {
+      throw new Error(extractMessage(error));
     }
   }, []);
 
-  // ─── forgotPassword ─────────────────────────────────────────────────────────
+  // ─── forgotPassword ──────────────────────────────────────────────────────────
   const forgotPassword = useCallback(async (email: string) => {
     try {
       await apolloClient.mutate({
         mutation: ForgotPasswordDocument,
-        variables: {
-          input: {
-            email: email.trim().toLowerCase(),
-          },
-        },
+        variables: { input: { email: email.trim().toLowerCase() } },
       });
     } catch (error) {
       throw new Error(extractMessage(error));
     }
   }, []);
 
-  // ─── confirmEmail ───────────────────────────────────────────────────────────
+  // ─── confirmEmail ─────────────────────────────────────────────────────────────
   const confirmEmail = useCallback(async (code: string) => {
     try {
       await apolloClient.mutate({
@@ -239,9 +250,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ─── updateUser ─────────────────────────────────────────────────────────────
+  // ─── updateUser ──────────────────────────────────────────────────────────────
   const updateUser = useCallback(async (patch: Partial<User>) => {
-    setUser(prev => {
+    setUser((prev) => {
       if (!prev) return null;
       const updated = { ...prev, ...patch };
       AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(updated));
