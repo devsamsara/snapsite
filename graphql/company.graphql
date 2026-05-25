@@ -47,7 +47,6 @@ query CurrentCompany {
     }
   }
 }
-
 query Members {
   getCompanyMembers {
     members {
@@ -66,7 +65,9 @@ query Members {
     totalProjects
   }
 }
-
+query InviteMember($input: InviteMemberInput!) {
+  inviteMember(input: $input)
+}
 # =============================================================================
 # MUTATIONS
 # =============================================================================
@@ -104,3 +105,4 @@ mutation CreateCompany($input: CreateCompanyInput!) {
     }
   }
 }
+

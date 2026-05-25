@@ -53,7 +53,6 @@ interface AuthContextValue {
   forgotPassword: (email: string) => Promise<void>;
   confirmEmail: (code: string) => Promise<void>;
   updateUser: (patch: Partial<User>) => void;
-  acceptInvitation: (token: string) => Promise<void>;
 }
 
 function extractMessage(error: any): string {
@@ -250,34 +249,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const acceptInvitation = useCallback(async (token: string) => {
-    try {
-      const response = await fetch(
-        `${REST_API_URL}/auth/accept-invitation?token=${encodeURIComponent(token)}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            // 'Authorization': `Bearer ${await restoreAuthToken()}`
-          },
-        }
-      );
-
-      if (!response.ok) {
-        let errorMessage = 'Failed to accept invitation';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-          const textError = await response.text();
-          errorMessage = textError || errorMessage;
-        }
-        throw new Error(errorMessage);
-      }
-    } catch (error) {
-      throw new Error(extractMessage(error));
-    }
-  }, []);
   return (
     <AuthContext.Provider
       value={{
@@ -289,7 +260,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         forgotPassword,
         confirmEmail,
         updateUser,
-        acceptInvitation,
       }}
     >
       {children}

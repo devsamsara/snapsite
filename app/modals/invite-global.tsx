@@ -36,52 +36,17 @@ import { Button } from '@/components/ui/button';
 import { AppInput } from '@/components/ui/app-input';
 import { SearchInput } from '@/components/ui/search-input';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { GetMyProjectsDocument, UserRole } from '@/gql/graphql';
-import { useQuery } from '@apollo/client/react';
+import {
+  GetMyProjectsDocument,
+  InviteMemberDocument,
+  UserRole,
+} from '@/gql/graphql';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { InviteGlobalSkeleton } from '@/components/invite-global-skeleton';
 import { AppAlert } from '@/components/ui/app-alert';
 import { GraphQLError } from '@/components/ui/graphql-error';
 
 type InviteForm = { name: string; email: string };
-
-// ─── Mocks ───────────────────────────────────────────────────────────────────
-const MOCK_PROJECTS = [
-  {
-    id: '1',
-    name: 'Reforma Oficinas BCN',
-    location: 'Barcelona',
-    color: '#3B82F6',
-    progress: 65,
-  },
-  {
-    id: '2',
-    name: 'Residencial Las Palmas',
-    location: 'Las Palmas de GC',
-    color: '#10B981',
-    progress: 30,
-  },
-  {
-    id: '3',
-    name: 'Centro Comercial Sur',
-    location: 'Sevilla',
-    color: '#F59E0B',
-    progress: 80,
-  },
-  {
-    id: '4',
-    name: 'Hotel Costa Brava',
-    location: 'Girona',
-    color: '#8B5CF6',
-    progress: 15,
-  },
-  {
-    id: '5',
-    name: 'Nave Industrial Zaragoza',
-    location: 'Zaragoza',
-    color: '#EF4444',
-    progress: 50,
-  },
-];
 
 // Los valores de los roles se resuelven en runtime con t('roles.<key>')
 // para que cambien automáticamente según el idioma activo.
@@ -109,6 +74,7 @@ export default function InviteGlobalModal() {
   const [roleError, setRoleError] = useState('');
   const [loading, setLoading] = useState(false);
   const { data, loading: dataLoading, error, refetch } = useQuery(GetMyProjectsDocument);
+  const [inviteMember, {loading: isLoading}] =  useMutation(InviteMemberDocument)
 
   const inviteSchema = z.object({
     name: z.string().min(2, t('validation.nameRequired')),
@@ -149,7 +115,13 @@ export default function InviteGlobalModal() {
     if (!valid) return;
 
     setLoading(true);
-    await new Promise(r => setTimeout(r, 900));
+    await inviteMember({
+      variables: {
+        input: {
+          ...data
+        }
+      }
+    })
     setLoading(false);
 
     console.log(data)
