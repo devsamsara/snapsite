@@ -357,7 +357,11 @@
       "infoText": "An invitation email will be sent for project {{project}}.",
       "send": "Send invitation",
       "successTitle": "Invitation sent",
-      "successMessage": "An email was sent to {{email}} to join \"{{project}}\"."
+      "successMessage": "An email was sent to {{email}} to join \"{{project}}\".",
+      "errorTitle": "Failed to send",
+      "errorMessage": "The invitation could not be sent. Please try again.",
+      "selectedProject": "Project: {{name}}",
+      "selectedProjectProgress": "Progress: {{progress}}%"
     }
   },
   "teamMembers": {

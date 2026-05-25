@@ -357,7 +357,11 @@
       "infoText": "Se enviará un correo de invitación al proyecto {{project}}.",
       "send": "Enviar invitación",
       "successTitle": "Invitación enviada",
-      "successMessage": "Se ha enviado un correo a {{email}} para unirse a \"{{project}}\"."
+      "successMessage": "Se ha enviado un correo a {{email}} para unirse a \"{{project}}\".",
+      "errorTitle": "Error al enviar",
+      "errorMessage": "No se pudo enviar la invitación. Inténtalo de nuevo.",
+      "selectedProject": "Proyecto: {{name}}",
+      "selectedProjectProgress": "Progreso: {{progress}}%"
     }
   },
   "teamMembers": {

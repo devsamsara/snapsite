@@ -10,7 +10,6 @@
  */
 import React, { useMemo, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -44,45 +43,6 @@ import { GraphQLError } from '@/components/ui/graphql-error';
 
 type InviteForm = { name: string; email: string };
 
-// ─── Mocks ───────────────────────────────────────────────────────────────────
-const MOCK_PROJECTS = [
-  {
-    id: '1',
-    name: 'Reforma Oficinas BCN',
-    location: 'Barcelona',
-    color: '#3B82F6',
-    progress: 65,
-  },
-  {
-    id: '2',
-    name: 'Residencial Las Palmas',
-    location: 'Las Palmas de GC',
-    color: '#10B981',
-    progress: 30,
-  },
-  {
-    id: '3',
-    name: 'Centro Comercial Sur',
-    location: 'Sevilla',
-    color: '#F59E0B',
-    progress: 80,
-  },
-  {
-    id: '4',
-    name: 'Hotel Costa Brava',
-    location: 'Girona',
-    color: '#8B5CF6',
-    progress: 15,
-  },
-  {
-    id: '5',
-    name: 'Nave Industrial Zaragoza',
-    location: 'Zaragoza',
-    color: '#EF4444',
-    progress: 50,
-  },
-];
-
 // Los valores de los roles se resuelven en runtime con t('roles.<key>')
 // para que cambien automáticamente según el idioma activo.
 const ROLE_KEYS = [
@@ -101,13 +61,12 @@ export default function InviteGlobalModal() {
   const cardElevation = useCardStyle();
 
   const [projectSearch, setProjectSearch] = useState('');
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    null
-  );
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [projectError, setProjectError] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [roleError, setRoleError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
   const { data, loading: dataLoading, error, refetch } = useQuery(GetMyProjectsDocument);
 
   const inviteSchema = z.object({
@@ -123,19 +82,24 @@ export default function InviteGlobalModal() {
     defaultValues: { name: '', email: '' },
   });
 
+  // ── Proyectos: usa los datos reales del backend, con fallback a lista vacía ──
+  const allProjects = data?.getMyProjects ?? [];
+
   const filteredProjects = useMemo(
     () =>
-      data?.getMyProjects.filter(
+      allProjects.filter(
         p =>
           p.name.toLowerCase().includes(projectSearch.toLowerCase()) ||
           p.location.toLowerCase().includes(projectSearch.toLowerCase())
       ),
-    [data, projectSearch]
+    [allProjects, projectSearch]
   );
 
-  const selectedProject = data?.getMyProjects.find(p => p.id === selectedProjectId);
+  // selectedProject busca en la misma fuente que se usa para renderizar
+  const selectedProject = allProjects.find(p => p.id === selectedProjectId) ?? null;
 
-  const onSubmit = async (data: InviteForm) => {
+  const onSubmit = async (formData: InviteForm) => {
+    // Validación manual de campos fuera de react-hook-form
     let valid = true;
     if (!selectedProjectId) {
       setProjectError(t('modals.inviteGlobal.selectProject'));
@@ -145,22 +109,32 @@ export default function InviteGlobalModal() {
       setRoleError(t('modals.inviteGlobal.selectRole'));
       valid = false;
     }
-
     if (!valid) return;
 
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 900));
-    setLoading(false);
+    setSubmitting(true);
+    try {
+      // TODO: reemplazar por la mutation real de invitación cuando esté disponible
+      await new Promise(r => setTimeout(r, 900));
 
-    console.log(data)
-    AppAlert.alert(
-      t('modals.inviteGlobal.successTitle'),
-      t('modals.inviteGlobal.successMessage', {
-        email: data.email,
-        project: selectedProject?.name,
-      }),
-      [{ text: t('common.ok'), onPress: () => router.back() }]
-    );
+      AppAlert.alert(
+        t('modals.inviteGlobal.successTitle'),
+        t('modals.inviteGlobal.successMessage', {
+          email: formData.email,
+          project: selectedProject?.name ?? '',
+        }),
+        [{ text: t('common.ok'), style: 'default', onPress: () => router.back() }],
+        { type: 'success' },
+      );
+    } catch (err) {
+      AppAlert.alert(
+        t('modals.inviteGlobal.errorTitle'),
+        t('modals.inviteGlobal.errorMessage'),
+        [{ text: t('common.ok'), style: 'cancel' }],
+        { type: 'error' },
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const getColorByProgress = (progress: number): string => {
@@ -170,11 +144,10 @@ export default function InviteGlobalModal() {
       { max: 85, color: '#3B82F6' },
       { max: 100, color: '#10B981' },
     ];
-
-    const range = COLOR_RANGES.find(r => progress <= r.max);
-
-    return range ? range.color : '#9CA3AF';
+    return COLOR_RANGES.find(r => progress <= r.max)?.color ?? '#9CA3AF';
   };
+
+  // ── Estados de carga y error ──────────────────────────────────────────────────
   if (dataLoading) return <InviteGlobalSkeleton />;
 
   if (error) {
@@ -191,247 +164,241 @@ export default function InviteGlobalModal() {
     );
   }
 
+  // ── Render principal ──────────────────────────────────────────────────────────
   return (
-    data && (
-      <KeyboardAvoidingView
-        style={S.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
-      >
-        <ModalRoot>
-          <ModalHeader
-            title={t('modals.inviteGlobal.title')}
-            subtitle={t('modals.inviteGlobal.subtitle')}
-            onClose={() => router.back()}
+    <KeyboardAvoidingView
+      style={S.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
+    >
+      <ModalRoot>
+        <ModalHeader
+          title={t('modals.inviteGlobal.title')}
+          subtitle={t('modals.inviteGlobal.subtitle')}
+          onClose={() => router.back()}
+        />
+
+        <ModalBody>
+          {/* ── Selector de proyecto ── */}
+          <Text style={[S.sectionLabel, { color: colors.foreground }]}>
+            {t('modals.inviteGlobal.project')}
+          </Text>
+
+          <SearchInput
+            placeholder={t('modals.inviteGlobal.searchProject')}
+            value={projectSearch}
+            onChangeText={setProjectSearch}
           />
 
-          <ModalBody>
-            {/* ── Selector de proyecto ── */}
-            <Text style={[S.sectionLabel, { color: colors.foreground }]}>
-              {t('modals.inviteGlobal.project')}
-            </Text>
-
-            <SearchInput
-              placeholder={t('modals.inviteGlobal.searchProject')}
-              value={projectSearch}
-              onChangeText={setProjectSearch}
-            />
-
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 32 }}
-            >
-              <View style={[S.projectList, cardElevation, { marginTop: 10 }]}>
-                {filteredProjects?.length === 0 ? (
-                  <Text style={[S.emptyText, { color: colors.muted }]}>
-                    {t('common.noResults')}
-                  </Text>
-                ) : (
-                  filteredProjects?.map((p, idx) => {
-                    const isSelected = selectedProjectId === p.id;
-                    const isLast = idx === filteredProjects.length - 1;
-                    return (
-                      <TouchableOpacity
-                        key={p.id}
-                        onPress={() => {
-                          setSelectedProjectId(p.id);
-                          setProjectError('');
-                        }}
-                        style={[
-                          S.projectRow,
-                          {
-                            backgroundColor: isSelected
-                              ? colors.primary + '12'
-                              : 'transparent',
-                            borderBottomWidth: isLast
-                              ? 0
-                              : StyleSheet.hairlineWidth,
-                            borderBottomColor: colors.border,
-                          },
-                        ]}
-                      >
-                        <View
-                          style={[S.projectDot, { backgroundColor: getColorByProgress(p.progress) }]}
-                        />
-                        <View style={S.projectInfo}>
-                          <Text
-                            style={[
-                              S.projectName,
-                              { color: colors.foreground },
-                            ]}
-                          >
-                            {p.name}
-                          </Text>
-                          <Text style={[S.projectLoc, { color: colors.muted }]}>
-                            {p.location}
-                          </Text>
-                        </View>
-                        {/* Progress bar */}
-                        <View style={S.progressWrap}>
-                          <View
-                            style={[
-                              S.progressBg,
-                              { backgroundColor: colors.border },
-                            ]}
-                          >
-                            <View
-                              style={[
-                                S.progressFill,
-                                {
-                                  width: `${p.progress}%` as any,
-                                  backgroundColor: getColorByProgress(p.progress),
-                                },
-                              ]}
-                            />
-                          </View>
-                          <Text
-                            style={[S.progressPct, { color: colors.muted }]}
-                          >
-                            {p.progress}%
-                          </Text>
-                        </View>
-                        {isSelected && (
-                          <IconSymbol
-                            name="checkmark.circle.fill"
-                            size={20}
-                            color={colors.primary}
-                          />
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })
-                )}
-              </View>
-              {!!projectError && (
-                <Text style={[S.errorText, { color: colors.error }]}>
-                  {projectError}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={S.scrollContent}
+          >
+            <View style={[S.projectList, cardElevation, S.projectListMargin]}>
+              {filteredProjects.length === 0 ? (
+                <Text style={[S.emptyText, { color: colors.muted }]}>
+                  {t('common.noResults')}
                 </Text>
-              )}
-
-              {/* ── Datos del invitado ── */}
-              <Text
-                style={[
-                  S.sectionLabel,
-                  { color: colors.foreground, marginTop: 24 },
-                ]}
-              >
-                {t('modals.inviteGlobal.guestData')}
-              </Text>
-
-              <AppInput
-                label={t('modals.inviteMember.name')}
-                name="name"
-                control={control}
-                icon="person.fill"
-                placeholder={t('modals.inviteMember.namePlaceholder')}
-                returnKeyType="next"
-                autoCapitalize="words"
-              />
-
-              <AppInput
-                label={t('modals.inviteMember.email')}
-                name="email"
-                control={control}
-                icon="envelope.fill"
-                placeholder={t('modals.inviteMember.emailPlaceholder')}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                returnKeyType="done"
-              />
-
-              {/* ── Rol ── */}
-              <Text style={[S.sectionLabel, { color: colors.foreground }]}>
-                {t('modals.inviteGlobal.role')}
-              </Text>
-              <View style={S.roles}>
-                {ROLE_KEYS.map(roleKey => {
-                  const active = selectedRole === roleKey;
+              ) : (
+                filteredProjects.map((p, idx) => {
+                  const isSelected = selectedProjectId === p.id;
+                  const isLast = idx === filteredProjects.length - 1;
                   return (
                     <TouchableOpacity
-                      key={roleKey}
+                      key={p.id}
                       onPress={() => {
-                        setSelectedRole(roleKey);
-                        setRoleError('');
+                        setSelectedProjectId(p.id);
+                        setProjectError('');
                       }}
                       style={[
-                        S.roleChip,
+                        S.projectRow,
                         {
-                          backgroundColor: active
-                            ? colors.primary
-                            : colors.surface,
-                          borderColor: active ? colors.primary : colors.border,
+                          backgroundColor: isSelected
+                            ? colors.primary + '12'
+                            : 'transparent',
+                          borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
+                          borderBottomColor: colors.border,
                         },
                       ]}
                     >
-                      <Text
+                      <View
                         style={[
-                          S.roleText,
-                          { color: active ? '#FFF' : colors.foreground },
+                          S.projectDot,
+                          { backgroundColor: getColorByProgress(p.progress) },
                         ]}
-                      >
-                        {t(`roles.${roleKey}`)}
-                      </Text>
+                      />
+                      <View style={S.projectInfo}>
+                        <Text style={[S.projectName, { color: colors.foreground }]}>
+                          {p.name}
+                        </Text>
+                        <Text style={[S.projectLoc, { color: colors.muted }]}>
+                          {p.location}
+                        </Text>
+                      </View>
+                      {/* Progress bar */}
+                      <View style={S.progressWrap}>
+                        <View style={[S.progressBg, { backgroundColor: colors.border }]}>
+                          <View
+                            style={[
+                              S.progressFill,
+                              {
+                                width: `${p.progress}%` as any,
+                                backgroundColor: getColorByProgress(p.progress),
+                              },
+                            ]}
+                          />
+                        </View>
+                        <Text style={[S.progressPct, { color: colors.muted }]}>
+                          {p.progress}%
+                        </Text>
+                      </View>
+                      {isSelected && (
+                        <IconSymbol
+                          name="checkmark.circle.fill"
+                          size={20}
+                          color={colors.primary}
+                        />
+                      )}
                     </TouchableOpacity>
                   );
-                })}
-              </View>
-              {!!roleError && (
-                <Text style={[S.errorText, { color: colors.error }]}>
-                  {roleError}
-                </Text>
+                })
               )}
+            </View>
 
-              {/* ── Info box ── */}
-              {selectedProject && (
-                <View
-                  style={[
-                    S.infoBox,
-                    {
-                      backgroundColor: colors.primary + '10',
-                      borderColor: colors.primary + '30',
-                    },
-                  ]}
-                >
-                  <IconSymbol
-                    name="info.circle.fill"
-                    size={16}
-                    color={colors.primary}
-                  />
+            {!!projectError && (
+              <Text style={[S.errorText, { color: colors.error }]}>
+                {projectError}
+              </Text>
+            )}
+
+            {/* ── Datos del invitado ── */}
+            <Text
+              style={[S.sectionLabel, { color: colors.foreground, marginTop: 24 }]}
+            >
+              {t('modals.inviteGlobal.guestData')}
+            </Text>
+
+            <AppInput
+              label={t('modals.inviteMember.name')}
+              name="name"
+              control={control}
+              icon="person.fill"
+              placeholder={t('modals.inviteMember.namePlaceholder')}
+              returnKeyType="next"
+              autoCapitalize="words"
+            />
+
+            <AppInput
+              label={t('modals.inviteMember.email')}
+              name="email"
+              control={control}
+              icon="envelope.fill"
+              placeholder={t('modals.inviteMember.emailPlaceholder')}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              returnKeyType="done"
+            />
+
+            {/* ── Rol ── */}
+            <Text style={[S.sectionLabel, { color: colors.foreground }]}>
+              {t('modals.inviteGlobal.role')}
+            </Text>
+            <View style={S.roles}>
+              {ROLE_KEYS.map(roleKey => {
+                const active = selectedRole === roleKey;
+                return (
+                  <TouchableOpacity
+                    key={roleKey}
+                    onPress={() => {
+                      setSelectedRole(roleKey);
+                      setRoleError('');
+                    }}
+                    style={[
+                      S.roleChip,
+                      {
+                        backgroundColor: active ? colors.primary : colors.surface,
+                        borderColor: active ? colors.primary : colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        S.roleText,
+                        { color: active ? '#FFF' : colors.foreground },
+                      ]}
+                    >
+                      {t(`roles.${roleKey}`)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {!!roleError && (
+              <Text style={[S.errorText, { color: colors.error }]}>
+                {roleError}
+              </Text>
+            )}
+
+            {/* ── Info box: datos del proyecto seleccionado ── */}
+            {selectedProject && (
+              <View
+                style={[
+                  S.infoBox,
+                  {
+                    backgroundColor: colors.primary + '10',
+                    borderColor: colors.primary + '30',
+                  },
+                ]}
+              >
+                <IconSymbol
+                  name="info.circle.fill"
+                  size={16}
+                  color={colors.primary}
+                />
+                <View style={S.infoContent}>
                   <Text style={[S.infoText, { color: colors.primary }]}>
                     {t('modals.inviteGlobal.infoText', {
                       project: selectedProject.name,
                     })}
                   </Text>
+                  <Text style={[S.infoSubText, { color: colors.primary + 'CC' }]}>
+                    {t('modals.inviteGlobal.selectedProjectProgress', {
+                      progress: selectedProject.progress,
+                    })}
+                    {'  ·  '}
+                    {selectedProject.location}
+                  </Text>
                 </View>
-              )}
-            </ScrollView>
-          </ModalBody>
+              </View>
+            )}
+          </ScrollView>
+        </ModalBody>
 
-          <ModalFooter row>
-            <Button
-              title={t('common.cancel')}
-              variant="ghost"
-              onPress={() => router.back()}
-              fullWidth={false}
-              style={S.btn}
-            />
-            <Button
-              title={t('modals.inviteGlobal.send')}
-              variant="primary"
-              onPress={handleSubmit(onSubmit)}
-              isLoading={loading}
-              fullWidth={false}
-              style={S.btn}
-            />
-          </ModalFooter>
-        </ModalRoot>
-      </KeyboardAvoidingView>
-    )
+        <ModalFooter row>
+          <Button
+            title={t('common.cancel')}
+            variant="ghost"
+            onPress={() => router.back()}
+            fullWidth={false}
+            style={S.btn}
+          />
+          <Button
+            title={t('modals.inviteGlobal.send')}
+            variant="primary"
+            onPress={handleSubmit(onSubmit)}
+            isLoading={submitting}
+            fullWidth={false}
+            style={S.btn}
+          />
+        </ModalFooter>
+      </ModalRoot>
+    </KeyboardAvoidingView>
   );
 }
 
 const S = StyleSheet.create({
   flex: { flex: 1 },
+  scrollContent: { paddingBottom: 32 },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '700',
@@ -441,6 +408,7 @@ const S = StyleSheet.create({
   },
   // Lista proyectos
   projectList: { borderRadius: 14, overflow: 'hidden', marginBottom: 4 },
+  projectListMargin: { marginTop: 10 },
   projectRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -467,17 +435,19 @@ const S = StyleSheet.create({
     borderWidth: 1,
   },
   roleText: { fontSize: 13, fontWeight: '500' },
-  // Info
+  // Info box
   infoBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
-    padding: 12,
+    gap: 10,
+    padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    marginTop: 8,
+    marginTop: 12,
   },
-  infoText: { flex: 1, fontSize: 12, lineHeight: 18 },
+  infoContent: { flex: 1, gap: 3 },
+  infoText: { fontSize: 13, lineHeight: 18, fontWeight: '500' },
+  infoSubText: { fontSize: 12, lineHeight: 16 },
   // Footer
   btn: { flex: 1 },
 });
