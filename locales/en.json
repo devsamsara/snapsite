@@ -718,5 +718,11 @@
   },
   "locationMap": {
     "openInMaps": "Open in Maps"
+  },
+  "graphqlError": {
+    "title": "Something went wrong",
+    "message": "We could not connect to the server. We are working to fix this. Please try again later.",
+    "retry": "Try again",
+    "status": "Service temporarily unavailable"
   }
 }

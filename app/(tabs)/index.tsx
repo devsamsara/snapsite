@@ -35,6 +35,7 @@ import {
 import { useQuery } from '@apollo/client/react';
 import { useAuth } from '@/lib/auth-context';
 import { HomeSkeleton } from '@/components/home-skeleton';
+import { GraphQLError } from '@/components/ui/graphql-error';
 
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -44,7 +45,7 @@ export default function HomeScreen() {
   const cardSmElevation = useCardStyleSm();
   const [searchQuery, setSearchQuery] = useState('');
   const { isLoading: authLoading } = useAuth();
-  const { data, loading, error } = useQuery(CurrentCompanyDocument, {
+  const { data, loading, error, refetch } = useQuery(CurrentCompanyDocument, {
     skip: authLoading,
   });
 
@@ -272,7 +273,7 @@ export default function HomeScreen() {
   }
 
   if (error) {
-    console.log('[HomeScreen] GraphQL error:', error);
+    return <GraphQLError onRetry={() => refetch()} />;
   }
 
   return (

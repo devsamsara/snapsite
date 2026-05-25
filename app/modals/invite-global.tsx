@@ -40,6 +40,7 @@ import { GetMyProjectsDocument, UserRole } from '@/gql/graphql';
 import { useQuery } from '@apollo/client/react';
 import { InviteGlobalSkeleton } from '@/components/invite-global-skeleton';
 import { AppAlert } from '@/components/ui/app-alert';
+import { GraphQLError } from '@/components/ui/graphql-error';
 
 type InviteForm = { name: string; email: string };
 
@@ -107,7 +108,7 @@ export default function InviteGlobalModal() {
   const [selectedRole, setSelectedRole] = useState('');
   const [roleError, setRoleError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { data, loading: dataLoading, error } = useQuery(GetMyProjectsDocument);
+  const { data, loading: dataLoading, error, refetch } = useQuery(GetMyProjectsDocument);
 
   const inviteSchema = z.object({
     name: z.string().min(2, t('validation.nameRequired')),
@@ -175,6 +176,20 @@ export default function InviteGlobalModal() {
     return range ? range.color : '#9CA3AF';
   };
   if (dataLoading) return <InviteGlobalSkeleton />;
+
+  if (error) {
+    return (
+      <ModalRoot>
+        <ModalHeader
+          title={t('modals.inviteGlobal.title')}
+          onClose={() => router.back()}
+        />
+        <ModalBody>
+          <GraphQLError variant="compact" onRetry={() => refetch()} />
+        </ModalBody>
+      </ModalRoot>
+    );
+  }
 
   return (
     data && (

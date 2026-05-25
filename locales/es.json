@@ -718,5 +718,11 @@
   },
   "locationMap": {
     "openInMaps": "Abrir en Maps"
+  },
+  "graphqlError": {
+    "title": "Algo salió mal",
+    "message": "No pudimos conectar con el servidor. Estamos trabajando para resolverlo. Por favor, inténtalo más tarde.",
+    "retry": "Reintentar",
+    "status": "Servicio temporalmente no disponible"
   }
 }

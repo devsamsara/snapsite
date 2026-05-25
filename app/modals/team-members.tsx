@@ -26,7 +26,8 @@ import {
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { SearchInput } from '@/components/ui/search-input';
 import { useQuery } from '@apollo/client/react';
-import { CompanyMember, MemberProject, MembersDocument } from '@/gql/graphql'; // ── Mocks ────────────────────────────────────────────────────────────────────
+import { CompanyMember, MemberProject, MembersDocument } from '@/gql/graphql';
+import { GraphQLError } from '@/components/ui/graphql-error';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 const COLORS: string[] = [
@@ -53,7 +54,7 @@ export default function TeamMembersModal() {
   const colors = useColors();
   const card = useCardStyle();
   const [search, setSearch] = useState('');
-  const { data, loading, error } = useQuery(MembersDocument);
+  const { data, loading, error, refetch } = useQuery(MembersDocument);
 
   const filtered = data?.getCompanyMembers.members.filter(
     m =>
@@ -136,6 +137,28 @@ export default function TeamMembersModal() {
       </View>
     </View>
   );
+
+  if (loading) {
+    return (
+      <ModalRoot>
+        <ModalHeader title={t('team.title')} onClose={() => router.back()} />
+        <ModalBody>
+          <GraphQLError variant="compact" />
+        </ModalBody>
+      </ModalRoot>
+    );
+  }
+
+  if (error) {
+    return (
+      <ModalRoot>
+        <ModalHeader title={t('team.title')} onClose={() => router.back()} />
+        <ModalBody>
+          <GraphQLError variant="compact" onRetry={() => refetch()} />
+        </ModalBody>
+      </ModalRoot>
+    );
+  }
 
   return (
     data && (
