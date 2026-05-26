@@ -10,7 +10,7 @@ import { useColors } from '@/hooks/use-colors';
 import { AppInput } from '@/components/ui/app-input';
 import { AppAlert } from '@/components/ui/app-alert';
 import { useMutation } from '@apollo/client/react';
-import { CreateProjectDocument } from '@/gql/graphql';
+import { CreateProjectDocument, CurrentCompanyDocument } from '@/gql/graphql';
 
 type ProjectFormValues = {
   name: string;
@@ -72,35 +72,22 @@ export default function CreateProjectDetailsScreen() {
             location: newProject.location,
           },
         },
+        refetchQueries: [CurrentCompanyDocument],
       });
 
       const createdId = res.data?.createProject?.id;
       setLoading(false);
 
-      AppAlert.alert(
-        t('createProject.successTitle'),
-        t('createProject.successSubtitle', { name: newProject.name }),
-        [
-          {
-            text: t('createProject.viewProjectDetails'),
-            style: 'cancel',
-            onPress: () =>
-              router.replace({
-                pathname: '/project/[id]',
-                params: { id: createdId ?? '' },
-              }),
+      setTimeout(() => {
+        setLoading(false);
+        router.replace({
+          pathname: '/add-photos-prompt',
+          params: {
+            projectId: createdId,
+            projectName: newProject.name,
           },
-          {
-            text: t('createProject.addPhotosNow'),
-            onPress: () =>
-              router.replace({
-                pathname: '/add-photos-prompt',
-                params: { projectId: createdId, projectName: newProject.name },
-              }),
-          },
-        ],
-        { type: 'success' },
-      );
+        });
+      }, 1500);
     } catch (err: any) {
       setLoading(false);
       const msg =

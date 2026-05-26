@@ -8,6 +8,55 @@ query GetMyProjects {
         progress
         startDate
         thumbnail
+        status
+        photos {
+            id
+            createdAt
+            url
+        }
+    }
+}
+
+query FindProject($findProjectId: ID!) {
+    findProject(id: $findProjectId) {
+        id
+        startDate
+        endDate
+        progress
+        thumbnail
+        timeline {
+            createdAt
+            description
+            id
+            photoUrl
+            title
+            type
+            updatedAt
+        }
+        createdAt
+        description
+        members {
+            id
+            name
+            role
+        }
+        notes {
+            author {
+                id
+                name
+            }
+            content
+            createdAt
+            id
+            pinned
+            updatedAt
+        }
+        photos {
+            createdAt
+            id
+            url
+            tags
+        }
     }
 }
 

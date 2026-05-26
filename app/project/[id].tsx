@@ -19,6 +19,16 @@ import { useState, useRef, useCallback } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Haptics from "expo-haptics";
 import { AppAlert } from '@/components/ui/app-alert';
+import { useQuery } from '@apollo/client/react';
+import {
+  FindProjectDocument,
+  Note,
+  Photo,
+  Project,
+  TimelineEvent,
+  User,
+  UserRole,
+} from '@/gql/graphql';
 
 const { width: W } = Dimensions.get("window");
 
@@ -65,30 +75,6 @@ const MOCK_PROJECTS: Record<string, Project> = {
   },
 };
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Photo {
-  id: string; url: string; date: string; caption: string; tags: string[];
-}
-interface TimelineEvent {
-  id: string; date: string; title: string; description: string;
-  type: "photo" | "note" | "milestone" | "team"; photoUrl?: string;
-}
-interface TeamMember {
-  id: string; name: string; role: string; initials: string;
-  color: string; lastActivity: string; online: boolean;
-}
-interface Note {
-  id: string; author: string; initials: string; authorColor: string;
-  content: string; date: string; pinned: boolean;
-}
-interface Project {
-  id: string; name: string; location: string; thumbnail: string;
-  description: string; status: string; progress: number;
-  startDate: string; endDate: string;
-  photos: Photo[]; timeline: TimelineEvent[]; team: TeamMember[]; notes: Note[];
-}
-
 type TabId = "gallery" | "timeline" | "team" | "notes";
 
 const TABS: { id: TabId; icon: string; labelKey: string }[] = [
@@ -129,13 +115,18 @@ export default function ProjectDetailScreen() {
   const cardElevation = useCardStyle();
   const cardSmElevation = useCardStyleSm();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const {data} = useQuery(FindProjectDocument, {
+    variables: {
+      findProjectId: id
+    }
+  })
 
-  const project: Project = MOCK_PROJECTS[id] ?? MOCK_PROJECTS["1"];
+  const project: Project = data?.findProject;
 
   const [activeTab, setActiveTab] = useState<TabId>("gallery");
-  const [notes, setNotes] = useState<Note[]>(project.notes);
-  const [photos, setPhotos] = useState<Photo[]>(project.photos);
-  const [team, setTeam] = useState<TeamMember[]>(project.team);
+  const [notes, setNotes] = useState<Note[]>(project?.notes);
+  const [photos, setPhotos] = useState<Photo[]>(project?.photos);
+  const [team, setTeam] = useState<User[]>(project?.members);
   const [filterTag, setFilterTag] = useState<string | null>(null);
 
   const tabAnim = useRef(new RNAnimated.Value(0)).current;
@@ -154,7 +145,7 @@ export default function ProjectDetailScreen() {
       const initials = result.name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
       const palette = ["#007AFF", "#FF2D55", "#FF9500", "#4CD964", "#5856D6", "#FF3B30", "#34C759"];
       const color = palette[Math.floor(Math.random() * palette.length)];
-      const newMember: TeamMember = { id: uid(), name: result.name, role: result.role, initials, color, lastActivity: "Ahora", online: false };
+      const newMember  = { id: uid(), name: result.name, role: result.role as UserRole } as User;
       setTeam((p) => [...p, newMember]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     });
@@ -165,14 +156,14 @@ export default function ProjectDetailScreen() {
     router.push({ pathname: "/modals/add-note", params: { projectId: project.id } });
     promise.then((result) => {
       if (!result) return;
-      const newNote: Note = { id: uid(), author: "Tú", initials: "TU", authorColor: colors.primary, content: result.text, date: "Ahora", pinned: false };
+      const newNote: Note = { id: uid(), content: result.text, date: "Ahora", pinned: false };
       setNotes((p) => [newNote, ...p]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     });
   }, [project.id, colors.primary, router]);
 
   const openLightbox = useCallback((photo: Photo) => {
-    router.push({ pathname: "/modals/photo-lightbox", params: { url: photo.url, caption: photo.caption, date: photo.date, tags: JSON.stringify(photo.tags), projectId: project.id } });
+    router.push({ pathname: "/modals/photo-lightbox", params: { url: photo.url, caption: photo.caption, date: photo.createdAt, tags: JSON.stringify(photo.tags), projectId: project.id } });
   }, [project.id, router]);
 
   const togglePin = (noteId: string) => {
@@ -188,7 +179,7 @@ export default function ProjectDetailScreen() {
   };
 
   const allTags = Array.from(new Set(photos.flatMap((p) => p.tags)));
-  const filteredPhotos = filterTag ? photos.filter((p) => p.tags.includes(filterTag)) : photos;
+  const filteredPhotos = filterTag ? photos.filter((p) => p!.tags!.includes(filterTag)) : photos;
 
   // ─── Tab: Gallery ─────────────────────────────────────────────────────────
 
@@ -205,7 +196,7 @@ export default function ProjectDetailScreen() {
         {allTags.map((tag) => (
           <TouchableOpacity
             key={tag}
-            onPress={() => setFilterTag(filterTag === tag ? null : tag)}
+            /*onPress={() => setFilterTag(filterTag === tag ? null : tag)}*/
             style={[S.tag, { backgroundColor: filterTag === tag ? colors.primary : colors.surface, borderColor: colors.border }]}
           >
             <Text style={[S.tagText, { color: filterTag === tag ? "#FFF" : colors.muted }]}>#{tag}</Text>
@@ -236,7 +227,7 @@ export default function ProjectDetailScreen() {
               <Image source={{ uri: photo.url }} style={S.gridItemImg} resizeMode="cover" />
               <View style={S.gridItemOverlay}>
                 <Text style={S.gridItemCaption} numberOfLines={1}>{photo.caption}</Text>
-                <Text style={S.gridItemDate}>{photo.date}</Text>
+                <Text style={S.gridItemDate}>{photo.createdAt}</Text>
               </View>
               <TouchableOpacity
                 onPress={() => router.push({ pathname: "/image-editor", params: { imageUri: photo.url, projectId: project.id } })}
@@ -264,10 +255,10 @@ export default function ProjectDetailScreen() {
 
   const renderTimeline = () => (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={S.timelineScroll}>
-      {project.timeline.map((event, idx) => {
+      {project?.timeline?.map((event, idx) => {
         const iconName = timelineIcon(event.type);
         const iconColor = timelineColor(event.type, colors);
-        const isLast = idx === project.timeline.length - 1;
+        const isLast = idx === project!.timeline!.length - 1;
         return (
           <View key={event.id} style={S.timelineRow}>
             {/* Line + icon */}
@@ -279,7 +270,7 @@ export default function ProjectDetailScreen() {
             </View>
             {/* Content */}
             <View style={[S.timelineContent, isLast && S.timelineContentLast]}>
-              <Text style={[S.timelineDate, { color: colors.muted }]}>{event.date}</Text>
+              <Text style={[S.timelineDate, { color: colors.muted }]}>{event.createdAt}</Text>
               <View style={[S.cardBase, cardElevation]}>
                 <Text style={[S.timelineTitle, { color: colors.foreground }]}>{event.title}</Text>
                 <Text style={[S.timelineDesc, { color: colors.muted }]}>{event.description}</Text>
@@ -303,7 +294,7 @@ export default function ProjectDetailScreen() {
         <View style={S.statsRow}>
           {[
             { label: t("project.members"),    value: team.length,                          icon: "group",               color: colors.primary },
-            { label: t("project.activeToday"), value: team.filter((m) => m.online).length, icon: "fiber-manual-record", color: colors.success },
+            { label: t("project.activeToday"), value: team.filter((m) => true).length, icon: "fiber-manual-record", color: colors.success },
           ].map((stat) => (
             <View key={stat.label} style={[S.statCard, cardSmElevation, S.flex1]}>
               <MaterialIcons name={stat.icon as any} size={22} color={stat.color} />
@@ -316,17 +307,17 @@ export default function ProjectDetailScreen() {
         {/* Members list */}
         {team.map((member) => (
           <View key={member.id} style={[S.cardBase, cardElevation, S.memberCard]}>
-            <View style={[S.memberAvatar, { backgroundColor: member.color + "25" }]}>
-              <Text style={[S.memberInitials, { color: member.color }]}>{member.initials}</Text>
+            <View style={[S.memberAvatar, { backgroundColor: 'blue' + "25" }]}>
+              <Text style={[S.memberInitials, { color: 'blue' }]}>JJ</Text>
             </View>
             <View style={S.flex1}>
               <View style={S.memberNameRow}>
                 <Text style={[S.memberName, { color: colors.foreground }]}>{member.name}</Text>
-                {member.online && <View style={[S.onlineDot, { backgroundColor: colors.success }]} />}
+                {true && <View style={[S.onlineDot, { backgroundColor: colors.success }]} />}
               </View>
               <Text style={[S.memberRole, { color: colors.primary }]}>{member.role}</Text>
               <Text style={[S.memberActivity, { color: colors.muted }]}>
-                {t("project.active")}: {member.lastActivity}
+                {t("project.active")}: {member.lastLoginAt}
               </Text>
             </View>
             <TouchableOpacity
@@ -375,12 +366,12 @@ export default function ProjectDetailScreen() {
               </View>
             )}
             <View style={S.noteAuthorRow}>
-              <View style={[S.noteAuthorAvatar, { backgroundColor: note.authorColor + "25" }]}>
-                <Text style={[S.noteAuthorInitials, { color: note.authorColor }]}>{note.initials}</Text>
+              <View style={[S.noteAuthorAvatar, { backgroundColor: 'blue'+ "25" }]}>
+                <Text style={[S.noteAuthorInitials, { color: 'blue' }]}>JJ</Text>
               </View>
               <View style={S.flex1}>
-                <Text style={[S.noteAuthorName, { color: colors.foreground }]}>{note.author}</Text>
-                <Text style={[S.noteDate, { color: colors.muted }]}>{note.date}</Text>
+                <Text style={[S.noteAuthorName, { color: colors.foreground }]}>{note.author.name}</Text>
+                <Text style={[S.noteDate, { color: colors.muted }]}>{note.createdAt}</Text>
               </View>
               <TouchableOpacity onPress={() => togglePin(note.id)} style={S.noteAction}>
                 <MaterialIcons name="push-pin" size={18} color={note.pinned ? colors.warning : colors.muted} />
