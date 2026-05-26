@@ -85,8 +85,8 @@ export default function InviteGlobalModal() {
       .string()
       .min(1, t('validation.required'))
       .email(t('validation.emailInvalid')),
-    role: z.nativeEnum(UserRole).optional(),
-    projectId: z.string().optional(),
+    role: z.enum(ROLE_KEYS),
+    projectId: z.string(),
   });
 
   const { control, handleSubmit } = useForm<InviteForm>({
@@ -173,7 +173,6 @@ export default function InviteGlobalModal() {
     return COLOR_RANGES.find(r => progress <= r.max)?.color ?? '#9CA3AF';
   };
 
-  // ── Estados de carga y error ──────────────────────────────────────────────────
   if (dataLoading) return <InviteGlobalSkeleton />;
 
   if (error) {
