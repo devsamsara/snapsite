@@ -19,6 +19,7 @@ import { useState, useRef, useCallback } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Haptics from "expo-haptics";
 import { AppAlert } from '@/components/ui/app-alert';
+import { ProjectDetailSkeleton } from '@/components/project-detail-skeleton';
 
 const { width: W } = Dimensions.get("window");
 
@@ -130,6 +131,9 @@ export default function ProjectDetailScreen() {
   const cardSmElevation = useCardStyleSm();
   const { id } = useLocalSearchParams<{ id: string }>();
 
+  // isLoading: cuando se integre el useQuery real, reemplazar por { loading } del hook.
+  // Mientras tanto se usa false (datos mock siempre disponibles).
+  const isLoading = false;
   const project: Project = MOCK_PROJECTS[id] ?? MOCK_PROJECTS["1"];
 
   const [activeTab, setActiveTab] = useState<TabId>("gallery");
@@ -401,6 +405,15 @@ export default function ProjectDetailScreen() {
   );
 
   // ─── Main Render ──────────────────────────────────────────────────────────
+
+  // Mostrar skeleton mientras se cargan los datos del proyecto
+  if (isLoading) {
+    return (
+      <ScreenContainer className="p-0">
+        <ProjectDetailSkeleton />
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer className="p-0">
