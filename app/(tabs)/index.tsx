@@ -301,14 +301,14 @@ export default function HomeScreen() {
                     )
                       .fill(0)
                       .slice(0, 5)
-                      .map(i => (
+                      .map((_,i) => (
                         <View
-                          key={`user_${data.getDashboardData.currentCompany.users.at(i)?.nickname}`}
+                          key={data.getDashboardData.currentCompany.users[i].id}
                           style={[
                             S.headerAvatar,
                             {
                               backgroundColor: colors.primary,
-                              marginLeft: i < 5 ? -10 : 0,
+                              marginLeft: i < 5 ? -8 : 0,
                               borderColor: colors.background,
                             },
                           ]}
@@ -435,7 +435,9 @@ export default function HomeScreen() {
                   <Text className="text-lg font-semibold text-foreground">
                     {t('home.recentProjects')}
                   </Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={()=>router.push({
+                    pathname: '/(tabs)/projects'
+                  })}>
                     <Text style={[S.seeAllText, { color: colors.primary }]}>
                       {t('home.seeAll')}
                     </Text>
