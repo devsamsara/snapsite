@@ -9,10 +9,12 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColors } from '@/hooks/use-colors';
 import { AppInput } from '@/components/ui/app-input';
 import { AppAlert } from '@/components/ui/app-alert';
+import { useMutation } from '@apollo/client/react';
+import { CreateProjectDocument } from '@/gql/graphql';
 
 type ProjectFormValues = {
   name: string;
-  address: string;
+  location: string;
   city: string;
   postalCode: string;
   notes?: string;
@@ -30,10 +32,11 @@ export default function CreateProjectDetailsScreen() {
     postalCode: string;
   }>();
   const [loading, setLoading] = useState(false);
+  const [createProject, {loading: isLoading, data: project}] = useMutation(CreateProjectDocument)
 
   const projectSchema = z.object({
     name:       z.string().min(3, t('validation.projectNameMin', { min: 3 })),
-    address:    z.string().min(5, t('validation.addressRequired')),
+    location:    z.string().min(5, t('validation.addressRequired')),
     city:       z.string().min(2, t('validation.cityRequired')),
     postalCode: z.string().min(4, t('validation.postalCodeRequired')),
     notes:      z.string().optional(),
@@ -43,7 +46,7 @@ export default function CreateProjectDetailsScreen() {
     resolver: zodResolver(projectSchema),
     defaultValues: {
       name:       '',
-      address:    params.address    || '',
+      location:    params.address    || '',
       city:       params.city       || '',
       postalCode: params.postalCode || '',
       notes:      '',
@@ -54,18 +57,30 @@ export default function CreateProjectDetailsScreen() {
     setLoading(true);
     try {
       const newProject = {
-        id: Math.random().toString(36).substr(2, 9),
         ...data,
         latitude:  parseFloat(params.latitude),
         longitude: parseFloat(params.longitude),
-        image: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=300&h=300&fit=crop',
       };
+
+      const res = await createProject({
+        variables: {
+          input: {
+            description: newProject.notes,
+            name: newProject.name,
+            latitude: newProject.latitude,
+            longitude: newProject.longitude,
+            location: newProject.location
+          }
+        }
+      })
+
+      console.log(res)
 
       setTimeout(() => {
         setLoading(false);
         router.replace({
           pathname: '/add-photos-prompt',
-          params: { projectId: newProject.id, projectName: newProject.name },
+          params: { projectId: project?.createProject.id, projectName: newProject.name },
         });
       }, 1500);
     } catch {
@@ -115,7 +130,7 @@ export default function CreateProjectDetailsScreen() {
 
             <AppInput
               label={t('createProject.address')}
-              name="address"
+              name="location"
               control={control}
               placeholder={t('createProject.addressPlaceholder')}
               icon="location.fill"
