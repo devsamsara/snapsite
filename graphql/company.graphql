@@ -10,6 +10,7 @@ query CurrentCompany {
         id
         name
         avatarUrl
+        nickname
       }
     }
     projectStatusData {

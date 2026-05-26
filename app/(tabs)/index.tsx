@@ -300,15 +300,15 @@ export default function HomeScreen() {
                       data.getDashboardData.currentCompany.users.length
                     )
                       .fill(0)
-                      .slice(0,5)
+                      .slice(0, 5)
                       .map(i => (
                         <View
-                          key={i}
+                          key={`user_${data.getDashboardData.currentCompany.users.at(i)?.nickname}`}
                           style={[
                             S.headerAvatar,
                             {
                               backgroundColor: colors.primary,
-                              marginLeft: i > 1 ? -8 : 0,
+                              marginLeft: i < 5 ? -10 : 0,
                               borderColor: colors.background,
                             },
                           ]}

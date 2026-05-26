@@ -6,8 +6,9 @@ import {
   ApolloLink,
   Observable,
   FetchResult,
-} from "@apollo/client";
-import { onError } from "@apollo/client/link/error";
+  CombinedGraphQLErrors,
+} from '@apollo/client';
+import { ErrorLink, onError } from '@apollo/client/link/error';
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import { RefreshTokenDocument, type RefreshTokenMutation } from "@/gql/graphql";
@@ -126,14 +127,6 @@ const authLink = new ApolloLink((operation, forward) => {
   return forward(operation);
 });
 
-/**
- * Error link: intercepts UNAUTHENTICATED errors (expired access token),
- * calls the RefreshToken mutation once, updates both tokens, and retries
- * the original failed operation transparently.
- *
- * If the refresh itself fails (refresh token also expired) it calls
- * onUnauthenticated() so AuthProvider can sign the user out cleanly.
- */
 let _onUnauthenticated: (() => void) | null = null;
 
 /** AuthProvider registers this callback so the error link can trigger signOut. */
@@ -159,17 +152,27 @@ export function registerTokenRefreshedHandler(handler: TokenRefreshedHandler) {
   _onTokenRefreshed = handler;
 }
 
-const errorLink = onError(({ graphQLErrors, operation, forward }) => {
-  if (!graphQLErrors) return;
+const errorLink = new ErrorLink(({ error, operation, forward }) => {
+  if (!error) return;
 
-  const isAuthError = graphQLErrors.some(
-    (err) =>
-      err.extensions?.code === 'UNAUTHENTICATED' ||
-      err.message?.toLowerCase().includes('unauthorized') ||
-      err.message?.toLowerCase().includes('unauthenticated') ||
-      err.message?.toLowerCase().includes('token') ||
-      err.message?.toLowerCase().includes('jwt')
-  );
+  let isAuthError = null;
+  if(CombinedGraphQLErrors.is(error)) {
+    error.errors.forEach(({ message, locations, path }) =>
+      console.log(
+        `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
+      )
+    );
+
+    isAuthError = error.errors.some(
+      err =>
+        err.extensions?.code === 'UNAUTHENTICATED' ||
+        err.message?.toLowerCase().includes('unauthorized') ||
+        err.message?.toLowerCase().includes('unauthenticated') ||
+        err.message?.toLowerCase().includes('token') ||
+        err.message?.toLowerCase().includes('jwt')
+    );
+  }
+
 
   if (!isAuthError) return;
 
@@ -214,10 +217,10 @@ const errorLink = onError(({ graphQLErrors, operation, forward }) => {
       });
 
     doRefresh()
-      .then(async ({ data, errors }) => {
-        if (errors?.length || !data?.refreshToken?.token) {
+      .then(async ({ data, error }) => {
+        if (CombinedGraphQLErrors.is(error) && error?.errors.length || !data?.refreshToken?.token) {
           throw new Error(
-            errors?.[0]?.message ?? 'Refresh failed: no token in response',
+            error?.message ?? 'Refresh failed: no token in response'
           );
         }
 

@@ -13,7 +13,6 @@ import {
   clearTokens,
   registerUnauthenticatedHandler,
   registerTokenRefreshedHandler,
-  REST_API_URL,
   restoreAuthToken,
   setAuthToken,
   setRefreshToken,
