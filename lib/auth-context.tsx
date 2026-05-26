@@ -12,6 +12,7 @@ import {
   apolloClient,
   clearTokens,
   registerUnauthenticatedHandler,
+  registerTokenRefreshedHandler,
   REST_API_URL,
   restoreAuthToken,
   setAuthToken,
@@ -92,6 +93,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     registerUnauthenticatedHandler(() => {
       signOutRef.current?.();
+    });
+  }, []);
+
+  // When the error link successfully refreshes the token, update the user
+  // state with the fresh data returned by the RefreshToken mutation.
+  useEffect(() => {
+    registerTokenRefreshedHandler(async (newToken, newRefreshToken, freshUser) => {
+      try {
+        const userToStore = freshUser as unknown as User;
+        setUser(userToStore);
+        await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userToStore));
+      } catch (e) {
+        console.error('[Auth] Failed to update user after token refresh:', e);
+      }
     });
   }, []);
 

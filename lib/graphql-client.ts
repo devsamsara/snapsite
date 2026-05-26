@@ -10,7 +10,7 @@ import {
 import { onError } from "@apollo/client/link/error";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
-import { RefreshTokenDocument } from "@/gql/graphql";
+import { RefreshTokenDocument, type RefreshTokenMutation } from "@/gql/graphql";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -141,6 +141,24 @@ export function registerUnauthenticatedHandler(handler: () => void) {
   _onUnauthenticated = handler;
 }
 
+type TokenRefreshedUser = RefreshTokenMutation['refreshToken']['user'];
+type TokenRefreshedHandler = (
+  newToken: string,
+  newRefreshToken: string,
+  user: TokenRefreshedUser,
+) => void;
+
+let _onTokenRefreshed: TokenRefreshedHandler | null = null;
+
+/**
+ * AuthProvider registers this callback to receive the fresh user data
+ * returned by the RefreshToken mutation, so it can update its state
+ * without requiring a full re-login.
+ */
+export function registerTokenRefreshedHandler(handler: TokenRefreshedHandler) {
+  _onTokenRefreshed = handler;
+}
+
 const errorLink = onError(({ graphQLErrors, operation, forward }) => {
   if (!graphQLErrors) return;
 
@@ -184,31 +202,35 @@ const errorLink = onError(({ graphQLErrors, operation, forward }) => {
 
     _isRefreshing = true;
 
-    // Use a raw fetch so we don't go through the Apollo link chain
-    // (which would try to inject the expired token again)
-    fetch(GRAPHQL_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: `
-          mutation RefreshToken($token: String!) {
-            refreshToken(token: $token) {
-              token
-              refreshToken
-            }
-          }
-        `,
-        variables: { token: _cachedRefreshToken },
-      }),
-    })
-      .then((res) => res.json())
-      .then(async (json) => {
-        const payload = json?.data?.refreshToken;
-        if (!payload?.token) throw new Error('Refresh failed: no token in response');
+    // Use apolloClient.mutate with RefreshTokenDocument so the call goes
+    // through the httpLink directly (bypassing authLink — no expired token injected).
+    // We call it via a deferred reference to avoid circular dependency at module init.
+    const doRefresh = () =>
+      apolloClient.mutate({
+        mutation: RefreshTokenDocument,
+        variables: { token: _cachedRefreshToken! },
+        // Skip the link chain's authLink by not sending Authorization header
+        context: { headers: { Authorization: '' } },
+      });
+
+    doRefresh()
+      .then(async ({ data, errors }) => {
+        if (errors?.length || !data?.refreshToken?.token) {
+          throw new Error(
+            errors?.[0]?.message ?? 'Refresh failed: no token in response',
+          );
+        }
+
+        const payload = data.refreshToken;
 
         // Persist the new tokens
         await setAuthToken(payload.token);
         await setRefreshToken(payload.refreshToken ?? _cachedRefreshToken);
+
+        // Update auth context with fresh user data if available
+        if (payload.user) {
+          _onTokenRefreshed?.(payload.token, payload.refreshToken, payload.user);
+        }
 
         resolveQueue(payload.token);
         _isRefreshing = false;
