@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
@@ -69,23 +69,50 @@ export default function CreateProjectDetailsScreen() {
             name: newProject.name,
             latitude: newProject.latitude,
             longitude: newProject.longitude,
-            location: newProject.location
-          }
-        }
-      })
+            location: newProject.location,
+          },
+        },
+      });
 
-      console.log(res)
-
-      setTimeout(() => {
-        setLoading(false);
-        router.replace({
-          pathname: '/add-photos-prompt',
-          params: { projectId: project?.createProject.id, projectName: newProject.name },
-        });
-      }, 1500);
-    } catch {
+      const createdId = res.data?.createProject?.id;
       setLoading(false);
-      AppAlert.alert(t('common.error'), t('createProject.errorCreate'));
+
+      AppAlert.alert(
+        t('createProject.successTitle'),
+        t('createProject.successSubtitle', { name: newProject.name }),
+        [
+          {
+            text: t('createProject.viewProjectDetails'),
+            style: 'cancel',
+            onPress: () =>
+              router.replace({
+                pathname: '/project/[id]',
+                params: { id: createdId ?? '' },
+              }),
+          },
+          {
+            text: t('createProject.addPhotosNow'),
+            onPress: () =>
+              router.replace({
+                pathname: '/add-photos-prompt',
+                params: { projectId: createdId, projectName: newProject.name },
+              }),
+          },
+        ],
+        { type: 'success' },
+      );
+    } catch (err: any) {
+      setLoading(false);
+      const msg =
+        err?.graphQLErrors?.[0]?.message ??
+        err?.message ??
+        t('createProject.errorCreate');
+      AppAlert.alert(
+        t('common.error'),
+        msg,
+        [{ text: t('common.ok') }],
+        { type: 'error' },
+      );
     }
   };
 
