@@ -6,16 +6,41 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { SearchInput } from "@/components/ui/search-input";
 import { useColors } from "@/hooks/use-colors";
 import { useCardStyle } from "@/hooks/use-card-style";
-import { FabOptions } from "@/components/fab-options";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState } from "react";
 
-// Mock data for all projects
+// ─── Hook de fecha relativa (sin moment, nativo) ─────────────────────────────
+function useRelativeDate() {
+  const { t } = useTranslation();
+
+  return (timestamp: number): string => {
+    const fecha = new Date(timestamp);
+    const hoy   = new Date();
+
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const diffMs   =
+      new Date(hoy.getFullYear(),   hoy.getMonth(),   hoy.getDate()).getTime() -
+      new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()).getTime();
+    const dias = Math.round(diffMs / msPerDay);
+
+    if (dias === 0) return t('common.today');
+    if (dias === 1) return t('common.yesterday');
+    if (dias === 2) return t('common.twoDaysAgo');
+    if (dias < 7)   return t('common.daysAgo',  { count: dias });
+    if (dias < 14)  return t('common.weekAgo');
+    return t('common.weeksAgo', { count: Math.floor(dias / 7) });
+  };
+}
+
+// ─── Mock data con timestamps reales ─────────────────────────────────────────
+const now = Date.now();
+const DAY = 1000 * 60 * 60 * 24;
+
 const ALL_PROJECTS = [
-  { id: "1", name: "Office Renovation",  location: "Downtown, NYC", progress: 65,  photos: 24, date: "Today",      status: "In Progress" },
-  { id: "2", name: "Parking Lot Repair", location: "Queens, NY",    progress: 40,  photos: 12, date: "Yesterday",  status: "In Progress" },
-  { id: "3", name: "Roof Installation",  location: "Brooklyn, NY",  progress: 100, photos: 45, date: "3 days ago", status: "Completed"   },
-  { id: "4", name: "Foundation Repair",  location: "Bronx, NY",     progress: 25,  photos: 8,  date: "1 week ago", status: "In Progress" },
+  { id: "1", name: "Office Renovation",  location: "Downtown, NYC", progress: 65,  photos: 24, timestamp: now,             status: "In Progress" },
+  { id: "2", name: "Parking Lot Repair", location: "Queens, NY",    progress: 40,  photos: 12, timestamp: now - DAY,       status: "In Progress" },
+  { id: "3", name: "Roof Installation",  location: "Brooklyn, NY",  progress: 100, photos: 45, timestamp: now - 3 * DAY,   status: "Completed"   },
+  { id: "4", name: "Foundation Repair",  location: "Bronx, NY",     progress: 25,  photos: 8,  timestamp: now - 7 * DAY,   status: "In Progress" },
 ];
 
 export default function ProjectsScreen() {
@@ -23,6 +48,7 @@ export default function ProjectsScreen() {
   const router                              = useRouter();
   const colors                              = useColors();
   const cardElevation                       = useCardStyle();
+  const relativeDate                        = useRelativeDate();
   const [searchText, setSearchText]         = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
 
@@ -86,7 +112,8 @@ export default function ProjectsScreen() {
                 {item.photos} {t('projects.photos')}
               </Text>
             </View>
-            <Text className="text-xs text-muted">{item.date}</Text>
+            {/* Fecha relativa calculada desde el timestamp */}
+            <Text className="text-xs text-muted">{relativeDate(item.timestamp)}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -148,13 +175,13 @@ export default function ProjectsScreen() {
           scrollEnabled={true}
           ListEmptyComponent={
             <View className="flex-1 items-center justify-center py-12">
-              <IconSymbol name="photo.stack.fill" size={48} color={colors.border} />
+              <IconSymbol name="folder.badge.plus" size={48} color={colors.border} />
               <Text className="text-lg font-semibold text-foreground mt-4">{t('projects.noProjects')}</Text>
               <Text className="text-sm text-muted text-center mt-2">{t('projects.noProjectsSubtitle')}</Text>
             </View>
           }
         />
-        <FabOptions />
+        {/* FAB eliminado — el botón de nuevo proyecto está en el header */}
       </View>
     </ScreenContainer>
   );
@@ -167,5 +194,5 @@ const S = StyleSheet.create({
   headerRow:    { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   addBtn:       { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   searchBar:    { marginBottom: 12 },
-  listContent:  { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 },
+  listContent:  { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
 });
