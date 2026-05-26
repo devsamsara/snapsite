@@ -19,6 +19,7 @@ import { useState, useRef, useCallback } from "react";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import * as Haptics from "expo-haptics";
 import { AppAlert } from '@/components/ui/app-alert';
+import { ProjectDetailSkeleton } from '@/components/project-detail-skeleton';
 import { useQuery } from '@apollo/client/react';
 import {
   FindProjectDocument,
@@ -121,6 +122,9 @@ export default function ProjectDetailScreen() {
     }
   })
 
+  // isLoading: cuando se integre el useQuery real, reemplazar por { loading } del hook.
+  // Mientras tanto se usa false (datos mock siempre disponibles).
+  const isLoading = false;
   const project: Project = data?.findProject;
 
   const [activeTab, setActiveTab] = useState<TabId>("gallery");
@@ -392,6 +396,15 @@ export default function ProjectDetailScreen() {
   );
 
   // ─── Main Render ──────────────────────────────────────────────────────────
+
+  // Mostrar skeleton mientras se cargan los datos del proyecto
+  if (isLoading) {
+    return (
+      <ScreenContainer className="p-0">
+        <ProjectDetailSkeleton />
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer className="p-0">

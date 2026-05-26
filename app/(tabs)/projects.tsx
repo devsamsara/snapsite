@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { useColors } from "@/hooks/use-colors";
 import { useCardStyle } from "@/hooks/use-card-style";
 import { useState } from "react";
+import { ProjectsListSkeleton } from '@/components/projects-list-skeleton';
 
 // ─── Hook de fecha relativa (sin moment, nativo) ─────────────────────────────
 function useRelativeDate() {
@@ -47,6 +48,8 @@ export default function ProjectsScreen() {
   const colors = useColors();
   const cardElevation = useCardStyle();
   const relativeDate                        = useRelativeDate();
+  // isLoading: cuando se integre el useQuery real, reemplazar por { loading } del hook.
+  const isLoading = false;
   const [searchText, setSearchText] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const { isLoading: authLoading } = useAuth();
@@ -156,6 +159,14 @@ export default function ProjectsScreen() {
       </TouchableOpacity>
     );
   };
+
+  if (isLoading) {
+    return (
+      <ScreenContainer className="p-0">
+        <ProjectsListSkeleton count={4} />
+      </ScreenContainer>
+    );
+  }
 
   return (
     data && (
