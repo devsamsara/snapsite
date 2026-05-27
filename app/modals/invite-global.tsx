@@ -158,6 +158,8 @@ export default function InviteGlobalModal() {
         [{ text: t('common.ok'), style: 'cancel' }],
         { type: 'error' },
       );
+
+      throw err;
     } finally {
       setSubmitting(false);
     }

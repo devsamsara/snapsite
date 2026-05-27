@@ -714,6 +714,27 @@ export type CreateCompanyMutationVariables = Exact<{
 
 export type CreateCompanyMutation = { __typename?: 'Mutation', createCompany: { __typename?: 'CreateCompanyResponse', message: string, token: string, company: { __typename?: 'Company', id: string, createdAt: string, industry: string, name: string, size: number, updatedAt: string }, user: { __typename?: 'User', id: string, name: string, email: string, avatarUrl?: string | null, role: UserRole, company?: { __typename?: 'Company', createdAt: string, id: string, industry: string, name: string, size: number, updatedAt: string, users: Array<{ __typename?: 'User', id: string, email: string, name: string }> } | null } } };
 
+export type DeleteNoteMutationVariables = Exact<{
+  deleteNoteId: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteNoteMutation = { __typename?: 'Mutation', deleteNote: boolean };
+
+export type CreateNoteMutationVariables = Exact<{
+  input: CreateNoteInput;
+}>;
+
+
+export type CreateNoteMutation = { __typename?: 'Mutation', createNote: { __typename?: 'Note', content: string, createdAt: string, id: string, pinned: boolean, updatedAt: string } };
+
+export type TogglePinNoteMutationVariables = Exact<{
+  togglePinNoteId: Scalars['ID']['input'];
+}>;
+
+
+export type TogglePinNoteMutation = { __typename?: 'Mutation', togglePinNote: { __typename?: 'Note', id: string, createdAt: string, content: string, pinned: boolean, author: { __typename?: 'User', id: string } } };
+
 export type GetMyProjectsQueryVariables = Exact<{ [key: string]: never; }>;
 
 

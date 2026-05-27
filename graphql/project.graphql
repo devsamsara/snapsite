@@ -86,3 +86,4 @@ mutation CreateProject($input: CreateProjectInput!) {
         thumbnail
     }
 }
+

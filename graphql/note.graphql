@@ -1,0 +1,25 @@
+mutation DeleteNote($deleteNoteId: ID!) {
+    deleteNote(id: $deleteNoteId)
+}
+
+mutation CreateNote($input: CreateNoteInput!) {
+    createNote(input: $input) {
+        content
+        createdAt
+        id
+        pinned
+        updatedAt
+    }
+}
+
+mutation TogglePinNote($togglePinNoteId: ID!) {
+    togglePinNote(id: $togglePinNoteId) {
+        id
+        author {
+            id
+        }
+        createdAt
+        content
+        pinned
+    }
+}

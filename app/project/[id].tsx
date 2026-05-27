@@ -1,5 +1,4 @@
 import {
-  Animated as RNAnimated,
   Dimensions,
   Image,
   ScrollView,
@@ -13,23 +12,22 @@ import { useTranslation } from 'react-i18next';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle, useCardStyleSm } from '@/hooks/use-card-style';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
 import { AppAlert } from '@/components/ui/app-alert';
 import { ProjectDetailSkeleton } from '@/components/project-detail-skeleton';
-import { useQuery } from '@apollo/client/react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import {
+  DeleteNoteDocument,
   FindProjectDocument,
-  Note,
+  GetMyProjectsDocument,
   Photo,
   Project,
   TimelineEvent,
-  User,
-  UserRole,
+  TogglePinNoteDocument,
 } from '@/gql/graphql';
 import { useRelativeDate } from '@/hooks/use-relative-date';
-import { addNoteStore, inviteMemberStore } from '@/lib/modal-stores';
 import moment from 'moment';
 
 const { width: W } = Dimensions.get('window');
@@ -80,6 +78,8 @@ export default function ProjectDetailScreen() {
   const cardElevation = useCardStyle();
   const cardSmElevation = useCardStyleSm();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [removeNote] = useMutation(DeleteNoteDocument);
+  const [togglePinNote] = useMutation(TogglePinNoteDocument)
   const { data } = useQuery(FindProjectDocument, {
     variables: {
       findProjectId: id,
@@ -89,9 +89,7 @@ export default function ProjectDetailScreen() {
   const isLoading = false;
 
   const [activeTab, setActiveTab] = useState<TabId>('gallery');
-  const [notes, setNotes] = useState<Note[] | undefined>();
   const [photos, setPhotos] = useState<Photo[] | undefined>();
-  const [team, setTeam] = useState<User[] | undefined>();
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [project, setProject] = useState<Project | undefined>();
   const relativeDate = useRelativeDate();
@@ -101,14 +99,11 @@ export default function ProjectDetailScreen() {
       if (data) {
         setProject(data.findProject);
         setPhotos(data.findProject.photos);
-        setTeam(data.findProject.members);
-        setNotes(data.findProject.notes);
       }
     };
 
     loadProyect();
   }, [data, project]);
-  const tabAnim = useRef(new RNAnimated.Value(0)).current;
 
   const switchTab = (tab: TabId) => {
     Haptics.selectionAsync();
@@ -124,52 +119,18 @@ export default function ProjectDetailScreen() {
   };
 
   const openInviteModal = useCallback(() => {
-    const promise = inviteMemberStore.open();
     router.push({
       pathname: '/modals/invite-member',
       params: { projectId: project!.id },
     });
-    promise.then(result => {
-      if (!result) return;
-      const palette = [
-        '#007AFF',
-        '#FF2D55',
-        '#FF9500',
-        '#4CD964',
-        '#5856D6',
-        '#FF3B30',
-        '#34C759',
-      ];
-      const color = palette[Math.floor(Math.random() * palette.length)];
-      const newMember = {
-        id: uid(),
-        name: result.name,
-        role: result.role as UserRole,
-      } as User;
-      setTeam(p => [...p!, newMember]);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    });
   }, [project, router]);
 
   const openNoteModal = useCallback(() => {
-    const promise = addNoteStore.open();
     router.push({
       pathname: '/modals/add-note',
       params: { projectId: project!.id },
     });
-    promise.then(result => {
-      if (!result) return;
-      const newNote: Note = {
-        id: uid(),
-        content: result.text,
-        createdAt: new Date().toISOString(),
-        pinned: false,
-
-      };
-      setNotes(p => [newNote, ...p]);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    });
-  }, [project?.id, colors.primary, router]);
+  }, [router, project]);
 
   const openLightbox = useCallback(
     (photo: Photo) => {
@@ -188,11 +149,15 @@ export default function ProjectDetailScreen() {
     [project, router]
   );
 
-  const togglePin = (noteId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setNotes(p =>
-      p?.map(n => (n.id === noteId ? { ...n, pinned: !n.pinned } : n))
-    );
+  const togglePin = async (noteId: string) => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    await togglePinNote({
+      variables: {
+        togglePinNoteId: noteId,
+      },
+      refetchQueries: [FindProjectDocument, GetMyProjectsDocument],
+    });
   };
 
   const deleteNote = (noteId: string) => {
@@ -204,20 +169,24 @@ export default function ProjectDetailScreen() {
         {
           text: t('common.delete'),
           style: 'destructive',
-          onPress: () => setNotes(p => p?.filter(n => n.id !== noteId)),
+          onPress: async () => {
+            await removeNote({
+              variables: {
+                deleteNoteId: noteId,
+              },
+              refetchQueries: [FindProjectDocument, GetMyProjectsDocument],
+            });
+          },
         },
       ]
     );
   };
 
   const allTags = Array.from(new Set(photos?.flatMap(p => p.tags)));
-  // const allTags = ['minni', ',iicky'];
   const filteredPhotos =
     filterTag && photos
       ? photos.filter(p => p!.tags!.includes(filterTag))
       : photos;
-
-  // ─── Tab: Gallery ─────────────────────────────────────────────────────────
 
   const renderGallery = () => (
     <ScrollView
@@ -272,7 +241,7 @@ export default function ProjectDetailScreen() {
       </ScrollView>
 
       {/* Photo count + add */}
-      <View style={S.photoCountRow}>
+      {/*<View style={S.photoCountRow}>
         <Text style={[S.photoCountText, { color: colors.muted }]}>
           {filteredPhotos?.length}{' '}
           {filteredPhotos?.length === 1
@@ -288,7 +257,7 @@ export default function ProjectDetailScreen() {
             {t('project.add')}
           </Text>
         </TouchableOpacity>
-      </View>
+      </View>*/}
 
       {/* Grid */}
       <View style={S.gridWrapper}>
@@ -327,11 +296,22 @@ export default function ProjectDetailScreen() {
 
         {filteredPhotos?.length === 0 && (
           <View style={S.emptyState}>
-            <View style={[S.emptyIconWrap, { backgroundColor: colors.border + '40' }]}>
-              <MaterialIcons name="photo-library" size={36} color={colors.muted} />
+            <View
+              style={[
+                S.emptyIconWrap,
+                { backgroundColor: colors.border + '40' },
+              ]}
+            >
+              <MaterialIcons
+                name="photo-library"
+                size={36}
+                color={colors.muted}
+              />
             </View>
             <Text style={[S.emptyTitle, { color: colors.foreground }]}>
-              {filterTag ? `${t('project.noPhotos')} #${filterTag}` : t('project.noPhotos')}
+              {filterTag
+                ? `${t('project.noPhotos')} #${filterTag}`
+                : t('project.noPhotos')}
             </Text>
             {!filterTag && (
               <Text style={[S.emptyHint, { color: colors.muted }]}>
@@ -360,7 +340,9 @@ export default function ProjectDetailScreen() {
     >
       {(!project?.timeline || project.timeline.length === 0) && (
         <View style={S.emptyState}>
-          <View style={[S.emptyIconWrap, { backgroundColor: colors.border + '40' }]}>
+          <View
+            style={[S.emptyIconWrap, { backgroundColor: colors.border + '40' }]}
+          >
             <MaterialIcons name="timeline" size={36} color={colors.muted} />
           </View>
           <Text style={[S.emptyTitle, { color: colors.foreground }]}>
@@ -424,6 +406,10 @@ export default function ProjectDetailScreen() {
     </ScrollView>
   );
 
+  const isActive = project?.members.filter(
+    m => Number.parseInt(m.lastLoginAt!) >= Date.now()
+  ).length;
+
   const renderTeam = () => (
     <View style={S.flex1}>
       <ScrollView
@@ -435,15 +421,15 @@ export default function ProjectDetailScreen() {
           {[
             {
               label: t('project.members'),
-              value: team?.length,
+              value: project?.members?.length,
               icon: 'group',
               color: colors.primary,
             },
             {
               label: t('project.activeToday'),
-              value: team?.filter(m => true).length ?? 0,
+              value: isActive ?? 0,
               icon: 'fiber-manual-record',
-              color: colors.success,
+              color: isActive ? colors.success : colors.error,
             },
           ].map(stat => (
             <View
@@ -466,7 +452,7 @@ export default function ProjectDetailScreen() {
         </View>
 
         {/* Members list */}
-        {team?.map(member => (
+        {project?.members.map(member => (
           <View
             key={member.id}
             style={[S.cardBase, cardElevation, S.memberCard]}
@@ -483,7 +469,7 @@ export default function ProjectDetailScreen() {
                 </Text>
                 {
                   <View
-                    style={[S.onlineDot, { backgroundColor: colors.success }]}
+                    style={[S.onlineDot, { backgroundColor: isActive ? colors.success: colors.error}]}
                   />
                 }
               </View>
@@ -517,8 +503,7 @@ export default function ProjectDetailScreen() {
       </TouchableOpacity>
     </View>
   );
-
-  const sortedNotes = notes?.sort(
+  const sortedNotes = [...(project?.notes ?? [])].sort(
     (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)
   );
 
@@ -531,7 +516,12 @@ export default function ProjectDetailScreen() {
         >
           {sortedNotes.length === 0 && (
             <View style={S.emptyState}>
-              <View style={[S.emptyIconWrap, { backgroundColor: colors.border + '40' }]}>
+              <View
+                style={[
+                  S.emptyIconWrap,
+                  { backgroundColor: colors.border + '40' },
+                ]}
+              >
                 <MaterialIcons name="notes" size={36} color={colors.muted} />
               </View>
               <Text style={[S.emptyTitle, { color: colors.foreground }]}>
@@ -582,11 +572,11 @@ export default function ProjectDetailScreen() {
                 <View
                   style={[
                     S.noteAuthorAvatar,
-                    { backgroundColor: 'blue' + '25' },
+                    { backgroundColor: colors.success + '25' },
                   ]}
                 >
-                  <Text style={[S.noteAuthorInitials, { color: 'blue' }]}>
-                    JJ
+                  <Text style={[S.noteAuthorInitials, { color: colors.text }]}>
+                    {note.author.name.at(0)?.toUpperCase()}
                   </Text>
                 </View>
                 <View style={S.flex1}>
@@ -596,7 +586,7 @@ export default function ProjectDetailScreen() {
                     {note.author.name}
                   </Text>
                   <Text style={[S.noteDate, { color: colors.muted }]}>
-                    {note.createdAt}
+                    {relativeDate(Number.parseInt(note.createdAt))}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -627,7 +617,7 @@ export default function ProjectDetailScreen() {
           ))}
         </ScrollView>
 
-            <TouchableOpacity
+        <TouchableOpacity
           onPress={() => openNoteModal()}
           style={[S.fab, { backgroundColor: colors.primary }]}
         >
@@ -975,7 +965,11 @@ const S = StyleSheet.create({
     borderRadius: 20,
     padding: 6,
   },
-  emptyState: { alignItems: 'center', paddingVertical: 56, paddingHorizontal: 32 },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 56,
+    paddingHorizontal: 32,
+  },
   emptyStateText: { marginTop: 12, fontSize: 15 },
   emptyIconWrap: {
     width: 72,
@@ -985,8 +979,18 @@ const S = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 16,
   },
-  emptyTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
-  emptyHint: { fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 20 },
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  emptyHint: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
   emptyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
