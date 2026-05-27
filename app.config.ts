@@ -11,7 +11,8 @@ const EAS_PROJECT_ID =
   process.env.EAS_PROJECT_ID ?? 'c8815663-68f6-4a93-8efb-9f6d40e70767';
 const EAS_OWNER = process.env.EAS_OWNER ?? 'devsamsara';
 const GRAPHQL_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? 'http://192.168.1.65:4000/api/graphql';
+  process.env.EXPO_PUBLIC_API_URL ??
+  'https://site--backoffice--dz9c78m5fdc5.code.run/api/graphql';
 const APP_ENV = process.env.APP_ENV ?? 'development';
 
 const env = {
