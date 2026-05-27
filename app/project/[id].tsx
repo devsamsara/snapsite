@@ -327,15 +327,26 @@ export default function ProjectDetailScreen() {
 
         {filteredPhotos?.length === 0 && (
           <View style={S.emptyState}>
-            <MaterialIcons
-              name="photo-library"
-              size={48}
-              color={colors.border}
-            />
-            <Text style={[S.emptyStateText, { color: colors.muted }]}>
-              {t('project.noPhotos')}
-              {filterTag ? ` #${filterTag}` : ''}
+            <View style={[S.emptyIconWrap, { backgroundColor: colors.border + '40' }]}>
+              <MaterialIcons name="photo-library" size={36} color={colors.muted} />
+            </View>
+            <Text style={[S.emptyTitle, { color: colors.foreground }]}>
+              {filterTag ? `${t('project.noPhotos')} #${filterTag}` : t('project.noPhotos')}
             </Text>
+            {!filterTag && (
+              <Text style={[S.emptyHint, { color: colors.muted }]}>
+                {t('project.noPhotosHint')}
+              </Text>
+            )}
+            {!filterTag && (
+              <TouchableOpacity
+                onPress={handleAddPhoto}
+                style={[S.emptyBtn, { backgroundColor: colors.primary }]}
+              >
+                <MaterialIcons name="add-a-photo" size={16} color="#FFF" />
+                <Text style={S.emptyBtnText}>{t('project.addFirstPhoto')}</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </View>
@@ -347,6 +358,19 @@ export default function ProjectDetailScreen() {
       showsVerticalScrollIndicator={false}
       contentContainerStyle={S.timelineScroll}
     >
+      {(!project?.timeline || project.timeline.length === 0) && (
+        <View style={S.emptyState}>
+          <View style={[S.emptyIconWrap, { backgroundColor: colors.border + '40' }]}>
+            <MaterialIcons name="timeline" size={36} color={colors.muted} />
+          </View>
+          <Text style={[S.emptyTitle, { color: colors.foreground }]}>
+            {t('project.noTimeline')}
+          </Text>
+          <Text style={[S.emptyHint, { color: colors.muted }]}>
+            {t('project.noTimelineHint')}
+          </Text>
+        </View>
+      )}
       {project?.timeline?.map((event, idx) => {
         const iconName = timelineIcon(event.type);
         const iconColor = timelineColor(event.type, colors);
@@ -507,10 +531,22 @@ export default function ProjectDetailScreen() {
         >
           {sortedNotes.length === 0 && (
             <View style={S.emptyState}>
-              <MaterialIcons name="notes" size={48} color={colors.border} />
-              <Text style={[S.emptyStateText, { color: colors.muted }]}>
+              <View style={[S.emptyIconWrap, { backgroundColor: colors.border + '40' }]}>
+                <MaterialIcons name="notes" size={36} color={colors.muted} />
+              </View>
+              <Text style={[S.emptyTitle, { color: colors.foreground }]}>
                 {t('project.noNotes')}
               </Text>
+              <Text style={[S.emptyHint, { color: colors.muted }]}>
+                {t('project.noNotesHint')}
+              </Text>
+              <TouchableOpacity
+                onPress={() => openNoteModal()}
+                style={[S.emptyBtn, { backgroundColor: colors.primary }]}
+              >
+                <MaterialIcons name="add" size={16} color="#FFF" />
+                <Text style={S.emptyBtnText}>{t('project.addFirstNote')}</Text>
+              </TouchableOpacity>
             </View>
           )}
           {sortedNotes.map(note => (
@@ -939,8 +975,27 @@ const S = StyleSheet.create({
     borderRadius: 20,
     padding: 6,
   },
-  emptyState: { alignItems: 'center', paddingVertical: 48 },
+  emptyState: { alignItems: 'center', paddingVertical: 56, paddingHorizontal: 32 },
   emptyStateText: { marginTop: 12, fontSize: 15 },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
+  emptyHint: { fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 20 },
+  emptyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  emptyBtnText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
 
   // Timeline
   timelineScroll: { paddingHorizontal: 16, paddingBottom: 32, paddingTop: 8 },
