@@ -24,6 +24,9 @@ query FindProject($findProjectId: ID!) {
         endDate
         progress
         thumbnail
+        location
+        name
+        status
         timeline {
             createdAt
             description
@@ -39,23 +42,36 @@ query FindProject($findProjectId: ID!) {
             id
             name
             role
+            createdAt
+            status
+            email
+            updatedAt
         }
         notes {
             author {
                 id
                 name
+                createdAt
+                updatedAt
+                role
+                status
+                email
             }
             content
             createdAt
             id
             pinned
             updatedAt
+            project {
+                id
+            }
         }
         photos {
             createdAt
             id
             url
             tags
+            caption
         }
     }
 }

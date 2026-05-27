@@ -12,68 +12,42 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useQuery } from '@apollo/client/react';
 import { GetMyProjectsDocument, Project, ProjectStatus } from '@/gql/graphql';
 import { useAuth } from '@/lib/auth-context';
-import { useRouter } from "expo-router";
-import { useTranslation } from "react-i18next";
-import { useColors } from "@/hooks/use-colors";
-import { useCardStyle } from "@/hooks/use-card-style";
-import { useState } from "react";
+import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
+import { useColors } from '@/hooks/use-colors';
+import { useCardStyle } from '@/hooks/use-card-style';
+import { useState } from 'react';
 import { ProjectsListSkeleton } from '@/components/projects-list-skeleton';
-
-// ─── Hook de fecha relativa (sin moment, nativo) ─────────────────────────────
-function useRelativeDate() {
-  const { t } = useTranslation();
-
-  return (timestamp: number): string => {
-    const fecha = new Date(timestamp);
-    const hoy   = new Date();
-
-    const msPerDay = 1000 * 60 * 60 * 24;
-    const diffMs   =
-      new Date(hoy.getFullYear(),   hoy.getMonth(),   hoy.getDate()).getTime() -
-      new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate()).getTime();
-    const dias = Math.round(diffMs / msPerDay);
-
-    if (dias === 0) return t('common.today');
-    if (dias === 1) return t('common.yesterday');
-    if (dias === 2) return t('common.twoDaysAgo');
-    if (dias < 7)   return t('common.daysAgo',  { count: dias });
-    if (dias < 14)  return t('common.weekAgo');
-    return t('common.weeksAgo', { count: Math.floor(dias / 7) });
-  };
-}
+import { useRelativeDate } from '@/hooks/use-relative-date';
 
 export default function ProjectsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
   const cardElevation = useCardStyle();
-  const relativeDate                        = useRelativeDate();
+  const relativeDate = useRelativeDate();
   // isLoading: cuando se integre el useQuery real, reemplazar por { loading } del hook.
   const isLoading = false;
   const [searchText, setSearchText] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const { isLoading: authLoading } = useAuth();
-  const {
-    data,
-    loading: dataLoading,
-    error,
-    refetch,
-  } = useQuery(GetMyProjectsDocument, {
+  const { data } = useQuery(GetMyProjectsDocument, {
     skip: authLoading,
   });
 
-  const filteredProjects = data?.getMyProjects.filter(project => {
-    const matchesSearch =
-      project.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      project.location.toLowerCase().includes(searchText.toLowerCase());
-    const matchesFilter =
-      selectedFilter === 'all' ||
-      (selectedFilter === 'active' &&
-        project.status === ProjectStatus.Active) ||
-      (selectedFilter === 'completed' &&
-        project.status === ProjectStatus.Completed);
-    return matchesSearch && matchesFilter;
-  });
+  const filteredProjects: any[] =
+    data?.getMyProjects.filter(project => {
+      const matchesSearch =
+        project.name.toLowerCase().includes(searchText.toLowerCase()) ||
+        project.location.toLowerCase().includes(searchText.toLowerCase());
+      const matchesFilter =
+        selectedFilter === 'all' ||
+        (selectedFilter === 'active' &&
+          project.status === ProjectStatus.Active) ||
+        (selectedFilter === 'completed' &&
+          project.status === ProjectStatus.Completed);
+      return matchesSearch && matchesFilter;
+    }) || ([] as Project[]);
 
   const filterLabels: Record<string, string> = {
     all: t('projects.filterAll'),
@@ -153,7 +127,9 @@ export default function ProjectsScreen() {
               </Text>
             </View>
             {/* Fecha relativa calculada desde el timestamp */}
-            <Text className="text-xs text-muted">{relativeDate(Number.parseInt(item.createdAt))}</Text>
+            <Text className="text-xs text-muted">
+              {relativeDate(Number.parseInt(item.createdAt))}
+            </Text>
           </View>
         </View>
       </TouchableOpacity>
