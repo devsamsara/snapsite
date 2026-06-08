@@ -1,5 +1,5 @@
 import { Text, View, TouchableOpacity, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
@@ -9,9 +9,10 @@ export default function AddPhotoModal() {
   const router = useRouter();
   const colors = useColors();
 
+  const { projectId } = useLocalSearchParams<{ projectId?: string }>();
   const handleClose = () => router.back();
-  const handleCamera = () => router.push("/camera-capture");
-  const handleGallery = () => router.push("/gallery-picker");
+  const handleCamera = () => router.push({ pathname: "/camera-capture", params: { projectId } });
+  const handleGallery = () => router.push({ pathname: "/gallery-picker", params: { projectId } });
 
   return (
     <View className="flex-1 bg-background">

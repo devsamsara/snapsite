@@ -87,3 +87,16 @@ mutation CreateProject($input: CreateProjectInput!) {
     }
 }
 
+mutation AddPhoto($projectId: ID!, $url: String!, $caption: String, $tags: [String]) {
+    addPhoto(projectId: $projectId, url: $url, caption: $caption, tags: $tags) {
+        id
+        url
+        caption
+        tags
+        createdAt
+    }
+}
+
+mutation DeletePhoto($photoId: ID!) {
+    deletePhoto(id: $photoId)
+}

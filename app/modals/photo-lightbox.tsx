@@ -12,7 +12,7 @@
  *   ├─────────────────────────────────┤
  *   │  METADATOS (ScrollView, ~35%)   │
  *   ├─────────────────────────────────┤
- *   │  FOOTER (botón anotar)          │
+ *   │  FOOTER (botones anotar/eliminar)│
  *   └─────────────────────────────────┘  ← insets.bottom
  *
  * Buenas prácticas aplicadas:
@@ -24,7 +24,7 @@
  * - ModalFooter con safe area bottom automática
  */
 
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -32,6 +32,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -39,6 +40,13 @@ import { useTranslation } from "react-i18next";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Button } from "@/components/ui/button";
 import { useColors } from "@/hooks/use-colors";
+import { AppAlert } from "@/components/ui/app-alert";
+import { useMutation } from "@apollo/client/react";
+import {
+  DeletePhotoDocument,
+  FindProjectDocument,
+  GetMyProjectsDocument,
+} from "@/gql/graphql";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -47,14 +55,23 @@ export default function PhotoLightboxModal() {
   const router  = useRouter();
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
+  const [deleting, setDeleting] = useState(false);
 
   const params = useLocalSearchParams<{
     url: string;
     caption: string;
     date: string;
     tags: string;
+    photoId: string;
     projectId: string;
   }>();
+
+  const [deletePhoto] = useMutation(DeletePhotoDocument, {
+    refetchQueries: [
+      { query: FindProjectDocument, variables: { findProjectId: params.projectId } },
+      GetMyProjectsDocument,
+    ],
+  });
 
   const tags: string[] = (() => {
     try { return JSON.parse(params.tags ?? "[]"); } catch { return []; }
@@ -65,6 +82,35 @@ export default function PhotoLightboxModal() {
       pathname: "/image-editor",
       params: { imageUri: params.url, projectId: params.projectId },
     });
+  };
+
+  const handleDelete = () => {
+    if (!params.photoId) return;
+    AppAlert.alert(
+      t('lightbox.deleteTitle', 'Eliminar foto'),
+      t('lightbox.deleteConfirm', '¿Estás seguro de que quieres eliminar esta foto? Esta acción no se puede deshacer.'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete', 'Eliminar'),
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await deletePhoto({ variables: { photoId: params.photoId } });
+              router.back();
+            } catch (err: any) {
+              AppAlert.alert(
+                t('common.error', 'Error'),
+                t('lightbox.deleteError', 'No se pudo eliminar la foto.'),
+              );
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -91,8 +137,22 @@ export default function PhotoLightboxModal() {
             {params.caption}
           </Text>
 
-          {/* Spacer derecho para centrar el título visualmente */}
-          <View style={S.closeBtn} pointerEvents="none" />
+          {/* Botón eliminar en la esquina derecha del header */}
+          {params.photoId ? (
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={S.deleteBtn}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              disabled={deleting}
+            >
+              {deleting
+                ? <ActivityIndicator size="small" color="#FF3B30" />
+                : <MaterialIcons name="delete-outline" size={22} color="#FF3B30" />
+              }
+            </TouchableOpacity>
+          ) : (
+            <View style={S.closeBtn} pointerEvents="none" />
+          )}
         </View>
       </View>
 
@@ -202,6 +262,14 @@ const S = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,59,48,0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
