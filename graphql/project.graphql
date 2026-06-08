@@ -100,3 +100,10 @@ mutation AddPhoto($projectId: ID!, $url: String!, $caption: String, $tags: [Stri
 mutation DeletePhoto($photoId: ID!) {
     deletePhoto(id: $photoId)
 }
+
+query GetUploadUrl($projectId: ID!, $fileName: String!, $mimeType: String!) {
+    getUploadUrl(projectId: $projectId, fileName: $fileName, mimeType: $mimeType) {
+        uploadUrl
+        fileUrl
+    }
+}

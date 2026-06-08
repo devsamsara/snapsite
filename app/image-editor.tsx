@@ -82,9 +82,7 @@ import * as Haptics from "expo-haptics";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppAlert } from '@/components/ui/app-alert';
-import { apolloClient } from '@/lib/graphql-client';
 import { uploadPhoto } from '@/lib/upload-service';
-import { AddPhotoDocument, FindProjectDocument } from '@/gql/graphql';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -473,26 +471,18 @@ export default function ImageEditorScreen() {
       // 1. Capturar la vista como imagen JPEG (incluye todas las anotaciones SVG)
       const uri = await captureRef(viewRef, { format: "jpg", quality: 0.95 });
 
-      // 2. Si hay un projectId, subir la foto al backend → S3
+      // 2. Si hay un projectId, subir la foto al backend → S3 (presigned URL)
       if (projectId) {
         try {
-          // Subir el archivo al endpoint REST del backend
-          const { url } = await uploadPhoto(uri);
-
-          // Registrar la foto en el proyecto vía GraphQL
-          await apolloClient.mutate({
-            mutation: AddPhotoDocument,
-            variables: {
-              projectId,
-              url,
-              caption: '',
-              tags: [],
-            },
-            // Refrescar la galería del proyecto automáticamente
-            refetchQueries: [{
-              query: FindProjectDocument,
-              variables: { findProjectId: projectId },
-            }],
+          // Flujo presigned URL:
+          //   a) getUploadUrl(projectId, fileName, mimeType) → { uploadUrl, fileUrl }
+          //   b) PUT uploadUrl ← blob de la imagen (directo a S3)
+          //   c) addPhoto(projectId, url: fileUrl) → registra en BD
+          await uploadPhoto({
+            localUri: uri,
+            projectId,
+            caption: '',
+            tags: [],
           });
 
           AppAlert.alert('¡Foto subida!', 'La foto se subió al proyecto correctamente.', [{
