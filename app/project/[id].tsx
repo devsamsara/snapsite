@@ -377,7 +377,6 @@ export default function ProjectDetailScreen() {
         const isLast = idx === project!.timeline!.length - 1;
         return (
           <View key={event.id} style={S.timelineRow}>
-            Line + icon
             <View style={S.timelineIconCol}>
               <View
                 style={[
@@ -397,7 +396,6 @@ export default function ProjectDetailScreen() {
                 />
               )}
             </View>
-            Content
             <View style={[S.timelineContent, isLast && S.timelineContentLast]}>
               <Text style={[S.timelineDate, { color: colors.muted }]}>
                 {relativeDate(Number.parseInt(event.createdAt))}
