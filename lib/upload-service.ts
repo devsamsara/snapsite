@@ -22,6 +22,7 @@ import {
   GetUploadUrlDocument,
   UpdatePhotoDocument,
 } from '@/gql/graphql';
+import { cacheDirectory, copyAsync } from 'expo-file-system/src/legacy';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -106,8 +107,8 @@ export async function ensureFileUri(uri: string): Promise<string> {
 
     // Busca en el mapa y, si no lo encuentra, usa 'jpg' como fallback
     const ext: string = extensionMap[mimeType] || 'jpg';
-    const dest = `${FileSystem.cacheDirectory}upload_${Date.now()}.${ext}`;
-    await FileSystem.copyAsync({ from: uri, to: dest });
+    const dest = `${cacheDirectory}upload_${Date.now()}.${ext}`;
+    await copyAsync({ from: uri, to: dest });
     return dest;
   }
 
