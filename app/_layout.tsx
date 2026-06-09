@@ -101,7 +101,7 @@ export default function RootLayout() {
                             <Stack.Screen
                                 name="image-editor"
                                 options={{
-                                    headerShown: false,
+                                    headerShown: true,
                                     presentation: 'fullScreenModal',
                                     animation: 'slide_from_bottom',
                                     contentStyle: {backgroundColor: "#000"},
