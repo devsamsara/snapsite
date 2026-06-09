@@ -394,7 +394,11 @@ export default function ImageEditorScreen() {
   const router     = useRouter();
   const insets     = useSafeAreaInsets();
   const colors     = useColors();
-  const { imageUri, projectId } = useLocalSearchParams<{ imageUri: string; projectId?: string }>();
+  const { imageUri, projectId, photoId } = useLocalSearchParams<{
+    imageUri: string;
+    projectId?: string;
+    photoId?: string;
+  }>();
 
   // Image state (imageUri viene del add-photo-modal vía router.replace)
 
@@ -468,59 +472,69 @@ export default function ImageEditorScreen() {
 
   // ── Actions ─────────────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
-    setProc(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
     try {
-      // 1. Capturar la vista como imagen JPEG (incluye todas las anotaciones SVG)
-      const uri = await captureRef(viewRef, { format: "jpg", quality: 0.95 });
+      // 1. Capturar PRIMERO mientras la vista está intacta
+      const uri = await captureRef(viewRef, { format: 'jpg', quality: 0.95 });
+
+      // 2. Ahora sí limpiar animaciones y mostrar loader
+      setTool(null);
+      cT.value = 0;
+      cL.value = 0;
+      cR.value = 0;
+      cB.value = 0;
+      setProc(true);
+
+      const safeUri = await ensureFileUri(uri);
 
       if (projectId) {
         try {
-          // Flujo presigned URL:
-          //   a) getUploadUrl(projectId, fileName, mimeType) → { uploadUrl, fileUrl }
-          //   b) PUT uploadUrl ← blob de la imagen (directo a S3)
-          //   c) addPhoto(projectId, url: fileUrl) → registra en BD
-          // Garantizar URI file:// válida antes del upload
-          const safeUri = await ensureFileUri(uri);
           await uploadPhoto({
             localUri: safeUri,
             projectId,
-            caption: `Picture_${Date.now()}.png`,
+            photoId,
+            caption: `Picture_${Date.now()}.jpg`,
             tags: [],
           });
-
-          AppAlert.alert('¡Foto subida!', 'La foto se subió al proyecto correctamente.', [{
-            text: 'OK',
-            onPress: () => router.back(),
-          }]);
+          AppAlert.alert(
+            '¡Foto guardada!',
+            'La foto se guardó correctamente.',
+            [
+              {
+                text: 'OK',
+                onPress: () => router.back(),
+              },
+            ]
+          );
         } catch (uploadErr: any) {
-          // Si el upload falla, guardar localmente como fallback
-          console.warn('[ImageEditor] Upload failed, saving locally:', uploadErr?.message);
+          console.warn('[ImageEditor] Upload failed:', uploadErr?.message);
           const { status } = await MediaLibrary.requestPermissionsAsync();
-          if (status === 'granted') {
-            await MediaLibrary.saveToLibraryAsync(uri);
-          }
+          if (status === 'granted') await MediaLibrary.saveToLibraryAsync(uri);
           AppAlert.alert(
             'Error al subir',
-            `No se pudo subir la foto al servidor. ${uploadErr?.message ?? ''}\n\nLa imagen se guardó en tu galería.`,
-            [{
-              text: 'OK',
-              onPress: () => router.back(),
-            }],
+            `${uploadErr?.message ?? ''}\n\nLa imagen se guardó en tu galería.`,
+            [
+              {
+                text: 'OK',
+                onPress: () => router.back(),
+              },
+            ]
           );
         }
       } else {
-        // Sin projectId: guardar solo en la galería del dispositivo
         const { status } = await MediaLibrary.requestPermissionsAsync();
         if (status !== 'granted') {
-          AppAlert.alert('Permiso denegado', 'Se necesita acceso a la galería.');
+          AppAlert.alert(
+            'Permiso denegado',
+            'Se necesita acceso a la galería.'
+          );
           return;
         }
         await MediaLibrary.saveToLibraryAsync(uri);
-        AppAlert.alert('¡Guardado!', 'La imagen se guardó en tu galería.', [{
-          text: 'OK',
-          onPress: () => router.back(),
-        }]);
+        AppAlert.alert('¡Guardado!', 'La imagen se guardó en tu galería.', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
       }
     } catch (err: any) {
       console.error('[ImageEditor] handleSave error:', err);
@@ -528,8 +542,7 @@ export default function ImageEditorScreen() {
     } finally {
       setProc(false);
     }
-  }, [projectId, router]);
-
+  }, [projectId, photoId, router, cT, cL, cR, cB]);
   // El image-editor es ahora un fullScreenModal: router.back() lo cierra limpiamente
   // sin acumular historial, independientemente de si viene de un proyecto o no.
   const handleCancel = useCallback(() => {

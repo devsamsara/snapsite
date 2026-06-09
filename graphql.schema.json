@@ -178,6 +178,7 @@ export type Mutation = {
   togglePinNote: Note;
   updateCompany: Company;
   updateNote: Note;
+  updatePhoto: Photo;
   updateProject: Project;
   updateProjectProgress: Project;
   updateTimelineEvent: TimelineEvent;
@@ -310,6 +311,14 @@ export type MutationUpdateCompanyArgs = {
 export type MutationUpdateNoteArgs = {
   id: Scalars['ID']['input'];
   input: UpdateNoteInput;
+};
+
+
+export type MutationUpdatePhotoArgs = {
+  caption?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
+  url?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -808,6 +817,16 @@ export type GetUploadUrlQueryVariables = Exact<{
 
 
 export type GetUploadUrlQuery = { __typename?: 'Query', getUploadUrl: { __typename?: 'UploadUrlPayload', uploadUrl: string, fileUrl: string } };
+
+export type UpdatePhotoMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  url?: InputMaybe<Scalars['String']['input']>;
+  caption?: InputMaybe<Scalars['String']['input']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
+}>;
+
+
+export type UpdatePhotoMutation = { __typename?: 'Mutation', updatePhoto: { __typename?: 'Photo', id: string, url: string, caption: string, tags?: Array<string | null> | null, createdAt: string } };
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 

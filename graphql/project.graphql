@@ -107,3 +107,13 @@ query GetUploadUrl($projectId: ID!, $fileName: String!, $mimeType: String!) {
         fileUrl
     }
 }
+
+mutation UpdatePhoto($id: ID!, $url: String, $caption: String, $tags: [String!]) {
+    updatePhoto(id: $id, url: $url, caption: $caption, tags: $tags) {
+        id
+        url
+        caption
+        tags
+        createdAt
+    }
+}

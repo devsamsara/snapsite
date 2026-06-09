@@ -16,10 +16,11 @@
 import * as FileSystem from 'expo-file-system';
 import { apolloClient } from '@/lib/graphql-client';
 import {
-  GetUploadUrlDocument,
   AddPhotoDocument,
   FindProjectDocument,
   GetMyProjectsDocument,
+  GetUploadUrlDocument,
+  UpdatePhotoDocument,
 } from '@/gql/graphql';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -27,6 +28,7 @@ import {
 export interface UploadPhotoOptions {
   localUri: string;
   projectId: string;
+  photoId?: string;
   caption?: string;
   tags?: string[];
 }
@@ -61,7 +63,7 @@ function getFileInfo(localUri: string): { fileName: string; mimeType: string } {
   };
 
   const mimeType = mimeMap[ext] ?? 'image/jpeg';
-  const safeExt = ext === 'jpeg' ? 'jpg' : (mimeMap[ext] ? ext : 'jpg');
+  const safeExt = ext === 'jpeg' ? 'jpg' : mimeMap[ext] ? ext : 'jpg';
   const fileName = rawName.match(/\.(jpg|jpeg|png|webp|heic|heif)$/i)
     ? rawName
     : `photo_${Date.now()}.${safeExt}`;
@@ -91,9 +93,19 @@ export async function ensureFileUri(uri: string): Promise<string> {
   }
 
   // ph:// (iOS Photos asset) o content:// (Android) — necesita copia
-  if (uri.startsWith('ph://') || uri.startsWith('content://') || uri.startsWith('assets-library://')) {
+  if (
+    uri.startsWith('ph://') ||
+    uri.startsWith('content://') ||
+    uri.startsWith('assets-library://')
+  ) {
     const { mimeType } = getFileInfo(uri);
-    const ext = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
+    const extensionMap: Record<string, string> = {
+      'image/png': 'png',
+      'image/webp': 'webp',
+    };
+
+    // Busca en el mapa y, si no lo encuentra, usa 'jpg' como fallback
+    const ext: string = extensionMap[mimeType] || 'jpg';
     const dest = `${FileSystem.cacheDirectory}upload_${Date.now()}.${ext}`;
     await FileSystem.copyAsync({ from: uri, to: dest });
     return dest;
@@ -106,8 +118,9 @@ export async function ensureFileUri(uri: string): Promise<string> {
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export const uploadPhoto = async ({
-  projectId,
   localUri,
+  projectId,
+  photoId,
   caption,
   tags,
 }: UploadPhotoOptions): Promise<string> => {
@@ -132,7 +145,9 @@ export const uploadPhoto = async ({
   // fetch() con file:// funciona en React Native (Hermes + expo-modules)
   const localResponse = await fetch(safeUri);
   if (!localResponse.ok) {
-    throw new Error(`No se pudo leer el archivo local: ${safeUri} (status ${localResponse.status})`);
+    throw new Error(
+      `No se pudo leer el archivo local: ${safeUri} (status ${localResponse.status})`
+    );
   }
   const blob = await localResponse.blob();
   console.log('[uploadPhoto] blob size:', blob.size, 'type:', blob.type);
@@ -154,11 +169,21 @@ export const uploadPhoto = async ({
   console.log('[uploadPhoto] S3 upload OK →', fileUrl);
 
   // ── Paso 4: registrar la foto en BD ──────────────────────────────────────────
-  await apolloClient.mutate({
-    mutation: AddPhotoDocument,
-    variables: { projectId, url: fileUrl, caption, tags },
-    refetchQueries: [FindProjectDocument, GetMyProjectsDocument],
-  });
+  if (photoId) {
+    // Edición — actualizar el registro existente con la nueva URL
+    await apolloClient.mutate({
+      mutation: UpdatePhotoDocument,
+      variables: { id: photoId, url: fileUrl, caption, tags },
+      refetchQueries: [FindProjectDocument, GetMyProjectsDocument],
+    });
+  } else {
+    // Nueva foto — crear registro
+    await apolloClient.mutate({
+      mutation: AddPhotoDocument,
+      variables: { projectId, url: fileUrl, caption, tags },
+      refetchQueries: [FindProjectDocument, GetMyProjectsDocument],
+    });
+  }
 
   return fileUrl;
 };

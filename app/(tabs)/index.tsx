@@ -36,6 +36,7 @@ import { useQuery } from '@apollo/client/react';
 import { useAuth } from '@/lib/auth-context';
 import { HomeSkeleton } from '@/components/home-skeleton';
 import { GraphQLError } from '@/components/ui/graphql-error';
+import { useRelativeDate } from '@/hooks/use-relative-date';
 
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -51,6 +52,7 @@ export default function HomeScreen() {
 
   const enterOpacity = useSharedValue(0);
   const enterScale = useSharedValue(1.06);
+  const relativeDate = useRelativeDate()
 
   useEffect(() => {
     enterOpacity.value = withTiming(1, {
@@ -71,8 +73,11 @@ export default function HomeScreen() {
   }));
 
   const handleSettingsTap = () => router.push('/settings');
-  const handleProjectTap = (projectId: string) => router.push(`/project/${projectId}`);
-  const handleImageTap = (_imageId: string) => { /* TODO */ };
+  const handleProjectTap = (projectId: string) =>
+    router.push(`/project/${projectId}`);
+  const handleImageTap = (_imageId: string) => {
+    /* TODO */
+  };
   const handleLocationTap = (item: RecentLocation) => {
     router.push({
       pathname: '/location-map',
@@ -91,18 +96,28 @@ export default function HomeScreen() {
 
   const EMPTY_ICONS: Record<'projects' | 'images' | 'locations', string> = {
     projects: 'folder.badge.plus',
-    images:   'photo.on.rectangle.angled',
+    images: 'photo.on.rectangle.angled',
     locations: 'map.fill',
   };
 
   const renderEmptyContent = (id: 'projects' | 'images' | 'locations') => {
-    const titleKey = `home.empty${id.charAt(0).toUpperCase() + id.slice(1)}` as const;
-    const hintKey  = `home.empty${id.charAt(0).toUpperCase() + id.slice(1)}Hint` as const;
+    const titleKey =
+      `home.empty${id.charAt(0).toUpperCase() + id.slice(1)}` as const;
+    const hintKey =
+      `home.empty${id.charAt(0).toUpperCase() + id.slice(1)}Hint` as const;
     return (
       <View style={S.emptyContainer}>
-        <IconSymbol name={EMPTY_ICONS[id] as any} size={48} color={colors.border} />
-        <Text className="text-lg font-semibold text-foreground mt-4">{t(titleKey)}</Text>
-        <Text className="text-sm text-muted text-center mt-2">{t(hintKey)}</Text>
+        <IconSymbol
+          name={EMPTY_ICONS[id] as any}
+          size={48}
+          color={colors.border}
+        />
+        <Text className="text-lg font-semibold text-foreground mt-4">
+          {t(titleKey)}
+        </Text>
+        <Text className="text-sm text-muted text-center mt-2">
+          {t(hintKey)}
+        </Text>
       </View>
     );
   };
@@ -217,21 +232,34 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
-  const renderImageCard = ({ item }: { item: RecentImage }) => (
-    <TouchableOpacity onPress={() => handleImageTap(item.id)} style={S.imageCardWrapper}>
-      <View style={S.imageCardInner}>
-        <Image source={{ uri: item.url }} style={S.imageCardImg} resizeMode="cover" />
-        <View style={S.imageOverlay}>
-          <Text className="text-white text-xs font-semibold" numberOfLines={1}>
-            {item.projectName}
-          </Text>
-          <Text className="text-white text-xs opacity-80" numberOfLines={1}>
-            {item.date}
-          </Text>
+  const renderImageCard = ({ item }: { item: RecentImage }) => {
+
+    return (
+      <TouchableOpacity
+        onPress={() => handleImageTap(item.id)}
+        style={S.imageCardWrapper}
+      >
+        <View style={S.imageCardInner}>
+          <Image
+            source={{ uri: item.url }}
+            style={S.imageCardImg}
+            resizeMode="cover"
+          />
+          <View style={S.imageOverlay}>
+            <Text
+              className="text-white text-xs font-semibold"
+              numberOfLines={1}
+            >
+              {item.projectName}
+            </Text>
+            <Text className="text-white text-xs opacity-80" numberOfLines={1}>
+              {relativeDate(Number.parseInt(item.date))}
+            </Text>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const renderLocationCard = ({ item }: { item: RecentLocation }) => (
     <TouchableOpacity
@@ -301,7 +329,7 @@ export default function HomeScreen() {
                     )
                       .fill(0)
                       .slice(0, 5)
-                      .map((_,i) => (
+                      .map((_, i) => (
                         <View
                           key={data.getDashboardData.currentCompany.users[i].id}
                           style={[
@@ -435,9 +463,13 @@ export default function HomeScreen() {
                   <Text className="text-lg font-semibold text-foreground">
                     {t('home.recentProjects')}
                   </Text>
-                  <TouchableOpacity onPress={()=>router.push({
-                    pathname: '/(tabs)/projects'
-                  })}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push({
+                        pathname: '/(tabs)/projects',
+                      })
+                    }
+                  >
                     <Text style={[S.seeAllText, { color: colors.primary }]}>
                       {t('home.seeAll')}
                     </Text>
@@ -521,22 +553,62 @@ const S = StyleSheet.create({
   flex1Ml3: { flex: 1, marginLeft: 12 },
 
   // Empty state
-  emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 48, paddingHorizontal: 24 },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
 
   // Header
   header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 },
-  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
   workspaceLabel: { fontSize: 13, marginBottom: 6 },
   workspaceName: { fontSize: 24, fontWeight: '700', marginBottom: 12 },
   teamRow: { flexDirection: 'row', alignItems: 'center' },
   avatarsTouchable: { flexDirection: 'row', marginRight: 12 },
-  headerAvatar: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  headerAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerAvatarText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
-  headerAvatarMore: { width: 32, height: 32, borderRadius: 16, marginLeft: -8, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  headerAvatarMore: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginLeft: -8,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerAvatarMoreText: { fontSize: 11, fontWeight: '600' },
-  inviteBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  inviteBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   inviteBtnText: { fontSize: 13, fontWeight: '600', color: '#FFFFFF' },
-  settingsBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginLeft: 12 },
+  settingsBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
 
   // Scroll
   scrollContent: { paddingBottom: 120 },
@@ -545,47 +617,117 @@ const S = StyleSheet.create({
   section: { marginTop: 24 },
   sectionTitleWrapper: { paddingHorizontal: 16, marginBottom: 12 },
   sectionTitle: { fontSize: 18, fontWeight: '600' },
-  sectionHeader: { paddingHorizontal: 16, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sectionHeader: {
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   seeAllText: { fontSize: 14, fontWeight: '600' },
   horizontalListContent: { paddingHorizontal: 16, paddingVertical: 14 },
 
   // Status grid
-  statusGrid: { paddingHorizontal: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  statusCard: { width: '48%', aspectRatio: 1.5, borderRadius: 16, padding: 16, justifyContent: 'space-between' },
-  statusCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  statusGrid: {
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  statusCard: {
+    width: '48%',
+    aspectRatio: 1.5,
+    borderRadius: 16,
+    padding: 16,
+    justifyContent: 'space-between',
+  },
+  statusCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
   statusCardLabel: { fontSize: 16, fontWeight: '600' },
-  statusIconBg: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  statusIconBg: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   statusCardCount: { fontSize: 24, fontWeight: '700' },
 
   // Project card
   projectCardWrapper: { marginRight: 16, width: 300 },
   projectCard: { borderRadius: 16, padding: 16 },
-  projectCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  projectCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
   statusBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999 },
   statusBadgeText: { fontSize: 12, fontWeight: '600' },
   progressSection: { marginBottom: 12 },
-  progressLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  progressLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   progressTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 4 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
   metaItem: { flexDirection: 'row', alignItems: 'center' },
   metaText: { fontSize: 12, marginLeft: 6 },
-  projectCardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  projectCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   avatarRow: { flexDirection: 'row' },
-  memberAvatar: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  memberAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   memberAvatarText: { fontSize: 10, fontWeight: '600', color: '#FFFFFF' },
 
   // Image card
   imageCardWrapper: { marginRight: 12 },
   imageCardInner: { borderRadius: 12, overflow: 'hidden' },
   imageCardImg: { width: 140, height: 140 },
-  imageOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.6)', paddingVertical: 6, paddingHorizontal: 8 },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
 
   // Location card
   locationCardWrapper: { marginRight: 16, width: 200 },
   locationCard: { borderRadius: 16, padding: 16 },
-  locationCardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  locationIconBg: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  locationCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  locationIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   locationFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   locationProjectsText: { fontSize: 12, marginLeft: 4 },
 });

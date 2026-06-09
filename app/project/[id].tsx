@@ -12,11 +12,12 @@ import { useTranslation } from 'react-i18next';
 import { ScreenContainer } from '@/components/screen-container';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle, useCardStyleSm } from '@/hooks/use-card-style';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
 import { AppAlert } from '@/components/ui/app-alert';
 import { ProjectDetailSkeleton } from '@/components/project-detail-skeleton';
+import { GalleryPhotoSkeleton } from '@/components/gallery-photo-skeleton';
 import { useMutation, useQuery } from '@apollo/client/react';
 import {
   DeleteNoteDocument,
@@ -79,14 +80,16 @@ export default function ProjectDetailScreen() {
   const cardSmElevation = useCardStyleSm();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [removeNote] = useMutation(DeleteNoteDocument);
-  const [togglePinNote] = useMutation(TogglePinNoteDocument)
-  const { data } = useQuery(FindProjectDocument, {
+  const [togglePinNote] = useMutation(TogglePinNoteDocument);
+  const { data, loading: queryLoading } = useQuery(FindProjectDocument, {
     variables: {
       findProjectId: id,
     },
   });
-
   const isLoading = false;
+  // Contador de imágenes cargadas para el skeleton de galería
+  const [imagesLoaded, setImagesLoaded] = useState(0);
+  const loadedCountRef = useRef(0);
 
   const [activeTab, setActiveTab] = useState<TabId>('gallery');
   const [photos, setPhotos] = useState<Photo[] | undefined>();
@@ -98,10 +101,12 @@ export default function ProjectDetailScreen() {
     const loadProyect = () => {
       if (data) {
         setProject(data.findProject);
+        // Resetear contador de imágenes al recibir nuevas fotos
+        loadedCountRef.current = 0;
+        setImagesLoaded(0);
         setPhotos(data.findProject.photos);
       }
     };
-
     loadProyect();
   }, [data, project]);
 
@@ -260,8 +265,11 @@ export default function ProjectDetailScreen() {
         </TouchableOpacity>
       </View>*/}
 
-      {/* Grid */}
-      <View style={S.gridWrapper}>
+      {/* Grid — skeleton mientras carga o mientras las imágenes no han terminado de renderizar */}
+      {queryLoading && <GalleryPhotoSkeleton count={photos?.length || 6} />}
+      <View
+        style={[S.gridWrapper, { display: queryLoading ? 'none' : 'flex' }]}
+      >
         <View style={S.grid}>
           {filteredPhotos?.map(photo => (
             <TouchableOpacity
@@ -273,18 +281,28 @@ export default function ProjectDetailScreen() {
                 source={{ uri: photo.url }}
                 style={S.gridItemImg}
                 resizeMode="cover"
+                onLoadEnd={() => {
+                  loadedCountRef.current += 1;
+                  setImagesLoaded(loadedCountRef.current);
+                }}
               />
               <View style={S.gridItemOverlay}>
                 <Text style={S.gridItemCaption} numberOfLines={1}>
                   {photo.caption}
                 </Text>
-                <Text style={S.gridItemDate}>{photo.createdAt}</Text>
+                <Text style={S.gridItemDate}>
+                  {relativeDate(Number.parseInt(photo.createdAt))}
+                </Text>
               </View>
               <TouchableOpacity
                 onPress={() =>
                   router.push({
                     pathname: '/image-editor',
-                    params: { imageUri: photo.url, projectId: project!.id },
+                    params: {
+                      imageUri: photo.url,
+                      projectId: project!.id,
+                      photoId: photo.id,
+                    },
                   })
                 }
                 style={S.gridItemEditBtn}
@@ -294,7 +312,6 @@ export default function ProjectDetailScreen() {
             </TouchableOpacity>
           ))}
         </View>
-
         {filteredPhotos?.length === 0 && (
           <View style={S.emptyState}>
             <View
@@ -383,7 +400,7 @@ export default function ProjectDetailScreen() {
             Content
             <View style={[S.timelineContent, isLast && S.timelineContentLast]}>
               <Text style={[S.timelineDate, { color: colors.muted }]}>
-                {event.createdAt}
+                {relativeDate(Number.parseInt(event.createdAt))}
               </Text>
               <View style={[S.cardBase, cardElevation]}>
                 <Text style={[S.timelineTitle, { color: colors.foreground }]}>
@@ -470,7 +487,14 @@ export default function ProjectDetailScreen() {
                 </Text>
                 {
                   <View
-                    style={[S.onlineDot, { backgroundColor: isActive ? colors.success: colors.error}]}
+                    style={[
+                      S.onlineDot,
+                      {
+                        backgroundColor: isActive
+                          ? colors.success
+                          : colors.error,
+                      },
+                    ]}
                   />
                 }
               </View>
@@ -726,11 +750,39 @@ export default function ProjectDetailScreen() {
           {/* ── Hero card ── */}
           <View style={S.heroWrapper}>
             <View style={[S.heroCard, cardElevation]}>
-              <Image
-                source={{ uri: project.thumbnail }}
-                style={S.heroImg}
-                resizeMode="cover"
-              />
+              {project.thumbnail ? (
+                <Image
+                  source={{ uri: project.thumbnail }}
+                  style={S.heroImg}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View
+                  style={[
+                    S.heroImg,
+                    S.heroImgPlaceholder,
+                    { backgroundColor: colors.surface },
+                  ]}
+                >
+                  <View
+                    style={[
+                      S.heroImgPlaceholderIcon,
+                      { backgroundColor: colors.border + '60' },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name="photo-camera"
+                      size={36}
+                      color={colors.muted}
+                    />
+                  </View>
+                  <Text
+                    style={[S.heroImgPlaceholderText, { color: colors.muted }]}
+                  >
+                    {t('project.noThumbnail')}
+                  </Text>
+                </View>
+              )}
               <View style={S.heroBody}>
                 <View style={S.progressLabelRow}>
                   <Text style={[S.progressLabel, { color: colors.foreground }]}>
@@ -888,6 +940,19 @@ const S = StyleSheet.create({
   heroWrapper: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
   heroCard: { borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
   heroImg: { width: '100%', height: 140 },
+  heroImgPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  heroImgPlaceholderIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroImgPlaceholderText: { fontSize: 13, fontWeight: '500' as const },
   heroBody: { padding: 14 },
   progressLabelRow: {
     flexDirection: 'row',
