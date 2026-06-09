@@ -82,7 +82,7 @@ import * as Haptics from "expo-haptics";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppAlert } from '@/components/ui/app-alert';
-import { uploadPhoto } from '@/lib/upload-service';
+import { normalizeUri, uploadPhoto } from '@/lib/upload-service';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -471,7 +471,6 @@ export default function ImageEditorScreen() {
       // 1. Capturar la vista como imagen JPEG (incluye todas las anotaciones SVG)
       const uri = await captureRef(viewRef, { format: "jpg", quality: 0.95 });
 
-      // 2. Si hay un projectId, subir la foto al backend → S3 (presigned URL)
       if (projectId) {
         try {
           // Flujo presigned URL:
@@ -479,9 +478,9 @@ export default function ImageEditorScreen() {
           //   b) PUT uploadUrl ← blob de la imagen (directo a S3)
           //   c) addPhoto(projectId, url: fileUrl) → registra en BD
           await uploadPhoto({
-            localUri: uri,
+            localUri: normalizeUri(uri),
             projectId,
-            caption: '',
+            caption: `Picture_${Date.now()}.png`,
             tags: [],
           });
 

@@ -154,6 +154,7 @@ export type MessagePayload = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  addPhoto: Photo;
   addProjectMember: Project;
   changePassword: Scalars['Boolean']['output'];
   confirmAccount: AuthPayload;
@@ -164,6 +165,7 @@ export type Mutation = {
   createTimelineEvent: TimelineEvent;
   deleteCompany: Scalars['Boolean']['output'];
   deleteNote: Scalars['Boolean']['output'];
+  deletePhoto: Scalars['Boolean']['output'];
   deleteProject: Scalars['Boolean']['output'];
   deleteTimelineEvent: Scalars['Boolean']['output'];
   deleteUser: Scalars['Boolean']['output'];
@@ -181,6 +183,14 @@ export type Mutation = {
   updateTimelineEvent: TimelineEvent;
   updateUser: User;
   updateUserPicture: User;
+};
+
+
+export type MutationAddPhotoArgs = {
+  caption?: InputMaybe<Scalars['String']['input']>;
+  projectId: Scalars['ID']['input'];
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
+  url: Scalars['String']['input'];
 };
 
 
@@ -231,6 +241,11 @@ export type MutationDeleteCompanyArgs = {
 
 
 export type MutationDeleteNoteArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeletePhotoArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -432,6 +447,7 @@ export type Query = {
   getPinnedNotes: Array<Note>;
   getProjectTimeline: Array<TimelineEvent>;
   getProjects: PaginatedProjects;
+  getUploadUrl: UploadUrlPayload;
   getUsers: PaginatedUsers;
   inviteMember: Scalars['Boolean']['output'];
   me: User;
@@ -486,6 +502,13 @@ export type QueryGetProjectTimelineArgs = {
 
 export type QueryGetProjectsArgs = {
   filters?: InputMaybe<ProjectFiltersInput>;
+};
+
+
+export type QueryGetUploadUrlArgs = {
+  fileName: Scalars['String']['input'];
+  mimeType: Scalars['String']['input'];
+  projectId: Scalars['ID']['input'];
 };
 
 
@@ -604,6 +627,12 @@ export type UpdateUserInput = {
   phone?: InputMaybe<Scalars['String']['input']>;
   role?: InputMaybe<UserRole>;
   status?: InputMaybe<UserStatus>;
+};
+
+export type UploadUrlPayload = {
+  __typename?: 'UploadUrlPayload';
+  fileUrl: Scalars['String']['output'];
+  uploadUrl: Scalars['String']['output'];
 };
 
 export type User = {
@@ -753,6 +782,32 @@ export type CreateProjectMutationVariables = Exact<{
 
 
 export type CreateProjectMutation = { __typename?: 'Mutation', createProject: { __typename?: 'Project', id: string, location: string, longitude?: number | null, latitude?: number | null, name: string, thumbnail?: string | null } };
+
+export type AddPhotoMutationVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+  url: Scalars['String']['input'];
+  caption?: InputMaybe<Scalars['String']['input']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']> | Scalars['String']['input']>;
+}>;
+
+
+export type AddPhotoMutation = { __typename?: 'Mutation', addPhoto: { __typename?: 'Photo', caption: string, createdAt: string, id: string, tags?: Array<string | null> | null, url: string } };
+
+export type DeletePhotoMutationVariables = Exact<{
+  photoId: Scalars['ID']['input'];
+}>;
+
+
+export type DeletePhotoMutation = { __typename?: 'Mutation', deletePhoto: boolean };
+
+export type GetUploadUrlQueryVariables = Exact<{
+  projectId: Scalars['ID']['input'];
+  fileName: Scalars['String']['input'];
+  mimeType: Scalars['String']['input'];
+}>;
+
+
+export type GetUploadUrlQuery = { __typename?: 'Query', getUploadUrl: { __typename?: 'UploadUrlPayload', uploadUrl: string, fileUrl: string } };
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 

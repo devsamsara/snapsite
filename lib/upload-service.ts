@@ -1,18 +1,5 @@
-/**
- * upload-service.ts
- *
- * Handles image upload to S3 via presigned URLs provided by the backend.
- *
- * Flow:
- *   1. captureRef()  → local file URI  (react-native-view-shot)
- *   2. Query getUploadUrl(projectId, fileName, mimeType)
- *      ← { uploadUrl, fileUrl }
- *   3. PUT uploadUrl ← blob de la imagen (directo a S3, el servidor no toca el archivo)
- *   4. Mutation addPhoto(projectId, url: fileUrl, caption?, tags?)
- *      ← { id, url, caption, tags, createdAt }
- */
 
-import * as FileSystem from 'expo-file-system';
+import { File } from 'expo-file-system';
 import { apolloClient } from '@/lib/graphql-client';
 import {
   GetUploadUrlDocument,
@@ -24,13 +11,9 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface UploadPhotoOptions {
-  /** Local file URI from captureRef / ImagePicker */
   localUri: string;
-  /** Project ID to associate the photo with */
   projectId: string;
-  /** Optional caption for the photo */
   caption?: string;
-  /** Optional tags for the photo */
   tags?: string[];
 }
 
@@ -43,11 +26,6 @@ export interface UploadPhotoResult {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/**
- * Derives a clean filename and mimeType from a local URI.
- * Defaults to "photo_<timestamp>.jpg" if the URI has no extension.
- */
 function getFileInfo(localUri: string): { fileName: string; mimeType: string } {
   const parts = localUri.split('/');
   const rawName = parts[parts.length - 1] ?? '';
@@ -71,79 +49,62 @@ function getFileInfo(localUri: string): { fileName: string; mimeType: string } {
   return { fileName, mimeType };
 }
 
-// ─── Main function ────────────────────────────────────────────────────────────
 
-/**
- * Full upload flow:
- *  1. Ask the backend for a presigned S3 URL
- *  2. PUT the image blob directly to S3
- *  3. Register the photo in the backend DB via addPhoto mutation
- *
- * @returns The created Photo object from the backend
- */
-export async function uploadPhoto(options: UploadPhotoOptions): Promise<UploadPhotoResult> {
-  const { localUri, projectId, caption = '', tags = [] } = options;
-  const { fileName, mimeType } = getFileInfo(localUri);
-
-  // ── Step 1: Get presigned upload URL from backend ──────────────────────────
-  const { data: urlData, errors: urlErrors } = await apolloClient.query({
+export const uploadPhoto = async ({
+  projectId,
+  localUri,
+  caption,
+  tags,
+}: {
+  projectId: string;
+  localUri: string;
+  caption?: string;
+  tags?: string[];
+}) => {
+  // 1. Pedir la URL firmada al backend
+  const { mimeType } = getFileInfo(localUri);
+  const { data } = await apolloClient.query({
     query: GetUploadUrlDocument,
-    variables: { projectId, fileName, mimeType },
-    fetchPolicy: 'no-cache',
-  });
-
-  if (urlErrors?.length || !urlData?.getUploadUrl) {
-    const msg = urlErrors?.[0]?.message ?? 'Failed to get upload URL from backend';
-    throw new Error(msg);
-  }
-
-  const { uploadUrl, fileUrl } = urlData.getUploadUrl;
-
-  // ── Step 2: Read file as base64 and convert to blob, then PUT to S3 ────────
-  // expo-file-system reads the local file; fetch() sends it directly to S3.
-  const base64 = await FileSystem.readAsStringAsync(localUri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-
-  // Convert base64 → Uint8Array → Blob for a clean binary PUT
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  const blob = new Blob([bytes], { type: mimeType });
-
-  const putResponse = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': mimeType },
-    body: blob,
-  });
-
-  if (!putResponse.ok) {
-    throw new Error(
-      `S3 upload failed: ${putResponse.status} ${putResponse.statusText}`,
-    );
-  }
-
-  // ── Step 3: Register photo in the backend DB ───────────────────────────────
-  const { data: photoData, errors: photoErrors } = await apolloClient.mutate({
-    mutation: AddPhotoDocument,
     variables: {
       projectId,
-      url: fileUrl,
-      caption: caption || undefined,
-      tags: tags.length > 0 ? tags : undefined,
+      fileName: localUri.split('/').pop() ?? 'photo.jpg',
+      mimeType,
     },
-    refetchQueries: [
-      { query: FindProjectDocument, variables: { findProjectId: projectId } },
-      GetMyProjectsDocument,
-    ],
   });
 
-  if (photoErrors?.length || !photoData?.addPhoto) {
-    const msg = photoErrors?.[0]?.message ?? 'Failed to register photo in backend';
-    throw new Error(msg);
+  const { uploadUrl, fileUrl } = data!.getUploadUrl;
+
+  // 2. Leer el archivo local como blob
+  const localResponse = await fetch(localUri);
+  const blob = await localResponse.blob();
+
+  // 3. Subir directamente a S3
+  const s3Response = await fetch(uploadUrl, {
+    method: 'PUT',
+    body: blob,
+    headers: {
+      'Content-Type': mimeType,
+    },
+  });
+
+  if (!s3Response.ok) {
+    const xml = await s3Response.text();
+    throw new Error(`S3 error ${s3Response.status}: ${xml}`);
   }
 
-  return photoData.addPhoto as UploadPhotoResult;
-}
+  // 4. Guardar el registro en BD
+  await apolloClient.mutate({
+    mutation: AddPhotoDocument,
+    variables: { projectId, url: fileUrl, caption, tags },
+  });
+
+  return fileUrl;
+};
+
+export const normalizeUri = (uri: string): string => {
+  // Si ya tiene scheme, devolverla tal cual
+  if (uri.startsWith('file://') || uri.startsWith('ph://')) return uri;
+  // Ruta absoluta sin scheme → añadir file://
+  if (uri.startsWith('/')) return `file://${uri}`;
+  return uri;
+};
