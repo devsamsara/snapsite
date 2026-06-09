@@ -113,7 +113,7 @@ export default function ProjectDetailScreen() {
   const handleAddPhoto = () => {
     if (project)
       router.push({
-        pathname: '/image-editor',
+        pathname: '/add-photo-modal',
         params: { projectId: project.id },
       });
   };
