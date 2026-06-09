@@ -3,10 +3,11 @@
  *
  * Flujo:
  *   project/[id]  →push→  add-photo-modal  →replace→  image-editor  →back→  project/[id]
+ *   add-photos-prompt →push→  add-photo-modal  →replace→  image-editor  →back→  add-photos-prompt
  *
  * Vistas internas (sin navegación entre rutas):
- *   "options"  → pantalla inicial: elegir entre Cámara o Galería
- *   "camera"   → CameraView a pantalla completa (reemplaza el modal visualmente)
+ *   "options"  → pantalla inicial: elegir entre Tomar Foto o Seleccionar de Galería
+ *   "camera"   → CameraView a pantalla completa
  *
  * Al obtener una foto (cámara o galería):
  *   router.replace('/image-editor', { imageUri, projectId })
@@ -15,6 +16,9 @@
  *
  * Al guardar/cancelar en el image-editor:
  *   router.back() → vuelve al project/[id] limpiamente
+ *
+ * Estilo: mismo lenguaje visual que add-photos-prompt
+ *   (centrado, icono grande en círculo, botones grandes con fondo de color)
  */
 
 import React, { useState, useRef } from 'react';
@@ -30,6 +34,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { CameraView, useCameraPermissions, FlashMode } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColors } from '@/hooks/use-colors';
@@ -54,8 +59,6 @@ export default function AddPhotoModal() {
   const [permission, requestPermission] = useCameraPermissions();
 
   // ── Navegar al editor reemplazando este modal ────────────────────────────────
-  // router.replace elimina add-photo-modal del stack → image-editor queda solo
-  // → router.back() desde el editor vuelve directamente al project/[id]
   const goToEditor = (imageUri: string) => {
     router.replace({
       pathname: '/image-editor',
@@ -70,7 +73,10 @@ export default function AddPhotoModal() {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        AppAlert.alert('Permiso requerido', 'Necesitamos acceso a tu galería para seleccionar fotos.');
+        AppAlert.alert(
+          'Permiso requerido',
+          'Necesitamos acceso a tu galería para seleccionar fotos.',
+        );
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -93,9 +99,7 @@ export default function AddPhotoModal() {
   const handleCameraOption = async () => {
     if (busy) return;
 
-    // Gestionar permiso antes de mostrar la cámara
     if (!permission) {
-      // Hook aún cargando — pedir permiso directamente
       const r = await requestPermission();
       if (!r.granted) {
         AppAlert.alert('Permiso requerido', 'Necesitamos acceso a la cámara para tomar fotos.');
@@ -117,7 +121,6 @@ export default function AddPhotoModal() {
       }
     }
 
-    // Permiso concedido → mostrar cámara
     setCamReady(false);
     setView('camera');
   };
@@ -178,81 +181,74 @@ export default function AddPhotoModal() {
     flash === 'on' ? 'bolt.fill' : flash === 'auto' ? 'bolt.badge.a.fill' : 'bolt.slash.fill';
 
   // ────────────────────────────────────────────────────────────────────────────
-  // VISTA: Opciones
+  // VISTA: Opciones — mismo estilo que add-photos-prompt
   // ────────────────────────────────────────────────────────────────────────────
   if (view === 'options') {
     return (
-      <View style={[S.flex1, { backgroundColor: colors.background }]}>
-        {/* Header */}
-        <View style={[S.header, { paddingTop: insets.top + 16 }]}>
+      <SafeAreaView
+        style={[S.container, { backgroundColor: colors.background }]}
+        edges={['top', 'bottom']}
+      >
+        {/* Botón cerrar — esquina superior derecha */}
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={[S.closeBtn, { backgroundColor: colors.surface, top: insets.top + 12 }]}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <IconSymbol name="xmark" size={16} color={colors.foreground} />
+        </TouchableOpacity>
+
+        <View style={S.content}>
+          {/* Icono central */}
+          <View style={[S.iconCircle, { backgroundColor: colors.primary + '18' }]}>
+            <IconSymbol name="camera.on.rectangle.fill" size={60} color={colors.primary} />
+          </View>
+
+          {/* Título y subtítulo */}
           <Text style={[S.title, { color: colors.foreground }]}>Agregar Foto</Text>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={[S.closeBtn, { backgroundColor: colors.surface }]}
-          >
-            <IconSymbol name="xmark" size={16} color={colors.foreground} />
-          </TouchableOpacity>
-        </View>
+          <Text style={[S.subtitle, { color: colors.muted }]}>
+            Toma una foto con la cámara o selecciona una de tu galería
+          </Text>
 
-        {/* Options */}
-        <View style={S.optionsWrapper}>
-          {/* Camera */}
-          <TouchableOpacity
-            onPress={handleCameraOption}
-            disabled={busy}
-            style={[
-              S.optionCard,
-              S.optionCardMargin,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-          >
-            <View style={[S.optionIcon, { backgroundColor: colors.primary + '20' }]}>
-              <IconSymbol name="camera.fill" size={28} color={colors.primary} />
-            </View>
-            <View style={S.flex1}>
-              <Text style={[S.optionTitle, { color: colors.foreground }]}>Tomar Foto</Text>
-              <Text style={[S.optionDesc, { color: colors.muted }]}>
-                Usa la cámara para capturar una nueva foto
-              </Text>
-            </View>
-            <IconSymbol name="chevron.right" size={20} color={colors.muted} />
-          </TouchableOpacity>
+          {/* Botones */}
+          <View style={S.buttonContainer}>
+            {/* Tomar Foto */}
+            <TouchableOpacity
+              style={[S.primaryButton, { backgroundColor: colors.primary }]}
+              onPress={handleCameraOption}
+              disabled={busy}
+              activeOpacity={0.85}
+            >
+              <IconSymbol name="camera.fill" size={20} color="#FFF" />
+              <Text style={S.primaryButtonText}>Tomar Foto</Text>
+            </TouchableOpacity>
 
-          {/* Gallery */}
-          <TouchableOpacity
-            onPress={handleGalleryOption}
-            disabled={busy}
-            style={[
-              S.optionCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-          >
-            <View style={[S.optionIcon, { backgroundColor: '#34C75920' }]}>
-              <IconSymbol name="photo.on.rectangle" size={28} color="#34C759" />
-            </View>
-            <View style={S.flex1}>
-              <Text style={[S.optionTitle, { color: colors.foreground }]}>
-                Seleccionar de Galería
-              </Text>
-              <Text style={[S.optionDesc, { color: colors.muted }]}>
-                Elige una foto de tu biblioteca
-              </Text>
-            </View>
-            {busy ? (
-              <ActivityIndicator size="small" color={colors.muted} />
-            ) : (
-              <IconSymbol name="chevron.right" size={20} color={colors.muted} />
-            )}
-          </TouchableOpacity>
+            {/* Seleccionar de Galería */}
+            <TouchableOpacity
+              style={[S.secondaryButton, { borderColor: colors.border }]}
+              onPress={handleGalleryOption}
+              disabled={busy}
+              activeOpacity={0.7}
+            >
+              {busy ? (
+                <ActivityIndicator size="small" color={colors.muted} />
+              ) : (
+                <>
+                  <IconSymbol name="photo.on.rectangle" size={20} color={colors.foreground} />
+                  <Text style={[S.secondaryButtonText, { color: colors.foreground }]}>
+                    Seleccionar de Galería
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   // ────────────────────────────────────────────────────────────────────────────
   // VISTA: Cámara
-  // Todos los checks de permiso están en handleCameraOption, no aquí.
-  // Si llegamos aquí, el permiso ya está concedido.
   // ────────────────────────────────────────────────────────────────────────────
   return (
     <View style={[S.flex1, { backgroundColor: '#000' }]}>
@@ -320,42 +316,84 @@ export default function AddPhotoModal() {
 
 const S = StyleSheet.create({
   flex1: { flex: 1 },
-  // ── Options ─────────────────────────────────────────────────────────────────
-  header: {
-    paddingHorizontal: 24,
-    paddingBottom: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+
+  // ── Options view ─────────────────────────────────────────────────────────────
+  container: {
+    flex: 1,
   },
-  title: { fontSize: 20, fontWeight: '700' },
   closeBtn: {
+    position: 'absolute',
+    right: 24,
     width: 32,
     height: 32,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
   },
-  optionsWrapper: { paddingHorizontal: 24, paddingTop: 40 },
-  optionCard: {
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  optionCardMargin: { marginBottom: 16 },
-  optionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  content: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    paddingHorizontal: 32,
   },
-  optionTitle: { fontSize: 17, fontWeight: '600', marginBottom: 4 },
-  optionDesc: { fontSize: 14 },
-  // ── Camera ──────────────────────────────────────────────────────────────────
+  iconCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 32,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  subtitle: {
+    fontSize: 17,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 48,
+  },
+  buttonContainer: {
+    width: '100%',
+    gap: 16,
+  },
+  primaryButton: {
+    height: 56,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  primaryButtonText: {
+    color: '#FFF',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  secondaryButton: {
+    height: 56,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderWidth: 1,
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  // ── Camera view ──────────────────────────────────────────────────────────────
   camera: { flex: 1 },
   topControls: {
     position: 'absolute',
@@ -407,16 +445,19 @@ const S = StyleSheet.create({
   galleryButton: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: 10,
     overflow: 'hidden',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  galleryPreview: { width: '100%', height: '100%' },
+  galleryPreview: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+  },
   galleryPlaceholder: {
-    width: '100%',
-    height: '100%',
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -91,6 +91,14 @@ export default function RootLayout() {
                                 }}
                             />
                             <Stack.Screen
+                                name="add-photos-prompt"
+                                options={{
+                                    headerShown: false,
+                                    presentation: 'fullScreenModal',
+                                    animation: 'slide_from_bottom',
+                                }}
+                            />
+                            <Stack.Screen
                                 name="add-photo-modal"
                                 options={{
                                     headerShown: false,
