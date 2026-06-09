@@ -93,8 +93,9 @@ export default function RootLayout() {
                             <Stack.Screen
                                 name="add-photo-modal"
                                 options={{
-                                    presentation: 'modal',
-                                    animation: 'slide_from_bottom'
+                                    headerShown: false,
+                                    presentation: 'fullScreenModal',
+                                    animation: 'slide_from_bottom',
                                 }}
                             />
                             <Stack.Screen

@@ -526,7 +526,15 @@ export default function ImageEditorScreen() {
     }
   }, [projectId, router]);
 
-  const handleCancel = useCallback(() => router.back(), [router]);
+  // Si viene de un proyecto, cancelar cierra todo el stack (add-photo-modal + image-editor)
+  // y vuelve al proyecto. Si no, simplemente retrocede.
+  const handleCancel = useCallback(() => {
+    if (projectId) {
+      router.replace({ pathname: '/project/[id]', params: { id: projectId } });
+    } else {
+      router.back();
+    }
+  }, [projectId, router]);
 
   // ── Native header buttons via useLayoutEffect ────────────────────────────────
   useLayoutEffect(() => {
