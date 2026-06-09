@@ -35,7 +35,6 @@ import React, {
   useState,
   useRef,
   useEffect,
-  useLayoutEffect,
   useCallback,
 } from "react";
 import {
@@ -50,7 +49,6 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams, Stack, useFocusEffect } from "expo-router";
 import { annotationTextStore, annotationMeasureStore } from "@/lib/modal-stores";
-import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // ─── react-native-svg (reemplaza @shopify/react-native-skia) ──────────────────
@@ -394,7 +392,6 @@ function CropCorner({
 // La selección de cámara/galería ocurre en add-photo-modal (ruta anterior).
 export default function ImageEditorScreen() {
   const router     = useRouter();
-  const navigation = useNavigation();
   const insets     = useSafeAreaInsets();
   const colors     = useColors();
   const { imageUri, projectId } = useLocalSearchParams<{ imageUri: string; projectId?: string }>();
@@ -537,27 +534,7 @@ export default function ImageEditorScreen() {
     router.back();
   }, [router]);
 
-  // ── Native header buttons via useLayoutEffect ────────────────────────────────
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: true,
-      title: "Anotar Foto",
-      headerStyle: { backgroundColor: "#111" },
-      headerTintColor: "#FFF",
-      headerTitleStyle: { fontWeight: "600", fontSize: 17 },
-      headerLeft: () => (
-        <TouchableOpacity onPress={handleCancel} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
-          <Text style={{ color: "#FFF", fontSize: 17, fontWeight: "400", marginLeft: 4 }}>Cancelar</Text>
-        </TouchableOpacity>
-      ),
-      headerRight: () => (
-        <TouchableOpacity onPress={handleSave} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
-          <Text style={{ color: "#007AFF", fontSize: 17, fontWeight: "600", marginRight: 4 }}>Guardar</Text>
-        </TouchableOpacity>
-      ),
-      headerBackVisible: false,
-    });
-  }, [navigation, handleCancel, handleSave]);
+
 
   const undo = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -676,8 +653,27 @@ export default function ImageEditorScreen() {
   // ── Render: EDITOR ────────────────────────────────────────────────────────────
   return (
     <GestureHandlerRootView style={S.root}>
-      <SafeAreaView style={S.root} edges={["bottom"]}>
+      <SafeAreaView style={S.root} edges={["top", "bottom"]}>
 
+        {/* ── Custom header ── */}
+        <View style={S.editorHeader}>
+          <TouchableOpacity
+            onPress={handleCancel}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={S.editorHeaderBtn}
+          >
+            <Text style={S.editorHeaderCancel}>Cancelar</Text>
+          </TouchableOpacity>
+          <Text style={S.editorHeaderTitle}>Anotar Foto</Text>
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={processing}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={S.editorHeaderBtn}
+          >
+            <Text style={[S.editorHeaderSave, processing && { opacity: 0.4 }]}>Guardar</Text>
+          </TouchableOpacity>
+        </View>
         {/* ── Image area — flex:1 so it fills all space between header and toolbar ── */}
         <View
           style={S.canvasArea}
@@ -844,6 +840,40 @@ export default function ImageEditorScreen() {
 
 const S = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
+  // Custom header
+  editorHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#111",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(255,255,255,0.12)",
+    paddingHorizontal: 8,
+    height: 52,
+  },
+  editorHeaderBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minWidth: 80,
+  },
+  editorHeaderTitle: {
+    color: "#FFF",
+    fontSize: 17,
+    fontWeight: "600",
+    flex: 1,
+    textAlign: "center",
+  },
+  editorHeaderCancel: {
+    color: "#FFF",
+    fontSize: 17,
+    fontWeight: "400",
+  },
+  editorHeaderSave: {
+    color: "#007AFF",
+    fontSize: 17,
+    fontWeight: "600",
+    textAlign: "right",
+  },
 
   canvasArea: {
     flex: 1,
