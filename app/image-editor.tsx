@@ -702,10 +702,28 @@ export default function ImageEditorScreen() {
   };
 
   const handleCameraOption = async () => {
-    if (!permission?.granted) {
+    // Si el hook aún no ha cargado el estado del permiso, esperar
+    if (!permission) {
       const r = await requestPermission();
       if (!r.granted) {
-        AppAlert.alert('Permiso requerido', 'Necesitamos acceso a la cámara.');
+        AppAlert.alert('Permiso requerido', 'Necesitamos acceso a la cámara para tomar fotos.');
+        return;
+      }
+      setMode('camera');
+      return;
+    }
+    if (!permission.granted) {
+      if (permission.canAskAgain) {
+        const r = await requestPermission();
+        if (!r.granted) {
+          AppAlert.alert('Permiso requerido', 'Necesitamos acceso a la cámara para tomar fotos.');
+          return;
+        }
+      } else {
+        AppAlert.alert(
+          'Permiso denegado',
+          'Ve a Ajustes > Privacidad > Cámara y activa el permiso para esta app.',
+        );
         return;
       }
     }

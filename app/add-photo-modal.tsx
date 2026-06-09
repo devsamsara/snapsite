@@ -2,19 +2,20 @@
  * add-photo-modal.tsx
  *
  * Flujo simplificado — stack mínimo:
- *   project/[id]  →  add-photo-modal  →  image-editor
+ *   project/[id]  →  image-editor  (fullScreenModal)
  *
- * La cámara y la galería se manejan como estados internos de este modal,
- * sin navegar a rutas intermedias. Al obtener la foto se navega directamente
- * al image-editor. Al guardar, el image-editor hace router.replace a
- * project/[id], cerrando todo el stack de una vez.
+ * Este archivo ya NO es el flujo principal. El project/[id] navega directamente
+ * al image-editor, que tiene sus propios modos picker/camera/editor.
+ *
+ * Este modal se mantiene como fallback para otros flujos que aún lo referencien
+ * (add-photos-prompt, create-project-location, etc.).
  *
  * Vistas internas:
  *   "options"  → pantalla inicial: elegir entre Cámara o Galería
  *   "camera"   → CameraView a pantalla completa
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -35,7 +36,7 @@ import { AppAlert } from "@/components/ui/app-alert";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-type View = "options" | "camera";
+type ModalView = "options" | "camera";
 
 export default function AddPhotoModal() {
   const { t } = useTranslation();
@@ -44,7 +45,7 @@ export default function AddPhotoModal() {
   const insets = useSafeAreaInsets();
   const { projectId } = useLocalSearchParams<{ projectId?: string }>();
 
-  const [view, setView] = useState<View>("options");
+  const [view, setView] = useState<ModalView>("options");
   const [facing, setFacing] = useState<"back" | "front">("back");
   const [flash, setFlash] = useState<FlashMode>("off");
   const [isReady, setIsReady] = useState(false);
@@ -63,7 +64,10 @@ export default function AddPhotoModal() {
 
   // ── Opción: Cámara ───────────────────────────────────────────────────────────
   const handleCameraOption = async () => {
-    if (!permission?.granted) {
+    // Si el permiso aún no se ha determinado, esperar
+    if (!permission) return;
+
+    if (!permission.granted) {
       const result = await requestPermission();
       if (!result.granted) {
         AppAlert.alert(
@@ -97,7 +101,6 @@ export default function AddPhotoModal() {
       if (!result.canceled && result.assets?.[0]) {
         goToEditor(result.assets[0].uri);
       }
-      // Si cancela, se queda en el modal (no hace nada)
     } catch (error) {
       console.error("[AddPhotoModal] Gallery error:", error);
       AppAlert.alert("Error", "No se pudo abrir la galería.");
@@ -163,9 +166,9 @@ export default function AddPhotoModal() {
     return (
       <View style={[S.flex1, { backgroundColor: colors.background }]}>
         {/* Header */}
-        <View style={S.header}>
+        <View style={[S.header, { paddingTop: insets.top + 16 }]}>
           <Text style={[S.title, { color: colors.foreground }]}>
-            {t("addPhoto.title")}
+            {t("addPhoto.title", "Agregar Foto")}
           </Text>
           <TouchableOpacity
             onPress={() => router.back()}
@@ -196,10 +199,10 @@ export default function AddPhotoModal() {
             </View>
             <View style={S.flex1}>
               <Text style={[S.optionTitle, { color: colors.foreground }]}>
-                {t("addPhoto.takePhoto")}
+                {t("addPhoto.takePhoto", "Tomar Foto")}
               </Text>
               <Text style={[S.optionDesc, { color: colors.muted }]}>
-                {t("addPhoto.takePhotoDesc")}
+                {t("addPhoto.takePhotoDesc", "Usa la cámara para capturar una nueva foto")}
               </Text>
             </View>
             <IconSymbol name="chevron.right" size={20} color={colors.muted} />
@@ -216,21 +219,21 @@ export default function AddPhotoModal() {
             <View
               style={[
                 S.optionIcon,
-                { backgroundColor: colors.success + "20" },
+                { backgroundColor: "#34C75920" },
               ]}
             >
               <IconSymbol
                 name="photo.on.rectangle"
                 size={28}
-                color={colors.success}
+                color="#34C759"
               />
             </View>
             <View style={S.flex1}>
               <Text style={[S.optionTitle, { color: colors.foreground }]}>
-                {t("addPhoto.selectGallery")}
+                {t("addPhoto.selectGallery", "Seleccionar de Galería")}
               </Text>
               <Text style={[S.optionDesc, { color: colors.muted }]}>
-                {t("addPhoto.selectGalleryDesc")}
+                {t("addPhoto.selectGalleryDesc", "Elige una foto de tu biblioteca")}
               </Text>
             </View>
             <IconSymbol name="chevron.right" size={20} color={colors.muted} />
@@ -242,11 +245,15 @@ export default function AddPhotoModal() {
 
   // ────────────────────────────────────────────────────────────────────────────
   // VISTA: Cámara (pantalla completa dentro del modal)
+  // view === "camera" — todos los checks de permiso van AQUÍ, no antes
   // ────────────────────────────────────────────────────────────────────────────
+
+  // Permiso aún cargando
   if (!permission) {
     return <View style={[S.flex1, { backgroundColor: "#000" }]} />;
   }
 
+  // Permiso denegado — mostrar pantalla de solicitud
   if (!permission.granted) {
     return (
       <View style={[S.flex1, S.center, { backgroundColor: "#000" }]}>
@@ -263,6 +270,7 @@ export default function AddPhotoModal() {
     );
   }
 
+  // Cámara activa
   return (
     <View style={[S.flex1, { backgroundColor: "#000" }]}>
       <CameraView
@@ -340,7 +348,6 @@ const S = StyleSheet.create({
   // ── Options view ────────────────────────────────────────────────────────────
   header: {
     paddingHorizontal: 24,
-    paddingTop: 16,
     paddingBottom: 16,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -437,6 +444,7 @@ const S = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  // ── Permission screen ────────────────────────────────────────────────────────
   permissionMsg: {
     color: "#FFF",
     fontSize: 16,
@@ -449,5 +457,5 @@ const S = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
   },
-  permissionButtonText: { color: "#FFF", fontWeight: "bold" },
+  permissionButtonText: { color: "#FFF", fontWeight: "bold", fontSize: 15 },
 });
