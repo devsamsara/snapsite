@@ -80,7 +80,7 @@ import * as Haptics from "expo-haptics";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppAlert } from '@/components/ui/app-alert';
-import { normalizeUri, uploadPhoto } from '@/lib/upload-service';
+import { ensureFileUri, uploadPhoto } from '@/lib/upload-service';
 import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 
@@ -480,8 +480,10 @@ export default function ImageEditorScreen() {
           //   a) getUploadUrl(projectId, fileName, mimeType) → { uploadUrl, fileUrl }
           //   b) PUT uploadUrl ← blob de la imagen (directo a S3)
           //   c) addPhoto(projectId, url: fileUrl) → registra en BD
+          // Garantizar URI file:// válida antes del upload
+          const safeUri = await ensureFileUri(uri);
           await uploadPhoto({
-            localUri: normalizeUri(uri),
+            localUri: safeUri,
             projectId,
             caption: `Picture_${Date.now()}.png`,
             tags: [],

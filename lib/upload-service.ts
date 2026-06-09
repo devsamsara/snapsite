@@ -1,5 +1,19 @@
+/**
+ * upload-service.ts
+ *
+ * Flujo presigned URL:
+ *   1. getUploadUrl(projectId, fileName, mimeType) → { uploadUrl, fileUrl }
+ *   2. PUT uploadUrl ← blob de la imagen (directo a S3, el servidor no toca el archivo)
+ *   3. addPhoto(projectId, url: fileUrl) → registra en BD
+ *
+ * Garantía de URI:
+ *   - Cualquier URI que llegue (file://, ph://, ruta absoluta sin scheme, captureRef output)
+ *     se normaliza a file:// antes del fetch usando expo-file-system.
+ *   - Las URIs ph:// de la galería de iOS se copian a un archivo temporal file://.
+ *   - Las rutas absolutas sin scheme (/var/...) reciben el prefijo file://.
+ */
 
-import { File } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system';
 import { apolloClient } from '@/lib/graphql-client';
 import {
   GetUploadUrlDocument,
@@ -26,8 +40,14 @@ export interface UploadPhotoResult {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Extrae nombre de archivo y mimeType a partir de la URI.
+ */
 function getFileInfo(localUri: string): { fileName: string; mimeType: string } {
-  const parts = localUri.split('/');
+  // Eliminar query string o fragmentos si los hay
+  const cleanUri = localUri.split('?')[0].split('#')[0];
+  const parts = cleanUri.split('/');
   const rawName = parts[parts.length - 1] ?? '';
   const ext = rawName.split('.').pop()?.toLowerCase() ?? 'jpg';
 
@@ -41,7 +61,7 @@ function getFileInfo(localUri: string): { fileName: string; mimeType: string } {
   };
 
   const mimeType = mimeMap[ext] ?? 'image/jpeg';
-  const safeExt = ext === 'jpeg' ? 'jpg' : ext;
+  const safeExt = ext === 'jpeg' ? 'jpg' : (mimeMap[ext] ? ext : 'jpg');
   const fileName = rawName.match(/\.(jpg|jpeg|png|webp|heic|heif)$/i)
     ? rawName
     : `photo_${Date.now()}.${safeExt}`;
@@ -49,36 +69,75 @@ function getFileInfo(localUri: string): { fileName: string; mimeType: string } {
   return { fileName, mimeType };
 }
 
+/**
+ * Garantiza que la URI sea accesible como file:// para fetch().
+ *
+ * Casos que maneja:
+ *   - file:///...         → devuelve tal cual ✅
+ *   - /var/... (sin scheme) → añade file:// ✅
+ *   - ph://...            → copia a FileSystem.cacheDirectory con FileSystem.copyAsync ✅
+ *   - content://...       → copia a cache con FileSystem.copyAsync ✅
+ *   - cualquier otro      → intenta añadir file:// ✅
+ */
+export async function ensureFileUri(uri: string): Promise<string> {
+  // Ya es file:// — listo
+  if (uri.startsWith('file://')) {
+    return uri;
+  }
+
+  // Ruta absoluta sin scheme (output de captureRef en algunos entornos)
+  if (uri.startsWith('/')) {
+    return `file://${uri}`;
+  }
+
+  // ph:// (iOS Photos asset) o content:// (Android) — necesita copia
+  if (uri.startsWith('ph://') || uri.startsWith('content://') || uri.startsWith('assets-library://')) {
+    const { mimeType } = getFileInfo(uri);
+    const ext = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
+    const dest = `${FileSystem.cacheDirectory}upload_${Date.now()}.${ext}`;
+    await FileSystem.copyAsync({ from: uri, to: dest });
+    return dest;
+  }
+
+  // Fallback: asumir que es una ruta relativa o desconocida
+  return `file://${uri}`;
+}
+
+// ─── Main export ──────────────────────────────────────────────────────────────
 
 export const uploadPhoto = async ({
   projectId,
   localUri,
   caption,
   tags,
-}: {
-  projectId: string;
-  localUri: string;
-  caption?: string;
-  tags?: string[];
-}) => {
-  // 1. Pedir la URL firmada al backend
-  const { mimeType } = getFileInfo(localUri);
+}: UploadPhotoOptions): Promise<string> => {
+  // ── Paso 0: normalizar la URI a file:// garantizado ──────────────────────────
+  const safeUri = await ensureFileUri(localUri);
+  console.log('[uploadPhoto] safeUri:', safeUri);
+
+  const { fileName, mimeType } = getFileInfo(safeUri);
+
+  // ── Paso 1: obtener presigned URL del backend ─────────────────────────────────
   const { data } = await apolloClient.query({
     query: GetUploadUrlDocument,
-    variables: {
-      projectId,
-      fileName: localUri.split('/').pop() ?? 'photo.jpg',
-      mimeType,
-    },
+    variables: { projectId, fileName, mimeType },
+    fetchPolicy: 'no-cache',
   });
 
   const { uploadUrl, fileUrl } = data!.getUploadUrl;
+  console.log('[uploadPhoto] uploadUrl:', uploadUrl);
+  console.log('[uploadPhoto] fileUrl:', fileUrl);
 
-  // 2. Leer el archivo local como blob
-  const localResponse = await fetch(localUri);
+  // ── Paso 2: leer el archivo local como blob y subir a S3 ──────────────────────
+  // fetch() con file:// funciona en React Native (Hermes + expo-modules)
+  const localResponse = await fetch(safeUri);
+  if (!localResponse.ok) {
+    throw new Error(`No se pudo leer el archivo local: ${safeUri} (status ${localResponse.status})`);
+  }
   const blob = await localResponse.blob();
+  console.log('[uploadPhoto] blob size:', blob.size, 'type:', blob.type);
 
-  // 3. Subir directamente a S3
+  // ── Paso 3: PUT directo a S3 ──────────────────────────────────────────────────
   const s3Response = await fetch(uploadUrl, {
     method: 'PUT',
     body: blob,
@@ -88,23 +147,29 @@ export const uploadPhoto = async ({
   });
 
   if (!s3Response.ok) {
-    const xml = await s3Response.text();
-    throw new Error(`S3 error ${s3Response.status}: ${xml}`);
+    const xml = await s3Response.text().catch(() => '');
+    throw new Error(`S3 upload error ${s3Response.status}: ${xml}`);
   }
 
-  // 4. Guardar el registro en BD
+  console.log('[uploadPhoto] S3 upload OK →', fileUrl);
+
+  // ── Paso 4: registrar la foto en BD ──────────────────────────────────────────
   await apolloClient.mutate({
     mutation: AddPhotoDocument,
     variables: { projectId, url: fileUrl, caption, tags },
+    refetchQueries: [FindProjectDocument, GetMyProjectsDocument],
   });
 
   return fileUrl;
 };
 
+/**
+ * normalizeUri — helper legacy para compatibilidad con llamadas existentes.
+ * Versión síncrona que solo maneja los casos más comunes.
+ * Para el flujo completo usa ensureFileUri (async).
+ */
 export const normalizeUri = (uri: string): string => {
-  // Si ya tiene scheme, devolverla tal cual
   if (uri.startsWith('file://') || uri.startsWith('ph://')) return uri;
-  // Ruta absoluta sin scheme → añadir file://
   if (uri.startsWith('/')) return `file://${uri}`;
   return uri;
 };
