@@ -82,6 +82,7 @@ import * as Haptics from "expo-haptics";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppAlert } from '@/components/ui/app-alert';
+import { uploadPhoto } from '@/lib/upload-service';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -467,21 +468,73 @@ export default function ImageEditorScreen() {
     setProc(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") { AppAlert.alert("Permiso denegado", "Se necesita acceso a la galería."); return; }
+      // 1. Capturar la vista como imagen JPEG (incluye todas las anotaciones SVG)
       const uri = await captureRef(viewRef, { format: "jpg", quality: 0.95 });
-      await MediaLibrary.saveToLibraryAsync(uri);
-      AppAlert.alert("¡Guardado!", "La imagen se guardó en tu galería.", [{
-        text: "OK",
-        onPress: () => projectId
-          ? router.replace({ pathname: "/project/[id]", params: { id: projectId } })
-          : router.back(),
-      }]);
-    } catch { AppAlert.alert("Error", "No se pudo guardar la imagen."); }
-    finally { setProc(false); }
+
+      // 2. Si hay un projectId, subir la foto al backend → S3 (presigned URL)
+      if (projectId) {
+        try {
+          // Flujo presigned URL:
+          //   a) getUploadUrl(projectId, fileName, mimeType) → { uploadUrl, fileUrl }
+          //   b) PUT uploadUrl ← blob de la imagen (directo a S3)
+          //   c) addPhoto(projectId, url: fileUrl) → registra en BD
+          await uploadPhoto({
+            localUri: uri,
+            projectId,
+            caption: '',
+            tags: [],
+          });
+
+          AppAlert.alert('¡Foto subida!', 'La foto se subió al proyecto correctamente.', [{
+            text: 'OK',
+            onPress: () => router.replace({ pathname: '/project/[id]', params: { id: projectId } }),
+          }]);
+        } catch (uploadErr: any) {
+          // Si el upload falla, guardar localmente como fallback
+          console.warn('[ImageEditor] Upload failed, saving locally:', uploadErr?.message);
+          const { status } = await MediaLibrary.requestPermissionsAsync();
+          if (status === 'granted') {
+            await MediaLibrary.saveToLibraryAsync(uri);
+          }
+          AppAlert.alert(
+            'Error al subir',
+            `No se pudo subir la foto al servidor. ${uploadErr?.message ?? ''}\n\nLa imagen se guardó en tu galería.`,
+            [{
+              text: 'OK',
+              onPress: () => router.replace({ pathname: '/project/[id]', params: { id: projectId } }),
+            }],
+          );
+        }
+      } else {
+        // Sin projectId: guardar solo en la galería del dispositivo
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status !== 'granted') {
+          AppAlert.alert('Permiso denegado', 'Se necesita acceso a la galería.');
+          return;
+        }
+        await MediaLibrary.saveToLibraryAsync(uri);
+        AppAlert.alert('¡Guardado!', 'La imagen se guardó en tu galería.', [{
+          text: 'OK',
+          onPress: () => router.back(),
+        }]);
+      }
+    } catch (err: any) {
+      console.error('[ImageEditor] handleSave error:', err);
+      AppAlert.alert('Error', 'No se pudo guardar la imagen.');
+    } finally {
+      setProc(false);
+    }
   }, [projectId, router]);
 
-  const handleCancel = useCallback(() => router.back(), [router]);
+  // Si viene de un proyecto, cancelar cierra todo el stack (add-photo-modal + image-editor)
+  // y vuelve al proyecto. Si no, simplemente retrocede.
+  const handleCancel = useCallback(() => {
+    if (projectId) {
+      router.replace({ pathname: '/project/[id]', params: { id: projectId } });
+    } else {
+      router.back();
+    }
+  }, [projectId, router]);
 
   // ── Native header buttons via useLayoutEffect ────────────────────────────────
   useLayoutEffect(() => {

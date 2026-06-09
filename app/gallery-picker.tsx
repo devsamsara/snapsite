@@ -1,5 +1,5 @@
-import { Text, View, TouchableOpacity, Alert, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
+import { Text, View, TouchableOpacity, StyleSheet } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import * as ImagePicker from 'expo-image-picker';
@@ -9,6 +9,7 @@ import { AppAlert } from '@/components/ui/app-alert';
 export default function GalleryPickerScreen() {
   const router = useRouter();
   const colors = useColors();
+  const { projectId } = useLocalSearchParams<{ projectId?: string }>();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   useEffect(() => {
@@ -50,10 +51,10 @@ export default function GalleryPickerScreen() {
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
-        // Redirigir al editor con la imagen seleccionada
+        // Redirigir al editor con la imagen seleccionada y el projectId
         router.replace({
           pathname: "/image-editor",
-          params: { imageUri: result.assets[0].uri }
+          params: { imageUri: result.assets[0].uri, projectId },
         });
       } else {
         // El usuario canceló, volver atrás

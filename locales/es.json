@@ -310,11 +310,16 @@
     "clearAll": "Limpiar",
     "clearAllConfirm": "¿Eliminar todas las anotaciones?",
     "savedTitle": "¡Guardado!",
-    "savedMessage": "La imagen se guardó en tu galería.",
+    "savedMessage": "La foto se subió al proyecto.",
     "permissionDenied": "Permiso denegado",
     "permissionMessage": "Se necesita acceso a la galería.",
     "errorSave": "No se pudo guardar la imagen.",
-    "errorCrop": "No se pudo recortar"
+    "errorCrop": "No se pudo recortar",
+    "uploading": "Subiendo foto...",
+    "uploadSuccess": "¡Foto subida!",
+    "uploadSuccessMessage": "La foto se subió al proyecto correctamente.",
+    "uploadError": "No se pudo subir la foto al servidor.",
+    "savedLocalMessage": "La foto se guardó en tu galería."
   },
   "annotation": {
     "text": {

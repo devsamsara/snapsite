@@ -142,6 +142,7 @@ export default function ProjectDetailScreen() {
             caption: photo.caption,
             date: photo.createdAt,
             tags: JSON.stringify(photo.tags),
+            photoId: photo.id,
             projectId: project.id,
           },
         });

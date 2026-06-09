@@ -310,11 +310,16 @@
     "clearAll": "Clear",
     "clearAllConfirm": "Delete all annotations?",
     "savedTitle": "Saved!",
-    "savedMessage": "The image was saved to your gallery.",
+    "savedMessage": "The photo was uploaded to the project.",
     "permissionDenied": "Permission denied",
     "permissionMessage": "Gallery access is required.",
     "errorSave": "Could not save the image.",
-    "errorCrop": "Could not crop"
+    "errorCrop": "Could not crop",
+    "uploading": "Uploading photo...",
+    "uploadSuccess": "Photo uploaded!",
+    "uploadSuccessMessage": "The photo was uploaded to the project successfully.",
+    "uploadError": "Could not upload the photo to the server.",
+    "savedLocalMessage": "The photo was saved to your gallery."
   },
   "annotation": {
     "text": {
