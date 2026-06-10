@@ -21,7 +21,7 @@
  *   (centrado, icono grande en círculo, botones grandes con fondo de color)
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -46,9 +46,10 @@ export default function AddPhotoModal() {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { projectId } = useLocalSearchParams<{ projectId?: string }>();
+  const { projectId, mode } = useLocalSearchParams<{ projectId?: string; mode?: string }>();
 
   const [view, setView] = useState<ModalView>('options');
+
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [flash, setFlash] = useState<FlashMode>('off');
   const [camReady, setCamReady] = useState(false);
@@ -62,7 +63,12 @@ export default function AddPhotoModal() {
   const goToEditor = (imageUri: string) => {
     router.replace({
       pathname: '/image-editor',
-      params: { imageUri, projectId: projectId ?? '' },
+      params: {
+        imageUri,
+        projectId: projectId ?? '',
+        // Pasar el source para que el editor sepa a dónde volver al cancelar
+        source: mode ? 'add-photos-prompt' : undefined,
+      },
     });
   };
 
@@ -166,6 +172,16 @@ export default function AddPhotoModal() {
       setBusy(false);
     }
   };
+
+  // Si viene con mode=camera o mode=gallery, ejecutar directamente al montar
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (mode === 'camera') {
+      handleCameraOption();
+    } else if (mode === 'gallery') {
+      handleGalleryOption();
+    }
+  }, []);
 
   const toggleFacing = () => {
     setFacing(c => (c === 'back' ? 'front' : 'back'));

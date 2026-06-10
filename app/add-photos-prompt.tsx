@@ -17,21 +17,31 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColors } from '@/hooks/use-colors';
+import { useCardStyle } from '@/hooks/use-card-style';
 
 export default function AddPhotosPromptScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
+  const cardElevation = useCardStyle();
   const { projectId, projectName } = useLocalSearchParams<{
     projectId: string;
     projectName: string;
   }>();
 
-  // ── Navegar al modal de foto pasando el projectId ────────────────────────────
-  const handleAddPhotos = () => {
+  // ── Abrir cámara directamente ────────────────────────────────────────────────
+  const handleCamera = () => {
     router.push({
       pathname: '/add-photo-modal',
-      params: { projectId: projectId ?? '' },
+      params: { projectId: projectId ?? '', mode: 'camera' },
+    });
+  };
+
+  // ── Abrir galería directamente ───────────────────────────────────────────────
+  const handleGallery = () => {
+    router.push({
+      pathname: '/add-photo-modal',
+      params: { projectId: projectId ?? '', mode: 'gallery' },
     });
   };
 
@@ -64,28 +74,42 @@ export default function AddPhotosPromptScreen() {
 
         {/* Botones de acción */}
         <View style={styles.buttonContainer}>
+
           {/* Tomar Foto */}
           <TouchableOpacity
             style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-            onPress={handleAddPhotos}
+            onPress={handleCamera}
             activeOpacity={0.85}
           >
             <IconSymbol name="camera.fill" size={20} color="#FFF" />
             <Text style={styles.primaryButtonText}>
-              {t('addPhotosPrompt.addNow')}
+              {t('addPhotosPrompt.takePhoto')}
             </Text>
           </TouchableOpacity>
 
-          {/* Ver Detalles */}
+          {/* Seleccionar de la Galería */}
           <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.border }]}
+            style={[styles.secondaryButton, { borderColor: colors.border, backgroundColor: colors.surface }, cardElevation]}
+            onPress={handleGallery}
+            activeOpacity={0.8}
+          >
+            <IconSymbol name="photo.on.rectangle" size={20} color={colors.primary} />
+            <Text style={[styles.secondaryButtonText, { color: colors.foreground }]}>
+              {t('addPhotosPrompt.selectFromGallery')}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Ver Detalles del Proyecto */}
+          <TouchableOpacity
+            style={styles.ghostButton}
             onPress={handleViewDetails}
             activeOpacity={0.7}
           >
-            <Text style={[styles.secondaryButtonText, { color: colors.muted }]}>
+            <Text style={[styles.ghostButtonText, { color: colors.muted }]}>
               {t('addPhotosPrompt.viewDetails')}
             </Text>
           </TouchableOpacity>
+
         </View>
       </View>
     </SafeAreaView>
@@ -124,7 +148,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     width: '100%',
-    gap: 16,
+    gap: 14,
   },
   primaryButton: {
     height: 56,
@@ -147,12 +171,24 @@ const styles = StyleSheet.create({
   secondaryButton: {
     height: 56,
     borderRadius: 16,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
     borderWidth: 1,
   },
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  ghostButton: {
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  ghostButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
   },
 });

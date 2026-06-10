@@ -247,6 +247,8 @@
     "subtitle": "Would you like to add the first photos to \"{{name}}\" right now?",
     "yourProject": "your project",
     "addNow": "Add Photos Now",
+    "takePhoto": "Take Photo",
+    "selectFromGallery": "Select from Gallery",
     "viewDetails": "View Project Details"
   },
   "lightbox": {
@@ -265,6 +267,7 @@
     "photo": "photo",
     "photos": "photos",
     "add": "Add",
+    "noThumbnail": "No cover image",
     "noPhotos": "No photos yet",
     "noPhotosHint": "Upload the first photo to document the project's progress.",
     "addFirstPhoto": "Add photo",

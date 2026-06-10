@@ -394,10 +394,11 @@ export default function ImageEditorScreen() {
   const router     = useRouter();
   const insets     = useSafeAreaInsets();
   const colors     = useColors();
-  const { imageUri, projectId, photoId } = useLocalSearchParams<{
+  const { imageUri, projectId, photoId, source } = useLocalSearchParams<{
     imageUri: string;
     projectId?: string;
     photoId?: string;
+    source?: string;
   }>();
 
   // Image state (imageUri viene del add-photo-modal vía router.replace)
@@ -543,11 +544,15 @@ export default function ImageEditorScreen() {
       setProc(false);
     }
   }, [projectId, photoId, router, cT, cL, cR, cB]);
-  // El image-editor es ahora un fullScreenModal: router.back() lo cierra limpiamente
-  // sin acumular historial, independientemente de si viene de un proyecto o no.
+  // Al cancelar: si viene desde add-photos-prompt, ir al inicio.
+  // En cualquier otro caso, router.back() cierra el editor limpiamente.
   const handleCancel = useCallback(() => {
-    router.back();
-  }, [router]);
+    if (source === 'add-photos-prompt') {
+      router.replace('/(tabs)');
+    } else {
+      router.back();
+    }
+  }, [router, source]);
 
 
 
@@ -763,7 +768,7 @@ export default function ImageEditorScreen() {
         </View>
 
         {/* ── Bottom Toolbar (iOS Markup style) ── */}
-        <View style={S.toolbar}>
+        <View style={[S.toolbar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
 
           {/* Options row — only shown when a tool that needs options is active */}
           {tool !== null && tool !== "crop" && (
