@@ -182,9 +182,9 @@ export default function CreateProjectDetailsScreen() {
             <TouchableOpacity
               style={[styles.saveButton, { backgroundColor: colors.primary }]}
               onPress={handleSubmit(onSubmit)}
-              disabled={loading}
+              disabled={isLoading}
             >
-              {loading ? (
+              {isLoading ? (
                 <ActivityIndicator color="#FFF" />
               ) : (
                 <Text style={styles.saveButtonText}>{t('createProject.createButton')}</Text>
