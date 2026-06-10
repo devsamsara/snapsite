@@ -92,10 +92,14 @@ export default function AddPhotoModal() {
       });
       if (!result.canceled && result.assets?.[0]) {
         goToEditor(result.assets[0].uri);
+      } else if (mode) {
+        // El usuario canceló el picker — volver a add-photos-prompt
+        router.back();
       }
     } catch (err) {
       console.error('[AddPhotoModal] Gallery error:', err);
       AppAlert.alert('Error', 'No se pudo abrir la galería.');
+      if (mode) router.back();
     } finally {
       setBusy(false);
     }
@@ -173,15 +177,21 @@ export default function AddPhotoModal() {
     }
   };
 
-  // Si viene con mode=camera o mode=gallery, ejecutar directamente al montar
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Si viene con mode=camera o mode=gallery, ejecutar directamente.
+  // Esperamos a que permission no sea null (ya cargado) para evitar
+  // que handleCameraOption llame a requestPermission innecesariamente.
+  const autoTriggered = React.useRef(false);
   useEffect(() => {
+    if (!mode) return;
+    if (permission === null) return; // aún cargando
+    if (autoTriggered.current) return;
+    autoTriggered.current = true;
     if (mode === 'camera') {
       handleCameraOption();
     } else if (mode === 'gallery') {
       handleGalleryOption();
     }
-  }, []);
+  }, [mode, permission]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleFacing = () => {
     setFacing(c => (c === 'back' ? 'front' : 'back'));
