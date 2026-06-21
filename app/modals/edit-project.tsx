@@ -45,18 +45,9 @@ import {
   GetMyProjectsDocument,
 } from "@/gql/graphql";
 
-// ── react-native-maps (safe require para Expo Go) ─────────────────────────────
-const TurboModuleRegistry = require("react-native").TurboModuleRegistry;
-const mapsAvailable = !!TurboModuleRegistry.get("RNMapsAirModule");
-let MapView: any = null;
-let Marker: any = null;
-let PROVIDER_GOOGLE: any = undefined;
-if (mapsAvailable) {
-  const RNMaps = require("react-native-maps");
-  MapView = RNMaps.default;
-  Marker = RNMaps.Marker;
-  PROVIDER_GOOGLE = RNMaps.PROVIDER_GOOGLE;
-}
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+
+const mapsAvailable = true;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 /** Convierte timestamp ms (string) → "DD/MM/YYYY". Devuelve "" si inválido. */
