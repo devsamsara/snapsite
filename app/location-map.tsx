@@ -8,7 +8,7 @@ import {
   Linking,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 import { useTranslation } from 'react-i18next';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle } from '@/hooks/use-card-style';
@@ -71,7 +71,6 @@ export default function LocationMapScreen() {
       <MapView
         ref={mapRef}
         style={S.map}
-        provider={PROVIDER_GOOGLE}
         initialRegion={region}
         showsUserLocation
         showsMyLocationButton={false}

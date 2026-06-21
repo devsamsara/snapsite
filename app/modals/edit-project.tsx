@@ -45,7 +45,7 @@ import {
   GetMyProjectsDocument,
 } from "@/gql/graphql";
 
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { Marker } from "react-native-maps";
 
 const mapsAvailable = true;
 
@@ -287,7 +287,6 @@ export default function EditProjectModal() {
                   activeOpacity={0.9}
                 >
                   <MapView
-                    provider={PROVIDER_GOOGLE}
                     style={S.mapPreviewInner}
                     region={{
                       latitude: coords.lat,
@@ -427,7 +426,6 @@ export default function EditProjectModal() {
 
           {mapsAvailable && MapView ? (
             <MapView
-              provider={PROVIDER_GOOGLE}
               style={S.fullMap}
               initialRegion={{
                 latitude: tempCoords.lat,
