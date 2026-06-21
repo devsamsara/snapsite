@@ -25,6 +25,8 @@ query FindProject($findProjectId: ID!) {
         progress
         thumbnail
         location
+        latitude
+        longitude
         name
         status
         timeline {
@@ -115,5 +117,18 @@ mutation UpdatePhoto($id: ID!, $url: String, $caption: String, $tags: [String!])
         caption
         tags
         createdAt
+    }
+}
+
+mutation UpdateProject($id: ID!, $input: UpdateProjectInput!) {
+    updateProject(id: $id, input: $input) {
+        id
+        name
+        location
+        latitude
+        longitude
+        status
+        startDate
+        endDate
     }
 }

@@ -632,7 +632,12 @@
     "errorNameMin": "El nombre debe tener al menos 3 caracteres",
     "errorNameMax": "El nombre no puede superar 80 caracteres",
     "errorLocation": "La ubicación es obligatoria",
-    "errorDateFormat": "Formato inválido. Usa DD/MM/AAAA"
+    "errorDateFormat": "Formato inválido. Usa DD/MM/AAAA",
+    "changeLocation": "Cambiar ubicación",
+    "selectLocation": "Seleccionar ubicación",
+    "confirm": "Confirmar",
+    "tapToMove": "Toca el mapa o arrastra el marcador para cambiar la ubicación",
+    "mapUnavailable": "Mapa no disponible en este entorno"
   },
   "projectTags": {
     "title": "Etiquetas",

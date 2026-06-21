@@ -721,9 +721,15 @@ export default function ProjectDetailScreen() {
                   router.push({
                     pathname: '/modals/project-settings',
                     params: {
-                      projectId: project.id,
-                      projectName: project.name,
-                      projectLocation: project.location,
+                      projectId:          project.id,
+                      projectName:        project.name,
+                      projectLocation:    project.location,
+                      projectLatitude:    String(project.latitude  ?? ""),
+                      projectLongitude:   String(project.longitude ?? ""),
+                      projectStatus:      project.status,
+                      projectStartDate:   project.startDate,
+                      projectEndDate:     project.endDate ?? "",
+                      projectDescription: project.description ?? "",
                     },
                   })
                 }

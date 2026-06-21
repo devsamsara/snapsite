@@ -632,7 +632,12 @@
     "errorNameMin": "Name must be at least 3 characters",
     "errorNameMax": "Name cannot exceed 80 characters",
     "errorLocation": "Location is required",
-    "errorDateFormat": "Invalid format. Use MM/DD/YYYY"
+    "errorDateFormat": "Invalid format. Use MM/DD/YYYY",
+    "changeLocation": "Change location",
+    "selectLocation": "Select location",
+    "confirm": "Confirm",
+    "tapToMove": "Tap the map or drag the marker to change the location",
+    "mapUnavailable": "Map not available in this environment"
   },
   "projectTags": {
     "title": "Tags",

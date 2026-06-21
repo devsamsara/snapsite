@@ -15,6 +15,8 @@
  *   - projectId: string
  *   - projectName: string
  *   - projectLocation: string
+ *   - projectLatitude: string
+ *   - projectLongitude: string
  *   - projectStatus: string
  *   - projectStartDate: string
  *   - projectEndDate: string
@@ -107,6 +109,8 @@ export default function ProjectSettingsModal() {
     projectId,
     projectName,
     projectLocation,
+    projectLatitude,
+    projectLongitude,
     projectStatus,
     projectStartDate,
     projectEndDate,
@@ -116,6 +120,8 @@ export default function ProjectSettingsModal() {
     projectId:          string;
     projectName:        string;
     projectLocation:    string;
+    projectLatitude:    string;
+    projectLongitude:   string;
     projectStatus:      string;
     projectStartDate:   string;
     projectEndDate:     string;
@@ -132,6 +138,8 @@ export default function ProjectSettingsModal() {
         projectId,
         projectName,
         projectLocation,
+        projectLatitude:  projectLatitude  ?? "",
+        projectLongitude: projectLongitude ?? "",
         projectStatus:    projectStatus    ?? "active",
         projectStartDate: projectStartDate ?? "",
         projectEndDate:   projectEndDate   ?? "",
