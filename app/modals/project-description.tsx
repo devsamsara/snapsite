@@ -34,6 +34,9 @@ import { ModalBody, ModalFooter, ModalHeader, ModalRoot } from "@/components/ui/
 import { AppInput } from "@/components/ui/app-input";
 import { useColors } from "@/hooks/use-colors";
 import { AppAlert } from '@/components/ui/app-alert';
+import { Button } from '@/components/ui/button';
+import { FindProjectDocument, UpdateProjectDocument } from '@/gql/graphql';
+import { useMutation } from '@apollo/client/react';
 
 // ─── Zod schema ───────────────────────────────────────────────────────────────
 
@@ -41,7 +44,8 @@ function buildSchema(t: (k: string) => string) {
   return z.object({
     description: z
       .string()
-      .max(1000, t("projectDescription.errorMax")),
+      .min(10, t('projectDescription.errorMin'))
+      .max(1000, t('projectDescription.errorMax')),
   });
 }
 
@@ -58,10 +62,11 @@ export default function ProjectDescriptionModal() {
     useLocalSearchParams<{ projectId: string; projectName: string; description: string }>();
 
   const [isSaving, setIsSaving] = useState(false);
-
+  const [text, setText] = useState('');
+  const [updateProject, { data, loading, }] = useMutation(UpdateProjectDocument,{refetchQueries: [FindProjectDocument]});
   const schema = buildSchema(t);
 
-  const { control, handleSubmit, watch, formState: { isDirty, isValid } } =
+  const { control, handleSubmit, watch, formState: { isDirty, isValid }, getValues } =
     useForm<FormValues>({
       resolver: zodResolver(schema),
       defaultValues: { description: descParam ?? "" },
@@ -74,8 +79,17 @@ export default function ProjectDescriptionModal() {
   const onSubmit = async (data: FormValues) => {
     setIsSaving(true);
     try {
-      await new Promise((r) => setTimeout(r, 700));
-      // TODO: call API to update description
+      await updateProject({
+        variables: {
+          id: projectId,
+          input: {
+            name: projectName,
+            description: data.description,
+
+          },
+        },
+      });
+
       AppAlert.alert(t("projectDescription.successTitle"), t("projectDescription.successMsg"));
       router.back();
     } catch {
@@ -84,23 +98,23 @@ export default function ProjectDescriptionModal() {
       setIsSaving(false);
     }
   };
-
-  const canSave = isDirty && isValid && !isSaving;
+  const handleCancel = () => {
+    router.back();
+  };
 
   return (
     <KeyboardAvoidingView
       style={S.flex1}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ModalRoot>
         <ModalHeader
-          title={t("projectDescription.title")}
-          subtitle={projectName ?? ""}
+          title={t('projectDescription.title')}
+          subtitle={projectName ?? ''}
           onClose={() => router.back()}
         />
 
-        <ModalBody>
+        <ModalBody style={S.modalBody}>
           <ScrollView
             contentContainerStyle={S.body}
             keyboardShouldPersistTaps="handled"
@@ -110,44 +124,58 @@ export default function ProjectDescriptionModal() {
             <AppInput
               name="description"
               control={control}
-              label={t("projectDescription.label")}
-              placeholder={t("projectDescription.placeholder")}
+              label={t('projectDescription.label')}
+              placeholder={t('projectDescription.placeholder')}
               multiline
-              numberOfLines={10}
               autoCapitalize="sentences"
               returnKeyType="default"
               maxLength={1000}
-              style={S.textarea as any}
+              autoFocus
+              onChange={() => setText(getValues('description'))}
+              textAlignVertical="top"
+              numberOfLines={6}
+              style={S.input}
+              showLength
             />
 
             {/* ── Char counter ── */}
-            <View style={S.counterRow}>
+            <View style={S.counter}>
               <Text
                 style={[
                   S.counter,
                   { color: charCount > 900 ? colors.warning : colors.muted },
                 ]}
               >
-                {charCount} / 1000 {t("projectDescription.chars")}
+                {charCount} / 1000 {t('projectDescription.chars')}
               </Text>
             </View>
           </ScrollView>
         </ModalBody>
 
-        <ModalFooter>
-          <TouchableOpacity
-            onPress={handleSubmit(onSubmit)}
-            disabled={!canSave}
-            style={[
-              S.saveBtn,
-              { backgroundColor: canSave ? colors.primary : colors.border },
-            ]}
-            activeOpacity={0.8}
-          >
-            <Text style={[S.saveBtnText, { color: canSave ? "#fff" : colors.muted }]}>
-              {isSaving ? t("projectDescription.saving") : t("projectDescription.save")}
-            </Text>
-          </TouchableOpacity>
+        <ModalFooter row>
+          <View style={S.flex1}>
+            <Button
+              title={t('common.cancel')}
+              onPress={handleCancel}
+              variant="secondary"
+              size="md"
+            />
+          </View>
+          <View style={S.flex1}>
+            <Button
+              title={
+                isSaving
+                  ? t('projectDescription.saving')
+                  : t('projectDescription.save')
+              }
+              onPress={handleSubmit(onSubmit)}
+              variant="primary"
+              size="md"
+              leftIcon="check"
+              disabled={!getValues('description').trim()}
+              isLoading={loading}
+            />
+          </View>
         </ModalFooter>
       </ModalRoot>
     </KeyboardAvoidingView>
@@ -157,30 +185,30 @@ export default function ProjectDescriptionModal() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const S = StyleSheet.create({
+  flex1: { flex: 1 },
   body: {
-    paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 24,
-    gap: 4,
+    gap: 16,
   },
-  counterRow: {
-    alignItems: "flex-end",
-    marginTop: -4,
+  modalBody: { flex: 1, height: 140 * 1.7 },
+  textarea: {
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    minHeight: 140,
+    textAlignVertical: 'top',
+  },
+  input: {
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    minHeight: 140,
+    textAlignVertical: 'top',
   },
   counter: {
-    fontSize: 12,
-    fontWeight: "500",
+    fontSize: 11,
+    textAlign: 'right',
+    marginTop: 6,
   },
-  saveBtn: {
-    paddingVertical: 15,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  saveBtnText: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  textarea: { minHeight: 180, textAlignVertical: "top" },
-  flex1: { flex: 1 },
 });

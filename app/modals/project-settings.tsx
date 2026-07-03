@@ -24,7 +24,7 @@
  *   - projectTags: string  (JSON.stringify de string[])
  */
 
-import React from "react";
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -42,6 +42,8 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ModalBody, ModalHeader, ModalRoot } from "@/components/ui/modal-layout";
 import { useColors } from "@/hooks/use-colors";
 import { AppAlert } from '@/components/ui/app-alert';
+import { useQuery } from '@apollo/client/react';
+import { FindProjectDocument, Project } from '@/gql/graphql';
 
 // ─── ActionItem sub-component ─────────────────────────────────────────────────
 
@@ -61,7 +63,7 @@ function ActionItem({
   onPress,
   color,
   showChevron = true,
-}: ActionRow) {
+}: Readonly<ActionRow>) {
   const colors = useColors();
   return (
     <TouchableOpacity
@@ -72,7 +74,7 @@ function ActionItem({
       <View
         style={[
           S.actionIcon,
-          { backgroundColor: (color ?? colors.primary) + "18" },
+          { backgroundColor: (color ?? colors.primary) + '18' },
         ]}
       >
         <MaterialIcons
@@ -107,74 +109,71 @@ export default function ProjectSettingsModal() {
 
   const {
     projectId,
-    projectName,
-    projectLocation,
-    projectLatitude,
-    projectLongitude,
-    projectStatus,
-    projectStartDate,
-    projectEndDate,
-    projectDescription,
-    projectTags,
   } = useLocalSearchParams<{
     projectId:          string;
-    projectName:        string;
-    projectLocation:    string;
-    projectLatitude:    string;
-    projectLongitude:   string;
-    projectStatus:      string;
-    projectStartDate:   string;
-    projectEndDate:     string;
-    projectDescription: string;
-    projectTags:        string;
   }>();
-
+  const [project, setProject] = useState<Project| undefined>(undefined);
+  const { data } = useQuery(FindProjectDocument, {
+    variables: {
+      findProjectId: projectId,
+    },
+  });
   // ── Handlers ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const loadProyect = () => {
+      if (data) {
+        setProject(data.findProject as Project);
+      }
+    };
+    loadProyect();
+  }, [data, project]);
 
   const handleEdit = () => {
-    router.push({
-      pathname: "/modals/edit-project",
-      params: {
-        projectId,
-        projectName,
-        projectLocation,
-        projectLatitude:  projectLatitude  ?? "",
-        projectLongitude: projectLongitude ?? "",
-        projectStatus:    projectStatus    ?? "active",
-        projectStartDate: projectStartDate ?? "",
-        projectEndDate:   projectEndDate   ?? "",
-      },
-    });
+    if(project)
+      router.push({
+        pathname: '/modals/edit-project',
+        params: {
+          projectId,
+          projectName: project.name,
+          projectLocation: project.location,
+          projectLatitude: project.latitude ?? '',
+          projectLongitude: project.longitude ?? '',
+          projectStatus: project.status ?? 'active',
+          projectStartDate: project.startDate ?? '',
+          projectEndDate: project.endDate ?? '',
+          projectProgress: project.progress ?? 0
+        },
+      });
   };
 
   const handleShare = () => {
     router.push({
       pathname: "/modals/project-share",
-      params: { projectId, projectName },
+      params: { projectId, projectName: project?.name },
     });
   };
 
   const handleExport = () => {
     router.push({
-      pathname: "/modals/project-export",
-      params: { projectId, projectName, projectLocation },
+      pathname: '/modals/project-export',
+      params: { projectId, projectName: project?.name, projectLocation: project?.location },
     });
   };
 
   const handleContacts = () => {
     router.push({
-      pathname: "/modals/project-contacts",
-      params: { projectId, projectName },
+      pathname: '/modals/project-contacts',
+      params: { projectId, projectName: project?.name },
     });
   };
 
   const handleTags = () => {
     router.push({
-      pathname: "/modals/project-tags",
+      pathname: '/modals/project-tags',
       params: {
         projectId,
-        projectName,
-        tags: projectTags ?? "[]",
+        projectName: project?.name,
+        tags: project?.tags ?? [],
       },
     });
   };
@@ -184,16 +183,16 @@ export default function ProjectSettingsModal() {
       pathname: "/modals/project-description",
       params: {
         projectId,
-        projectName,
-        description: projectDescription ?? "",
+        projectName: project?.name,
+        description: project?.description ?? "",
       },
     });
   };
 
   const handleCollaborators = () => {
     router.push({
-      pathname: "/modals/invite-member",
-      params: { projectId, projectName },
+      pathname: '/modals/invite-member',
+      params: { projectId, projectName: project?.name },
     });
   };
 
@@ -217,13 +216,13 @@ export default function ProjectSettingsModal() {
 
   const handleDelete = () => {
     AppAlert.alert(
-      t("projectSettings.deleteTitle"),
-      t("projectSettings.deleteMsg", { name: projectName }),
+      t('projectSettings.deleteTitle'),
+      t('projectSettings.deleteMsg', { name: project?.name }),
       [
-        { text: t("common.cancel"), style: "cancel" },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: t("common.delete"),
-          style: "destructive",
+          text: t('common.delete'),
+          style: 'destructive',
           onPress: () => {
             router.back();
             // TODO: call delete API and navigate back to projects list
@@ -244,7 +243,7 @@ export default function ProjectSettingsModal() {
       <ModalRoot>
         <ModalHeader
           title={t("projectSettings.title")}
-          subtitle={projectName ?? t("projectSettings.defaultProject")}
+          subtitle={project?.name ?? t("projectSettings.defaultProject")}
           onClose={() => router.back()}
         />
 
@@ -273,9 +272,9 @@ export default function ProjectSettingsModal() {
                   style={[S.infoName, { color: colors.foreground }]}
                   numberOfLines={1}
                 >
-                  {projectName ?? t("projectSettings.defaultProject")}
+                  {project?.name ?? t("projectSettings.defaultProject")}
                 </Text>
-                {!!projectLocation && (
+                {!!project?.location && (
                   <View style={S.locationRow}>
                     <MaterialIcons
                       name="location-on"
@@ -286,7 +285,7 @@ export default function ProjectSettingsModal() {
                       style={[S.infoLoc, { color: colors.muted }]}
                       numberOfLines={1}
                     >
-                      {projectLocation}
+                      {project?.location}
                     </Text>
                   </View>
                 )}
@@ -334,12 +333,12 @@ export default function ProjectSettingsModal() {
                 { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
             >
-              <ActionItem
+              {/*<ActionItem
                 icon="contacts"
                 label={t("projectSettings.contacts")}
                 description={t("projectSettings.contactsDesc")}
                 onPress={handleContacts}
-              />
+              />*/}
               <ActionItem
                 icon="label"
                 label={t("projectSettings.tags")}
@@ -357,7 +356,6 @@ export default function ProjectSettingsModal() {
                 label={t("projectSettings.collaborators")}
                 description={t("projectSettings.collaboratorsDesc")}
                 onPress={handleCollaborators}
-                showChevron={false}
               />
             </View>
 

@@ -145,6 +145,7 @@
     "statusPaused": "Pausado",
     "statusComplete": "Completado",
     "statusCancel": "Cancelado",
+    "statusArchived": "Archivado",
     "progress": "Progreso",
     "documents": "Documentos",
     "comments": "Comentarios",
@@ -166,8 +167,11 @@
     "filterAll": "Todos",
     "filterActive": "Activos",
     "filterCompleted": "Completados",
+    "statusActive": "Activo",
     "statusInProgress": "En progreso",
     "statusCompleted": "Completado",
+    "statusArchived": "Archivado",
+    "statusOngoing": "En progreso",
     "progress": "Progreso",
     "photos": "fotos",
     "noProjects": "No hay proyectos",
@@ -621,6 +625,7 @@
     "statusPaused": "Pausado",
     "statusCompleted": "Completado",
     "statusCancelled": "Cancelado",
+    "statusArchived": "Archivado",
     "startDate": "Fecha de inicio",
     "endDate": "Fecha de fin",
     "datePlaceholder": "DD/MM/AAAA",
@@ -637,7 +642,8 @@
     "selectLocation": "Seleccionar ubicación",
     "confirm": "Confirmar",
     "tapToMove": "Toca el mapa o arrastra el marcador para cambiar la ubicación",
-    "mapUnavailable": "Mapa no disponible en este entorno"
+    "mapUnavailable": "Mapa no disponible en este entorno",
+    "progress": "Progreso"
   },
   "projectTags": {
     "title": "Etiquetas",
@@ -651,7 +657,8 @@
     "duplicate": "Esa etiqueta ya existe",
     "errorMin": "Mínimo 2 caracteres",
     "errorMax": "Máximo 24 caracteres",
-    "suggestions": "Sugerencias"
+    "suggestions": "Sugerencias",
+    "current": "Etiquetas actuales"
   },
   "projectDescription": {
     "title": "Descripción",
@@ -662,6 +669,7 @@
     "saving": "Guardando...",
     "chars": "caracteres",
     "errorMax": "La descripción no puede superar 1000 caracteres",
+    "errorMin": "La descripción debe contener un mínimo de 10 caracteres",
     "successTitle": "Descripción guardada",
     "successMsg": "La descripción se ha actualizado correctamente."
   },

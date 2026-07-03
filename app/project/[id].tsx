@@ -1,4 +1,5 @@
 import {
+  ActivityIndicator,
   Dimensions,
   Image,
   ScrollView,
@@ -15,6 +16,7 @@ import { useCardStyle, useCardStyleSm } from '@/hooks/use-card-style';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { AppAlert } from '@/components/ui/app-alert';
 import { ProjectDetailSkeleton } from '@/components/project-detail-skeleton';
 import { GalleryPhotoSkeleton } from '@/components/gallery-photo-skeleton';
@@ -30,6 +32,7 @@ import {
 } from '@/gql/graphql';
 import { useRelativeDate } from '@/hooks/use-relative-date';
 import moment from 'moment';
+import { uploadPhoto } from '@/lib/upload-service'; // ajusta el path si tu service está en otra carpeta
 
 const { width: W } = Dimensions.get('window');
 
@@ -41,10 +44,6 @@ const TABS: { id: TabId; icon: string; labelKey: string }[] = [
   { id: 'team', icon: 'group', labelKey: 'project.tabs.team' },
   { id: 'notes', icon: 'notes', labelKey: 'project.tabs.notes' },
 ];
-
-function uid() {
-  return Math.random().toString(36).slice(2, 9);
-}
 
 function timelineIcon(type: TimelineEvent['type']) {
   switch (type) {
@@ -95,12 +94,13 @@ export default function ProjectDetailScreen() {
   const [photos, setPhotos] = useState<Photo[] | undefined>();
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [project, setProject] = useState<Project | undefined>();
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const relativeDate = useRelativeDate();
 
   useEffect(() => {
     const loadProyect = () => {
       if (data) {
-        setProject(data.findProject);
+        setProject(data.findProject as Project);
         // Resetear contador de imágenes al recibir nuevas fotos
         loadedCountRef.current = 0;
         setImagesLoaded(0);
@@ -115,6 +115,76 @@ export default function ProjectDetailScreen() {
     setActiveTab(tab);
   };
 
+  // ─── Photo picker + upload (usado para cambiar el thumbnail del proyecto) ──
+
+  const pickAndUploadPhoto = useCallback(
+    async (source: 'camera' | 'library') => {
+      if (!project) return;
+
+      try {
+        let result: ImagePicker.ImagePickerResult;
+
+        if (source === 'camera') {
+          const perm = await ImagePicker.requestCameraPermissionsAsync();
+          if (!perm.granted) {
+            AppAlert.alert(
+              t('common.permissionRequired'),
+              t('project.cameraPermissionMsg')
+            );
+            return;
+          }
+          result = await ImagePicker.launchCameraAsync({
+            quality: 0.9,
+            allowsEditing: false,
+          });
+        } else {
+          const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (!perm.granted) {
+            AppAlert.alert(
+              t('common.permissionRequired'),
+              t('project.galleryPermissionMsg')
+            );
+            return;
+          }
+          result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.9,
+            allowsEditing: false,
+          });
+        }
+
+        if (result.canceled || !result.assets?.[0]) return;
+
+        const localUri = result.assets[0].uri;
+
+        setIsUploadingPhoto(true);
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+        // uploadPhoto ya hace ensureFileUri + presigned PUT a S3 + addPhoto mutation
+        await uploadPhoto({
+          localUri,
+          projectId: project.id,
+          caption: `thumbnail_${project.id}`,
+          tags: [],
+        });
+
+        // uploadPhoto dispara refetchQueries: [FindProjectDocument, GetMyProjectsDocument],
+        // así que `photos`/`thumbnail` se actualizan solos vía el useEffect existente.
+
+        await Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success
+        );
+      } catch (err) {
+        console.error('[pickAndUploadPhoto] error:', err);
+        AppAlert.alert(t('common.error'), t('project.uploadPhotoError'));
+      } finally {
+        setIsUploadingPhoto(false);
+      }
+    },
+    [project, t]
+  );
+
+  // Header — vuelve a su función original: abrir el modal de añadir foto a la galería
   const handleAddPhoto = () => {
     if (project)
       router.push({
@@ -122,6 +192,24 @@ export default function ProjectDetailScreen() {
         params: { projectId: project.id },
       });
   };
+
+  // Hero — nueva función: action sheet para cambiar el thumbnail del proyecto
+  const handleChangeThumbnail = useCallback(() => {
+    if (!project) return;
+    Haptics.selectionAsync();
+
+    AppAlert.alert(t('project.addPhotoTitle'), t('project.addPhotoMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('addPhoto.takePhoto'),
+        onPress: () => pickAndUploadPhoto('camera'),
+      },
+      {
+        text: t('addPhoto.selectGallery'),
+        onPress: () => pickAndUploadPhoto('library'),
+      },
+    ]);
+  }, [project, t, pickAndUploadPhoto]);
 
   const openInviteModal = useCallback(() => {
     router.push({
@@ -210,13 +298,13 @@ export default function ProjectDetailScreen() {
           style={[
             S.tag,
             {
-              backgroundColor: !filterTag ? colors.primary : colors.surface,
+              backgroundColor: filterTag ? colors.surface : colors.primary,
               borderColor: colors.border,
             },
           ]}
         >
           <Text
-            style={[S.tagText, { color: !filterTag ? '#FFF' : colors.muted }]}
+            style={[S.tagText, { color: filterTag ? colors.muted : '#FFF' }]}
           >
             {t('project.all')}
           </Text>
@@ -245,25 +333,6 @@ export default function ProjectDetailScreen() {
           </TouchableOpacity>
         ))}
       </ScrollView>
-
-      {/* Photo count + add */}
-      {/*<View style={S.photoCountRow}>
-        <Text style={[S.photoCountText, { color: colors.muted }]}>
-          {filteredPhotos?.length}{' '}
-          {filteredPhotos?.length === 1
-            ? t('project.photo')
-            : t('project.photos')}
-        </Text>
-        <TouchableOpacity
-          onPress={handleAddPhoto}
-          style={[S.addPhotoBtn, { backgroundColor: colors.primary + '20' }]}
-        >
-          <MaterialIcons name="add-a-photo" size={16} color={colors.primary} />
-          <Text style={[S.addPhotoBtnText, { color: colors.primary }]}>
-            {t('project.add')}
-          </Text>
-        </TouchableOpacity>
-      </View>*/}
 
       {/* Grid — skeleton mientras carga o mientras las imágenes no han terminado de renderizar */}
       {queryLoading && <GalleryPhotoSkeleton count={photos?.length || 6} />}
@@ -423,7 +492,7 @@ export default function ProjectDetailScreen() {
   );
 
   const isActive = project?.members.filter(
-    m => Number.parseInt(m.lastLoginAt!) >= Date.now()
+    m => Number.parseInt(m.lastLoginAt as string) >= Date.now()
   ).length;
 
   const renderTeam = () => (
@@ -703,6 +772,7 @@ export default function ProjectDetailScreen() {
               </View>
             </View>
             <View style={S.headerActions}>
+              {/* Cámara del header → vuelve a abrir el modal de añadir foto */}
               <TouchableOpacity
                 onPress={handleAddPhoto}
                 style={[
@@ -721,15 +791,16 @@ export default function ProjectDetailScreen() {
                   router.push({
                     pathname: '/modals/project-settings',
                     params: {
-                      projectId:          project.id,
-                      projectName:        project.name,
-                      projectLocation:    project.location,
-                      projectLatitude:    String(project.latitude  ?? ""),
-                      projectLongitude:   String(project.longitude ?? ""),
-                      projectStatus:      project.status,
-                      projectStartDate:   project.startDate,
-                      projectEndDate:     project.endDate ?? "",
-                      projectDescription: project.description ?? "",
+                      projectId: project.id,
+                      projectName: project.name,
+                      projectLocation: project.location,
+                      projectLatitude: String(project.latitude ?? ''),
+                      projectLongitude: String(project.longitude ?? ''),
+                      projectStatus: project.status,
+                      projectStartDate: project.startDate,
+                      projectEndDate: project.endDate ?? '',
+                      projectDescription: project.description ?? '',
+                      projectProgress: project?.progress ?? 0
                     },
                   })
                 }
@@ -754,39 +825,59 @@ export default function ProjectDetailScreen() {
           {/* ── Hero card ── */}
           <View style={S.heroWrapper}>
             <View style={[S.heroCard, cardElevation]}>
-              {project.thumbnail ? (
-                <Image
-                  source={{ uri: project.thumbnail }}
-                  style={S.heroImg}
-                  resizeMode="cover"
-                />
-              ) : (
-                <View
-                  style={[
-                    S.heroImg,
-                    S.heroImgPlaceholder,
-                    { backgroundColor: colors.surface },
-                  ]}
-                >
+              {/* Imagen + botón flotante para cambiar el thumbnail */}
+              <View style={S.heroImgWrapper}>
+                {project.thumbnail ? (
+                  <Image
+                    source={{ uri: project.thumbnail }}
+                    style={S.heroImg}
+                    resizeMode="cover"
+                  />
+                ) : (
                   <View
                     style={[
-                      S.heroImgPlaceholderIcon,
-                      { backgroundColor: colors.border + '60' },
+                      S.heroImg,
+                      S.heroImgPlaceholder,
+                      { backgroundColor: colors.surface },
                     ]}
                   >
-                    <MaterialIcons
-                      name="photo-camera"
-                      size={36}
-                      color={colors.muted}
-                    />
+                    <View
+                      style={[
+                        S.heroImgPlaceholderIcon,
+                        { backgroundColor: colors.border + '60' },
+                      ]}
+                    >
+                      <MaterialIcons
+                        name="photo-camera"
+                        size={36}
+                        color={colors.muted}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        S.heroImgPlaceholderText,
+                        { color: colors.muted },
+                      ]}
+                    >
+                      {t('project.noThumbnail')}
+                    </Text>
                   </View>
-                  <Text
-                    style={[S.heroImgPlaceholderText, { color: colors.muted }]}
-                  >
-                    {t('project.noThumbnail')}
-                  </Text>
-                </View>
-              )}
+                )}
+
+                {/* Botón flotante — abre el action sheet (cámara/galería) y sube vía uploadPhoto */}
+                <TouchableOpacity
+                  onPress={handleChangeThumbnail}
+                  disabled={isUploadingPhoto}
+                  style={[S.heroPhotoBtn, { backgroundColor: colors.primary }]}
+                >
+                  {isUploadingPhoto ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <MaterialIcons name="add-a-photo" size={16} color="#FFF" />
+                  )}
+                </TouchableOpacity>
+              </View>
+
               <View style={S.heroBody}>
                 <View style={S.progressLabelRow}>
                   <Text style={[S.progressLabel, { color: colors.foreground }]}>
@@ -943,6 +1034,7 @@ const S = StyleSheet.create({
   // Hero
   heroWrapper: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
   heroCard: { borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
+  heroImgWrapper: { position: 'relative' },
   heroImg: { width: '100%', height: 140 },
   heroImgPlaceholder: {
     alignItems: 'center',
@@ -957,6 +1049,22 @@ const S = StyleSheet.create({
     justifyContent: 'center',
   },
   heroImgPlaceholderText: { fontSize: 13, fontWeight: '500' as const },
+  // Botón flotante de cámara sobre la imagen del hero
+  heroPhotoBtn: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
   heroBody: { padding: 14 },
   progressLabelRow: {
     flexDirection: 'row',

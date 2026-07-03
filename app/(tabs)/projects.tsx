@@ -1,10 +1,4 @@
-import {
-  FlatList,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View, } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { SearchInput } from '@/components/ui/search-input';
@@ -57,6 +51,21 @@ export default function ProjectsScreen() {
 
   const renderProjectCard = ({ item }: { item: Project }) => {
     const isCompleted = item.status === ProjectStatus.Completed;
+
+      const getStatus = (status: ProjectStatus) => {
+       switch (status) {
+         case ProjectStatus.Completed:
+           return t('projects.statusCompleted');
+         case ProjectStatus.Active:
+           return t('projects.statusActive');
+         case ProjectStatus.Ongoing:
+           return t('projects.statusOngoing');
+         case ProjectStatus.Canceled:
+           return t('projects.statusCancelled');
+         default:
+           return t('projects.statusArchived');
+       }
+      }
     return (
       <TouchableOpacity
         onPress={() => router.push(`/project/${item.id}`)}
@@ -85,9 +94,7 @@ export default function ProjectsScreen() {
                 className="text-xs font-semibold"
                 style={{ color: isCompleted ? colors.success : colors.primary }}
               >
-                {isCompleted
-                  ? t('projects.statusCompleted')
-                  : t('projects.statusInProgress')}
+                {getStatus(item.status)}
               </Text>
             </View>
           </View>

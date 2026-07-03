@@ -288,7 +288,6 @@ export default function ProjectShareModal() {
 
 const S = StyleSheet.create({
   body: {
-    paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 24,
     gap: 10,

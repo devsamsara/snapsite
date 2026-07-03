@@ -145,6 +145,7 @@
     "statusPaused": "Paused",
     "statusComplete": "Complete",
     "statusCancel": "Cancelled",
+    "statusArchived": "Archived",
     "progress": "Progress",
     "documents": "Documents",
     "comments": "Comments",
@@ -166,8 +167,11 @@
     "filterAll": "All",
     "filterActive": "Active",
     "filterCompleted": "Completed",
+    "statusActive": "Active",
     "statusInProgress": "In Progress",
     "statusCompleted": "Completed",
+    "statusArchived": "Archived",
+    "statusOngoing": "Ongoing",
     "progress": "Progress",
     "photos": "photos",
     "noProjects": "No projects found",
@@ -621,6 +625,7 @@
     "statusPaused": "Paused",
     "statusCompleted": "Completed",
     "statusCancelled": "Cancelled",
+    "statusArchived": "Archived",
     "startDate": "Start date",
     "endDate": "End date",
     "datePlaceholder": "MM/DD/YYYY",
@@ -637,7 +642,8 @@
     "selectLocation": "Select location",
     "confirm": "Confirm",
     "tapToMove": "Tap the map or drag the marker to change the location",
-    "mapUnavailable": "Map not available in this environment"
+    "mapUnavailable": "Map not available in this environment",
+    "progress": "Progress"
   },
   "projectTags": {
     "title": "Tags",
@@ -651,7 +657,8 @@
     "duplicate": "That tag already exists",
     "errorMin": "Minimum 2 characters",
     "errorMax": "Maximum 24 characters",
-    "suggestions": "Suggestions"
+    "suggestions": "Suggestions",
+    "current": "Current tags"
   },
   "projectDescription": {
     "title": "Description",
@@ -662,6 +669,7 @@
     "saving": "Saving...",
     "chars": "characters",
     "errorMax": "Description cannot exceed 1000 characters",
+    "errorMin": "Description must contain a minimum of 10 characters",
     "successTitle": "Description saved",
     "successMsg": "The description has been updated successfully."
   },

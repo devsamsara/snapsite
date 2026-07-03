@@ -29,6 +29,7 @@ query FindProject($findProjectId: ID!) {
         longitude
         name
         status
+        tags
         timeline {
             createdAt
             description
