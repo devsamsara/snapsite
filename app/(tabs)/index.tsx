@@ -72,7 +72,7 @@ export default function HomeScreen() {
     transform: [{ scale: enterScale.value }],
   }));
 
-  const handleProfileTap = () => router.push('/profile');
+  const handleProfileTap = () => router.push('/settings');
   const handleProjectTap = (projectId: string) =>
     router.push(`/project/${projectId}`);
   const handleImageTap = (_imageId: string) => {

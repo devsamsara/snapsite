@@ -2,7 +2,6 @@ import { useColors } from "@/hooks/use-colors";
 import { useTranslation } from "react-i18next";
 import HomeScreen from "./index";
 import ProjectsScreen from "./projects";
-import ProfileScreen from "../profile";
 import { NativeTabs, Label, Icon } from "expo-router/unstable-native-tabs";
 import SettingsScreen from '@/app/(tabs)/settings';
 

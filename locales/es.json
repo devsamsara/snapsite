@@ -487,7 +487,10 @@
       "profile": "Perfil",
       "notifications": "Notificaciones",
       "appearance": "Apariencia",
-      "general": "General"
+      "general": "General",
+      "account": "Cuenta",
+      "company": "Empresa",
+      "session": "Sesión"
     },
     "profile": {
       "editProfile": "Editar Perfil",
