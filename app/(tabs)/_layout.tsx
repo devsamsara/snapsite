@@ -2,17 +2,33 @@ import { useColors } from "@/hooks/use-colors";
 import { useTranslation } from "react-i18next";
 import HomeScreen from "./index";
 import ProjectsScreen from "./projects";
-import ProfileScreen from "./profile";
+import ProfileScreen from "../profile";
 import { NativeTabs, Label, Icon } from "expo-router/unstable-native-tabs";
+import SettingsScreen from '@/app/(tabs)/settings';
 
 export default function TabLayout() {
   const { t }  = useTranslation();
   const colors = useColors();
 
   const tabs = [
-    { name: "index"    as const, title: t('tabs.home'),     icon: "house.fill",       component: HomeScreen    },
-    { name: "projects" as const, title: t('tabs.projects'), icon: "photo.stack.fill", component: ProjectsScreen },
-    { name: "profile"  as const, title: t('tabs.profile'),  icon: "person.fill",      component: ProfileScreen  },
+    {
+      name: 'index' as const,
+      title: t('tabs.home'),
+      icon: 'house.fill',
+      component: HomeScreen,
+    },
+    {
+      name: 'projects' as const,
+      title: t('tabs.projects'),
+      icon: 'photo.stack.fill',
+      component: ProjectsScreen,
+    },
+    {
+      name: 'settings' as const,
+      title: t('tabs.settings'),
+      icon: 'gearshape.fill',
+      component: SettingsScreen,
+    },
   ];
 
   return (

@@ -79,14 +79,14 @@ export default function RootLayout() {
                 <Stack.Screen name="auth/confirm-email" />
                 <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
                 {/* oauth/callback removed — handled by AuthProvider */}
-                <Stack.Screen
+              {/*  <Stack.Screen
                   name="company-cam-clone"
                   options={{
                     headerShown: false,
                     presentation: 'fullScreenModal',
                     animation: 'slide_from_bottom',
                   }}
-                />
+                />*/}
                 <Stack.Screen
                   name="add-photos-prompt"
                   options={{

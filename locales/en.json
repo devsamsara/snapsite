@@ -35,7 +35,8 @@
     "home": "Home",
     "projects": "Projects",
     "camera": "Camera",
-    "profile": "Profile"
+    "profile": "Profile",
+    "settings": "Settings"
   },
   "auth": {
     "login": {

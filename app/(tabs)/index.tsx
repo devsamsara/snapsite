@@ -72,11 +72,11 @@ export default function HomeScreen() {
     transform: [{ scale: enterScale.value }],
   }));
 
-  const handleSettingsTap = () => router.push('/settings');
+  const handleProfileTap = () => router.push('/profile');
   const handleProjectTap = (projectId: string) =>
     router.push(`/project/${projectId}`);
   const handleImageTap = (_imageId: string) => {
-    /* TODO */
+
   };
   const handleLocationTap = (item: RecentLocation) => {
     router.push({
@@ -379,11 +379,11 @@ export default function HomeScreen() {
                 </View>
               </View>
               <TouchableOpacity
-                onPress={handleSettingsTap}
+                onPress={()=>handleProfileTap()}
                 style={[S.settingsBtn, { backgroundColor: colors.surface }]}
               >
                 <IconSymbol
-                  name="gearshape.fill"
+                  name="person.fill"
                   size={20}
                   color={colors.foreground}
                 />

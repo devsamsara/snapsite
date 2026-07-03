@@ -35,7 +35,8 @@
     "home": "Inicio",
     "projects": "Proyectos",
     "camera": "Cámara",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "settings": "Configuración"
   },
   "auth": {
     "login": {
