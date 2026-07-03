@@ -462,7 +462,7 @@
   "editProfile": {
     "title": "Editar Perfil",
     "changePhoto": "Cambiar Foto",
-    "changePhotoDesc": "El selector de fotos se implementará aquí",
+    "changePhotoDesc": "Elige cómo quieres cambiar tu foto de perfil",
     "personalInfo": "Información Personal",
     "professionalInfo": "Información Profesional",
     "additionalOptions": "Opciones Adicionales",

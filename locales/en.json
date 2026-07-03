@@ -462,7 +462,7 @@
   "editProfile": {
     "title": "Edit Profile",
     "changePhoto": "Change Photo",
-    "changePhotoDesc": "Photo picker will be implemented here",
+    "changePhotoDesc": "Choose how to change your profile photo",
     "personalInfo": "Personal Information",
     "professionalInfo": "Professional Information",
     "additionalOptions": "Additional Options",

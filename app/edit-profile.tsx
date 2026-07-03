@@ -10,6 +10,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
@@ -91,20 +93,34 @@ export default function EditProfileScreen() {
     return fileUrl;
   };
 
-  // ── Change photo handler ───────────────────────────────────────────────────
-  const handleChangePhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      AppAlert.alert(t('common.permissionRequired'), t('editProfile.photoPermissionMessage'));
-      return;
-    }
+  // ── Pick and upload photo (camera or library) ────────────────────────────
+  const pickAndUploadPhoto = async (source: 'camera' | 'library') => {
+    let result: ImagePicker.ImagePickerResult;
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
+    if (source === 'camera') {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (perm.status !== 'granted') {
+        AppAlert.alert(t('common.permissionRequired'), t('editProfile.photoPermissionMessage'));
+        return;
+      }
+      result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+    } else {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (perm.status !== 'granted') {
+        AppAlert.alert(t('common.permissionRequired'), t('editProfile.photoPermissionMessage'));
+        return;
+      }
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+    }
 
     if (result.canceled || !result.assets?.[0]?.uri) return;
 
@@ -134,6 +150,16 @@ export default function EditProfileScreen() {
     } finally {
       setUploadingPhoto(false);
     }
+  };
+
+  // ── Action sheet igual que el thumbnail del proyecto ──────────────────────
+  const handleChangePhoto = () => {
+    Haptics.selectionAsync();
+    AppAlert.alert(t('editProfile.changePhoto'), t('editProfile.changePhotoDesc'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('addPhoto.takePhoto'), onPress: () => pickAndUploadPhoto('camera') },
+      { text: t('addPhoto.selectGallery'), onPress: () => pickAndUploadPhoto('library') },
+    ]);
   };
 
   // ── Save form ──────────────────────────────────────────────────────────────
@@ -224,33 +250,29 @@ export default function EditProfileScreen() {
           keyboardShouldPersistTaps="handled"
         >
 
-          {/* Foto de perfil */}
+          {/* Foto de perfil — mismo patrón que el thumbnail del proyecto */}
           <View style={S.avatarSection}>
-            <TouchableOpacity
-              onPress={handleChangePhoto}
-              disabled={uploadingPhoto}
-              activeOpacity={0.8}
-              style={[S.avatarWrapper, { backgroundColor: colors.primary }]}
-            >
+            <View style={S.avatarWrapper}>
               {avatarUri ? (
                 <Image source={{ uri: avatarUri }} style={S.avatarImage} />
               ) : (
-                <IconSymbol name="person.fill" size={48} color="#FFFFFF" />
+                <View style={[S.avatarImage, S.avatarPlaceholder, { backgroundColor: colors.primary }]}>
+                  <IconSymbol name="person.fill" size={40} color="#FFFFFF" />
+                </View>
               )}
-              {/* Camera badge */}
-              <View style={[S.cameraBadge, { backgroundColor: colors.surface, borderColor: colors.background }]}>
+              {/* Botón flotante igual que heroPhotoBtn */}
+              <TouchableOpacity
+                onPress={handleChangePhoto}
+                disabled={uploadingPhoto}
+                style={[S.avatarPhotoBtn, { backgroundColor: colors.primary }]}
+              >
                 {uploadingPhoto ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
+                  <ActivityIndicator size="small" color="#FFF" />
                 ) : (
-                  <IconSymbol name="camera.fill" size={14} color={colors.primary} />
+                  <MaterialIcons name="add-a-photo" size={16} color="#FFF" />
                 )}
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleChangePhoto} disabled={uploadingPhoto} style={S.changePhotoBtn}>
-              <Text style={[S.changePhotoTxt, { color: uploadingPhoto ? colors.muted : colors.primary }]}>
-                {uploadingPhoto ? t('editProfile.uploadingPhoto') : t('editProfile.changePhoto')}
-              </Text>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Sección: Información personal */}
@@ -379,14 +401,19 @@ const S = StyleSheet.create({
 
   avatarSection: { alignItems: "center", marginBottom: 24 },
   avatarWrapper: {
-    width: 88, height: 88, borderRadius: 44,
-    alignItems: "center", justifyContent: "center", marginBottom: 12,
-    overflow: 'visible',
+    position: 'relative',
+    width: 88,
+    height: 88,
+    marginBottom: 12,
   },
   avatarImage: {
     width: 88, height: 88, borderRadius: 44,
   },
-  cameraBadge: {
+  avatarPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarPhotoBtn: {
     position: 'absolute',
     bottom: 0,
     right: 0,
@@ -395,10 +422,12 @@ const S = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  changePhotoBtn: { paddingVertical: 4 },
-  changePhotoTxt: { fontSize: 15, fontWeight: "600" },
 
   sectionLabel: {
     fontSize: 11, fontWeight: "700",
