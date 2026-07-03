@@ -635,6 +635,7 @@ export type UpdateTimelineEventInput = {
 };
 
 export type UpdateUserInput = {
+  avatarUrl?: InputMaybe<Scalars['String']['input']>;
   company?: InputMaybe<Scalars['String']['input']>;
   email?: InputMaybe<Scalars['String']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;

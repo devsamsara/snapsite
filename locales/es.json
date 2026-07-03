@@ -479,7 +479,10 @@
     "changePassword": "Cambiar Contraseña",
     "deleteAccount": "Eliminar Cuenta",
     "successTitle": "Éxito",
-    "successMessage": "Perfil actualizado correctamente"
+    "successMessage": "Perfil actualizado correctamente",
+    "uploadingPhoto": "Subiendo foto...",
+    "photoUploadError": "No se pudo subir la foto. Inténtalo de nuevo.",
+    "photoPermissionMessage": "Necesitamos acceso a tu galería para cambiar la foto de perfil."
   },
   "settings": {
     "title": "Ajustes",
@@ -763,5 +766,59 @@
     "message": "No pudimos conectar con el servidor. Estamos trabajando para resolverlo. Por favor, inténtalo más tarde.",
     "retry": "Reintentar",
     "status": "Servicio temporalmente no disponible"
+  },
+  "accountDetails": {
+    "title": "Detalles de cuenta",
+    "subtitle": "Información, seguridad y zona peligrosa",
+    "sectionInfo": "Información",
+    "sectionSecurity": "Seguridad",
+    "sectionDanger": "Zona peligrosa",
+    "name": "Nombre",
+    "email": "Email",
+    "company": "Empresa",
+    "role": "Rol",
+    "twoFactor": "Verificación en dos pasos",
+    "deleteAccountHint": "Elimina tu cuenta y todos tus datos de forma permanente.",
+    "deleteCompanyHint": "Elimina la empresa y todos sus proyectos y datos de forma permanente."
+  },
+  "about": {
+    "title": "Acerca de SnapSite",
+    "version": "Versión",
+    "description": "SnapSite es una plataforma de gestión de proyectos de construcción y obra. Captura, organiza y comparte el progreso visual de tus proyectos de forma sencilla.",
+    "developer": "Desarrollado por",
+    "developerName": "SnapSite Team",
+    "website": "Sitio web",
+    "websiteUrl": "https://snapsite.app",
+    "legal": "Legal",
+    "privacyPolicy": "Política de privacidad",
+    "termsOfService": "Términos de servicio",
+    "licenses": "Licencias de código abierto",
+    "contact": "Contacto",
+    "contactEmail": "soporte@snapsite.app",
+    "close": "Cerrar"
+  },
+  "helpSupport": {
+    "title": "Ayuda y soporte",
+    "subtitle": "¿Cómo podemos ayudarte?",
+    "sectionFaq": "Preguntas frecuentes",
+    "sectionContact": "Contacto",
+    "sectionResources": "Recursos",
+    "faq1Question": "¿Cómo creo un nuevo proyecto?",
+    "faq1Answer": "Pulsa el botón + en la pantalla de Proyectos, rellena el nombre, ubicación y fechas, y confirma.",
+    "faq2Question": "¿Cómo añado fotos a un proyecto?",
+    "faq2Answer": "Abre el proyecto y pulsa el botón de cámara. Puedes tomar una foto nueva o seleccionar una de tu galería.",
+    "faq3Question": "¿Cómo invito a miembros del equipo?",
+    "faq3Answer": "Ve a Ajustes > Miembros del equipo y pulsa Invitar. El miembro recibirá un email de invitación.",
+    "faq4Question": "¿Puedo exportar los informes de un proyecto?",
+    "faq4Answer": "Sí. Abre el proyecto, pulsa el icono de compartir y selecciona Exportar informe.",
+    "contactEmail": "Enviar email",
+    "contactEmailAddress": "soporte@snapsite.app",
+    "contactChat": "Chat en vivo",
+    "contactChatDesc": "Disponible de lunes a viernes, 9:00–18:00",
+    "documentation": "Documentación",
+    "documentationDesc": "Guías y tutoriales completos",
+    "changelog": "Novedades",
+    "changelogDesc": "Últimas actualizaciones y mejoras",
+    "close": "Cerrar"
   }
 }

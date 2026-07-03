@@ -259,18 +259,25 @@ export default function SettingsScreen() {
             </View>
           </View>
 
+          {/* ── CUENTA ─────────────────────────────────────────────────────── */}
+          <SL label={t("settings.sections.account") ?? "Cuenta"} />
+          <View style={[S.card, cardElevation]}>
+            <TouchableOpacity onPress={() => nav(() => router.push("/account-details" as any))} style={S.row} activeOpacity={0.7}>
+              <View style={S.rowLeft}>
+                <IconSymbol name="person.text.rectangle.fill" size={20} color={colors.primary} />
+                <View style={S.rowTextBlock}>
+                  <Text style={[S.rowLabel, { color: colors.foreground }]}>{t("accountDetails.title")}</Text>
+                  <Text style={S.rowSublabel}>{t("accountDetails.subtitle")}</Text>
+                </View>
+              </View>
+              <IconSymbol name="chevron.right" size={16} color={colors.muted} />
+            </TouchableOpacity>
+          </View>
+
           {/* ── GENERAL ────────────────────────────────────────────────────── */}
           <SL label={t("settings.sections.general")} />
           <View style={[S.card, cardElevation]}>
-            <TouchableOpacity style={[S.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]} activeOpacity={0.7}>
-              <View style={S.rowLeft}><IconSymbol name="lock.fill" size={20} color={colors.primary} /><Text style={[S.rowLabel, { color: colors.foreground, marginLeft: 16 }]}>{t("settings.general.privacy")}</Text></View>
-              <IconSymbol name="chevron.right" size={16} color={colors.muted} />
-            </TouchableOpacity>
-            <TouchableOpacity style={[S.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]} activeOpacity={0.7}>
-              <View style={S.rowLeft}><IconSymbol name="internaldrive.fill" size={20} color={colors.primary} /><Text style={[S.rowLabel, { color: colors.foreground, marginLeft: 16 }]}>{t("settings.general.storage")}</Text></View>
-              <View style={S.rowRight}><Text style={S.rowSublabel}>{t("settings.general.storageUsed", { amount: "2.4 GB" })}</Text><IconSymbol name="chevron.right" size={16} color={colors.muted} /></View>
-            </TouchableOpacity>
-            <TouchableOpacity style={[S.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => nav(() => router.push("/modals/help-support" as any))} style={[S.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]} activeOpacity={0.7}>
               <View style={S.rowLeft}><IconSymbol name="questionmark.circle.fill" size={20} color={colors.primary} /><Text style={[S.rowLabel, { color: colors.foreground, marginLeft: 16 }]}>{t("settings.general.helpSupport")}</Text></View>
               <IconSymbol name="chevron.right" size={16} color={colors.muted} />
             </TouchableOpacity>
@@ -291,7 +298,7 @@ export default function SettingsScreen() {
                 ))}
               </View>
             </View>
-            <TouchableOpacity style={S.row} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => nav(() => router.push("/modals/about" as any))} style={S.row} activeOpacity={0.7}>
               <View style={S.rowLeft}><IconSymbol name="info.circle.fill" size={20} color={colors.primary} /><Text style={[S.rowLabel, { color: colors.foreground, marginLeft: 16 }]}>{t("settings.general.about")}</Text></View>
               <View style={S.rowRight}><Text style={S.rowSublabel}>v1.0.0</Text><IconSymbol name="chevron.right" size={16} color={colors.muted} /></View>
             </TouchableOpacity>
@@ -308,44 +315,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* ── ZONA PELIGROSA ─────────────────────────────────────────────── */}
-          <SL label={t("projectSettings.sectionDanger")} />
-          <View style={{ gap: 10, marginBottom: 8 }}>
-            <TouchableOpacity onPress={handleDeleteAccount} style={[S.dangerRow, { backgroundColor: colors.error + "10", borderColor: colors.error + "40" }]} activeOpacity={0.7}>
-              <View style={S.rowLeft}>
-                <IconSymbol name="person.fill.xmark" size={20} color={colors.error} />
-                <View style={S.rowTextBlock}>
-                  <Text style={[S.rowLabel, { color: colors.error }]}>{t("profile.deleteAccountButton")}</Text>
-                  <Text style={[S.rowSublabel, { color: colors.error + "CC" }]} numberOfLines={2}>{t("profile.deleteAccountHint")}</Text>
-                </View>
-              </View>
-              <IconSymbol name="chevron.right" size={16} color={colors.error} />
-            </TouchableOpacity>
-            {!isOwner && (
-              <TouchableOpacity onPress={handleLeaveCompany} style={[S.dangerRow, { backgroundColor: colors.error + "10", borderColor: colors.error + "40" }]} activeOpacity={0.7}>
-                <View style={S.rowLeft}>
-                  <IconSymbol name="rectangle.portrait.and.arrow.right.fill" size={20} color={colors.error} />
-                  <View style={S.rowTextBlock}>
-                    <Text style={[S.rowLabel, { color: colors.error }]}>{t("profile.leaveCompanyButton")}</Text>
-                    <Text style={[S.rowSublabel, { color: colors.error + "CC" }]} numberOfLines={2}>{t("profile.leaveCompanyHint")}</Text>
-                  </View>
-                </View>
-                <IconSymbol name="chevron.right" size={16} color={colors.error} />
-              </TouchableOpacity>
-            )}
-            {isOwner && (
-              <TouchableOpacity onPress={handleDeleteCompany} style={[S.dangerRow, { backgroundColor: colors.error + "10", borderColor: colors.error + "40" }]} activeOpacity={0.7}>
-                <View style={S.rowLeft}>
-                  <IconSymbol name="building.2.fill" size={20} color={colors.error} />
-                  <View style={S.rowTextBlock}>
-                    <Text style={[S.rowLabel, { color: colors.error }]}>{t("profile.deleteCompanyButton")}</Text>
-                    <Text style={[S.rowSublabel, { color: colors.error + "CC" }]} numberOfLines={2}>{t("profile.deleteCompanyHint")}</Text>
-                  </View>
-                </View>
-                <IconSymbol name="chevron.right" size={16} color={colors.error} />
-              </TouchableOpacity>
-            )}
-          </View>
+
 
           {/* Footer */}
           <View style={S.footer}>

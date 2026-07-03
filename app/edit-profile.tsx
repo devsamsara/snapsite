@@ -1,8 +1,8 @@
 
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
+  Image,
   Platform,
   ScrollView,
   StyleSheet,
@@ -15,15 +15,14 @@ import { useTranslation } from "react-i18next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import * as ImagePicker from 'expo-image-picker';
 import { ScreenContainer } from "@/components/screen-container";
 import { AppInput } from "@/components/ui/app-input";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { useCardStyle } from "@/hooks/use-card-style";
 import { useAuth } from "@/lib/auth-context";
-
-// ─── Component ────────────────────────────────────────────────────────────────
-import { UserRole, UpdateUserDocument, User } from '@/gql/graphql';
+import { UserRole, UpdateUserDocument, GetUploadUrlDocument, User } from '@/gql/graphql';
 import { apolloClient } from "@/lib/graphql-client";
 import { AppAlert } from '@/components/ui/app-alert';
 
@@ -35,6 +34,9 @@ export default function EditProfileScreen() {
   const colors    = useColors();
   const cardStyle = useCardStyle();
   const { user, updateUser }  = useAuth();
+
+  const [avatarUri, setAvatarUri] = useState<string | null>(user?.avatarUrl ?? null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const isAdmin = user?.role === UserRole.Admin || user?.role === UserRole.Root;
 
@@ -62,11 +64,84 @@ export default function EditProfileScreen() {
     mode: "onChange",
   });
 
+  // ── Upload avatar to S3 ────────────────────────────────────────────────────
+  const uploadAvatarToS3 = async (localUri: string): Promise<string> => {
+    const ext = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+    const mime = ext === 'png' ? 'image/png' : 'image/jpeg';
+    const filename = `avatar_${user?.id}_${Date.now()}.${ext}`;
+
+    const { data: urlData } = await apolloClient.query({
+      query: GetUploadUrlDocument,
+      variables: { filename, projectId: '' },
+      fetchPolicy: 'no-cache',
+    });
+
+    if (!urlData?.getUploadUrl?.uploadUrl) throw new Error('No upload URL');
+
+    const { uploadUrl, fileUrl } = urlData.getUploadUrl;
+
+    const blob = await fetch(localUri).then(r => r.blob());
+    const uploadResp = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': mime },
+      body: blob,
+    });
+
+    if (!uploadResp.ok) throw new Error(`Upload failed: ${uploadResp.status}`);
+    return fileUrl;
+  };
+
+  // ── Change photo handler ───────────────────────────────────────────────────
+  const handleChangePhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      AppAlert.alert(t('common.permissionRequired'), t('editProfile.photoPermissionMessage'));
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets?.[0]?.uri) return;
+
+    const localUri = result.assets[0].uri;
+    setAvatarUri(localUri);
+    setUploadingPhoto(true);
+
+    try {
+      const remoteUrl = await uploadAvatarToS3(localUri);
+
+      const { data: response } = await apolloClient.mutate({
+        mutation: UpdateUserDocument,
+        variables: {
+          updateUserId: user!.id,
+          input: { avatarUrl: remoteUrl },
+        },
+      });
+
+      if (response?.updateUser) {
+        updateUser(response.updateUser as User);
+        setAvatarUri(remoteUrl);
+      }
+    } catch (err: any) {
+      console.error('[EditProfile] Photo upload error:', err);
+      AppAlert.alert(t('common.error'), err?.message ?? t('editProfile.photoUploadError'));
+      setAvatarUri(user?.avatarUrl ?? null);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  // ── Save form ──────────────────────────────────────────────────────────────
   const onSave = async (data: FormValues) => {
     if (!user?.id) return;
 
     try {
-      const { data: response, error } = await apolloClient.mutate({
+      const { data: response, errors } = await apolloClient.mutate({
         mutation: UpdateUserDocument,
         variables: {
           updateUserId: user.id,
@@ -80,14 +155,10 @@ export default function EditProfileScreen() {
         },
       });
 
-      if (error) {
-        throw new Error(error.message);
-      }
+      if (errors?.length) throw new Error(errors[0].message);
 
       if (response?.updateUser) {
-        // Update local state in AuthContext
         updateUser(response.updateUser as User);
-
         AppAlert.alert(t('editProfile.successTitle'), t('editProfile.successMessage'), [
           { text: t('common.ok'), onPress: () => router.back() },
         ]);
@@ -96,10 +167,6 @@ export default function EditProfileScreen() {
       console.error("[EditProfile] Save error:", error);
       AppAlert.alert(t('common.error'), error.message || t('editProfile.errorSave'));
     }
-  };
-
-  const handleChangePhoto = () => {
-    AppAlert.alert(t('editProfile.changePhoto'), t('editProfile.changePhotoDesc'));
   };
 
   return (
@@ -125,10 +192,10 @@ export default function EditProfileScreen() {
             disabled={!isValid || !isDirty || isSubmitting}
             style={[
               S.saveBtn,
-              { 
-                backgroundColor: (!isValid || !isDirty || isSubmitting) 
-                  ? (isSubmitting ? colors.primary : colors.border) 
-                  : colors.primary 
+              {
+                backgroundColor: (!isValid || !isDirty || isSubmitting)
+                  ? (isSubmitting ? colors.primary : colors.border)
+                  : colors.primary
               },
               (!isValid || !isDirty) && !isSubmitting && { opacity: 0.5 }
             ]}
@@ -138,9 +205,9 @@ export default function EditProfileScreen() {
                 <ActivityIndicator size="small" color="#FFFFFF" />
               </View>
             ) : (
-              <Text 
+              <Text
                 style={[
-                  S.saveBtnTxt, 
+                  S.saveBtnTxt,
                   { color: (!isValid || !isDirty) ? colors.muted : "#FFFFFF" }
                 ]}
               >
@@ -159,12 +226,29 @@ export default function EditProfileScreen() {
 
           {/* Foto de perfil */}
           <View style={S.avatarSection}>
-            <View style={[S.avatar, { backgroundColor: colors.primary }]}>
-              <IconSymbol name="person.fill" size={48} color="#FFFFFF" />
-            </View>
-            <TouchableOpacity onPress={handleChangePhoto} style={S.changePhotoBtn}>
-              <Text style={[S.changePhotoTxt, { color: colors.primary }]}>
-                {t('editProfile.changePhoto')}
+            <TouchableOpacity
+              onPress={handleChangePhoto}
+              disabled={uploadingPhoto}
+              activeOpacity={0.8}
+              style={[S.avatarWrapper, { backgroundColor: colors.primary }]}
+            >
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={S.avatarImage} />
+              ) : (
+                <IconSymbol name="person.fill" size={48} color="#FFFFFF" />
+              )}
+              {/* Camera badge */}
+              <View style={[S.cameraBadge, { backgroundColor: colors.surface, borderColor: colors.background }]}>
+                {uploadingPhoto ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <IconSymbol name="camera.fill" size={14} color={colors.primary} />
+                )}
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleChangePhoto} disabled={uploadingPhoto} style={S.changePhotoBtn}>
+              <Text style={[S.changePhotoTxt, { color: uploadingPhoto ? colors.muted : colors.primary }]}>
+                {uploadingPhoto ? t('editProfile.uploadingPhoto') : t('editProfile.changePhoto')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -249,17 +333,6 @@ export default function EditProfileScreen() {
               </View>
               <IconSymbol name="chevron.right" size={16} color={colors.muted} />
             </TouchableOpacity>
-
-            {/* Eliminar cuenta */}
-            <TouchableOpacity style={S.optionRow} activeOpacity={0.7}>
-              <View style={S.optionLeft}>
-                <IconSymbol name="trash.fill" size={20} color={colors.error} />
-                <Text style={[S.optionTxt, { color: colors.error }]}>
-                  {t('editProfile.deleteAccount')}
-                </Text>
-              </View>
-              <IconSymbol name="chevron.right" size={16} color={colors.muted} />
-            </TouchableOpacity>
           </View>
 
           <View style={{ height: 48 }} />
@@ -289,7 +362,6 @@ const S = StyleSheet.create({
     minWidth: 80,
     alignItems: "center",
     justifyContent: "center",
-    // Añadimos sombra sutil para mejorar visibilidad en modo claro
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -297,27 +369,33 @@ const S = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 4,
       },
-      android: {
-        elevation: 3,
-      },
+      android: { elevation: 3 },
     }),
   },
-  saveBtnTxt: {
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  loadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
+  saveBtnTxt: { fontSize: 15, fontWeight: "700" },
+  loadingContainer: { flexDirection: "row", alignItems: "center", gap: 6 },
 
   scrollContent: { paddingHorizontal: 16, paddingTop: 16 },
 
   avatarSection: { alignItems: "center", marginBottom: 24 },
-  avatar: {
+  avatarWrapper: {
     width: 88, height: 88, borderRadius: 44,
     alignItems: "center", justifyContent: "center", marginBottom: 12,
+    overflow: 'visible',
+  },
+  avatarImage: {
+    width: 88, height: 88, borderRadius: 44,
+  },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
   },
   changePhotoBtn: { paddingVertical: 4 },
   changePhotoTxt: { fontSize: 15, fontWeight: "600" },

@@ -267,6 +267,31 @@ export default function RootLayout() {
                     animation: 'slide_from_right',
                   }}
                 />
+                <Stack.Screen
+                  name="account-details"
+                  options={{
+                    headerShown: false,
+                    animation: 'slide_from_right',
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/about"
+                  options={{
+                    headerShown: false,
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                    contentStyle: { backgroundColor: sheetBg },
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/help-support"
+                  options={{
+                    headerShown: false,
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                    contentStyle: { backgroundColor: sheetBg },
+                  }}
+                />
               </Stack>
               <StatusBar style="auto" />
             </AuthProvider>
