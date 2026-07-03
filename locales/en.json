@@ -145,6 +145,7 @@
     "statusPaused": "Paused",
     "statusComplete": "Complete",
     "statusCancel": "Cancelled",
+    "statusArchived": "Archived",
     "progress": "Progress",
     "documents": "Documents",
     "comments": "Comments",
@@ -166,8 +167,11 @@
     "filterAll": "All",
     "filterActive": "Active",
     "filterCompleted": "Completed",
+    "statusActive": "Active",
     "statusInProgress": "In Progress",
     "statusCompleted": "Completed",
+    "statusArchived": "Archived",
+    "statusOngoing": "Ongoing",
     "progress": "Progress",
     "photos": "photos",
     "noProjects": "No projects found",
@@ -247,6 +251,8 @@
     "subtitle": "Would you like to add the first photos to \"{{name}}\" right now?",
     "yourProject": "your project",
     "addNow": "Add Photos Now",
+    "takePhoto": "Take Photo",
+    "selectFromGallery": "Select from Gallery",
     "viewDetails": "View Project Details"
   },
   "lightbox": {
@@ -265,6 +271,7 @@
     "photo": "photo",
     "photos": "photos",
     "add": "Add",
+    "noThumbnail": "No cover image",
     "noPhotos": "No photos yet",
     "noPhotosHint": "Upload the first photo to document the project's progress.",
     "addFirstPhoto": "Add photo",
@@ -618,6 +625,7 @@
     "statusPaused": "Paused",
     "statusCompleted": "Completed",
     "statusCancelled": "Cancelled",
+    "statusArchived": "Archived",
     "startDate": "Start date",
     "endDate": "End date",
     "datePlaceholder": "MM/DD/YYYY",
@@ -629,7 +637,13 @@
     "errorNameMin": "Name must be at least 3 characters",
     "errorNameMax": "Name cannot exceed 80 characters",
     "errorLocation": "Location is required",
-    "errorDateFormat": "Invalid format. Use MM/DD/YYYY"
+    "errorDateFormat": "Invalid format. Use MM/DD/YYYY",
+    "changeLocation": "Change location",
+    "selectLocation": "Select location",
+    "confirm": "Confirm",
+    "tapToMove": "Tap the map or drag the marker to change the location",
+    "mapUnavailable": "Map not available in this environment",
+    "progress": "Progress"
   },
   "projectTags": {
     "title": "Tags",
@@ -643,7 +657,8 @@
     "duplicate": "That tag already exists",
     "errorMin": "Minimum 2 characters",
     "errorMax": "Maximum 24 characters",
-    "suggestions": "Suggestions"
+    "suggestions": "Suggestions",
+    "current": "Current tags"
   },
   "projectDescription": {
     "title": "Description",
@@ -654,6 +669,7 @@
     "saving": "Saving...",
     "chars": "characters",
     "errorMax": "Description cannot exceed 1000 characters",
+    "errorMin": "Description must contain a minimum of 10 characters",
     "successTitle": "Description saved",
     "successMsg": "The description has been updated successfully."
   },

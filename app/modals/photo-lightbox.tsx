@@ -24,38 +24,40 @@
  * - ModalFooter con safe area bottom automática
  */
 
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
-} from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTranslation } from "react-i18next";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Button } from "@/components/ui/button";
-import { useColors } from "@/hooks/use-colors";
-import { AppAlert } from "@/components/ui/app-alert";
-import { useMutation } from "@apollo/client/react";
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Button } from '@/components/ui/button';
+import { useColors } from '@/hooks/use-colors';
+import { AppAlert } from '@/components/ui/app-alert';
+import { useMutation } from '@apollo/client/react';
 import {
   DeletePhotoDocument,
   FindProjectDocument,
   GetMyProjectsDocument,
-} from "@/gql/graphql";
+} from '@/gql/graphql';
+import { useRelativeDate } from '@/hooks/use-relative-date';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PhotoLightboxModal() {
   const { t } = useTranslation();
-  const router  = useRouter();
-  const colors  = useColors();
-  const insets  = useSafeAreaInsets();
+  const router = useRouter();
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
   const [deleting, setDeleting] = useState(false);
+  const relativeDate = useRelativeDate();
 
   const params = useLocalSearchParams<{
     url: string;
@@ -68,19 +70,30 @@ export default function PhotoLightboxModal() {
 
   const [deletePhoto] = useMutation(DeletePhotoDocument, {
     refetchQueries: [
-      { query: FindProjectDocument, variables: { findProjectId: params.projectId } },
+      {
+        query: FindProjectDocument,
+        variables: { findProjectId: params.projectId },
+      },
       GetMyProjectsDocument,
     ],
   });
 
   const tags: string[] = (() => {
-    try { return JSON.parse(params.tags ?? "[]"); } catch { return []; }
+    try {
+      return JSON.parse(params.tags ?? '[]');
+    } catch {
+      return [];
+    }
   })();
 
   const handleAnnotate = () => {
     router.replace({
-      pathname: "/image-editor",
-      params: { imageUri: params.url, projectId: params.projectId },
+      pathname: '/image-editor',
+      params: {
+        imageUri: params.url,
+        projectId: params.projectId,
+        photoId: params.photoId,
+      },
     });
   };
 
@@ -88,7 +101,10 @@ export default function PhotoLightboxModal() {
     if (!params.photoId) return;
     AppAlert.alert(
       t('lightbox.deleteTitle', 'Eliminar foto'),
-      t('lightbox.deleteConfirm', '¿Estás seguro de que quieres eliminar esta foto? Esta acción no se puede deshacer.'),
+      t(
+        'lightbox.deleteConfirm',
+        '¿Estás seguro de que quieres eliminar esta foto? Esta acción no se puede deshacer.'
+      ),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
@@ -102,7 +118,7 @@ export default function PhotoLightboxModal() {
             } catch (err: any) {
               AppAlert.alert(
                 t('common.error', 'Error'),
-                t('lightbox.deleteError', 'No se pudo eliminar la foto.'),
+                t('lightbox.deleteError', 'No se pudo eliminar la foto.')
               );
             } finally {
               setDeleting(false);
@@ -115,7 +131,6 @@ export default function PhotoLightboxModal() {
 
   return (
     <View style={S.root}>
-
       {/*
         ── HEADER ──
         paddingTop = insets.top garantiza que el contenido del header
@@ -145,10 +160,15 @@ export default function PhotoLightboxModal() {
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               disabled={deleting}
             >
-              {deleting
-                ? <ActivityIndicator size="small" color="#FF3B30" />
-                : <MaterialIcons name="delete-outline" size={22} color="#FF3B30" />
-              }
+              {deleting ? (
+                <ActivityIndicator size="small" color="#FF3B30" />
+              ) : (
+                <MaterialIcons
+                  name="delete-outline"
+                  size={22}
+                  color="#FF3B30"
+                />
+              )}
             </TouchableOpacity>
           ) : (
             <View style={S.closeBtn} pointerEvents="none" />
@@ -186,12 +206,14 @@ export default function PhotoLightboxModal() {
 
           <View style={S.dateRow}>
             <MaterialIcons name="access-time" size={13} color={colors.muted} />
-            <Text style={[S.date, { color: colors.muted }]}>{params.date}</Text>
+            <Text style={[S.date, { color: colors.muted }]}>
+              {relativeDate(Number.parseInt(params.date))}
+            </Text>
           </View>
 
           {tags.length > 0 && (
             <View style={S.tags}>
-              {tags.map((tag) => (
+              {tags.map(tag => (
                 <View
                   key={tag}
                   style={[
@@ -202,7 +224,9 @@ export default function PhotoLightboxModal() {
                     },
                   ]}
                 >
-                  <Text style={[S.tagTxt, { color: colors.muted }]}>#{tag}</Text>
+                  <Text style={[S.tagTxt, { color: colors.muted }]}>
+                    #{tag}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -233,7 +257,6 @@ export default function PhotoLightboxModal() {
           leftIcon="edit"
         />
       </View>
-
     </View>
   );
 }
@@ -243,49 +266,49 @@ export default function PhotoLightboxModal() {
 const S = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: '#000',
   },
 
   // Header — en flujo normal, nunca tapado
   header: {
-    backgroundColor: "rgba(0,0,0,0.85)",
+    backgroundColor: 'rgba(0,0,0,0.85)',
     zIndex: 1,
   },
   headerInner: {
     height: 44,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
   },
   closeBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   deleteBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(255,59,48,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: 'rgba(255,59,48,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     flex: 1,
-    color: "#FFF",
+    color: '#FFF',
     fontSize: 15,
-    fontWeight: "600",
-    textAlign: "center",
+    fontWeight: '600',
+    textAlign: 'center',
     marginHorizontal: 8,
   },
 
   // Foto — ocupa todo el espacio disponible entre header y metadatos
   photoArea: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: '#000',
   },
 
   // Metadatos — altura fija, scroll interno
@@ -300,19 +323,19 @@ const S = StyleSheet.create({
 
   caption: {
     fontSize: 17,
-    fontWeight: "700",
+    fontWeight: '700',
     marginBottom: 6,
   },
   dateRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 4,
     marginBottom: 12,
   },
   date: { fontSize: 13 },
   tags: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   tag: {
@@ -321,7 +344,7 @@ const S = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
   },
-  tagTxt: { fontSize: 13, fontWeight: "500" },
+  tagTxt: { fontSize: 13, fontWeight: '500' },
 
   // Footer
   footer: {

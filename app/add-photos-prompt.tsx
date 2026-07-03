@@ -1,63 +1,115 @@
+/**
+ * add-photos-prompt.tsx
+ *
+ * Pantalla post-creación de proyecto.
+ * Ofrece dos opciones:
+ *   - Tomar Foto → add-photo-modal (con projectId, abre cámara)
+ *   - Seleccionar de Galería → add-photo-modal (con projectId, abre galería)
+ *   - Ver Detalles → project/[id]
+ *
+ * El projectId se pasa siempre desde create-project-details.tsx.
+ */
+
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColors } from '@/hooks/use-colors';
+import { useCardStyle } from '@/hooks/use-card-style';
 
 export default function AddPhotosPromptScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
-  const params = useLocalSearchParams<{ projectId: string, projectName: string }>();
+  const cardElevation = useCardStyle();
+  const { projectId, projectName } = useLocalSearchParams<{
+    projectId: string;
+    projectName: string;
+  }>();
 
-  const handleAddPhotos = () => {
-    // Navegar a la cámara pasando el ID del proyecto para vincular las fotos
+  // ── Abrir cámara directamente ────────────────────────────────────────────────
+  const handleCamera = () => {
     router.push({
-      pathname: '/camera-capture',
-      params: { projectId: params.projectId }
+      pathname: '/add-photo-modal',
+      params: { projectId: projectId ?? '', mode: 'camera' },
     });
   };
 
-  const handleSkip = () => {
-    // Ir directamente a los detalles del proyecto (ruta dinámica project/[id])
-    // Usamos el ID del proyecto recién creado o uno de prueba si no existe
-    const targetId = params.projectId || '1'; 
-    router.push(`/project/${targetId}`);
+  // ── Abrir galería directamente ───────────────────────────────────────────────
+  const handleGallery = () => {
+    router.push({
+      pathname: '/add-photo-modal',
+      params: { projectId: projectId ?? '', mode: 'gallery' },
+    });
+  };
+
+  // ── Ir directamente a los detalles del proyecto ──────────────────────────────
+  const handleViewDetails = () => {
+    if (!projectId) return;
+    router.replace(`/project/${projectId}`);
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={['top', 'bottom']}
+    >
       <View style={styles.content}>
-        <View style={[styles.iconCircle, { backgroundColor: colors.primary + '15' }]}>
+        {/* Icono */}
+        <View style={[styles.iconCircle, { backgroundColor: colors.primary + '18' }]}>
           <IconSymbol name="photo.on.rectangle.angled" size={60} color={colors.primary} />
         </View>
 
+        {/* Título y subtítulo */}
         <Text style={[styles.title, { color: colors.foreground }]}>
           {t('addPhotosPrompt.title')}
         </Text>
-        
         <Text style={[styles.subtitle, { color: colors.muted }]}>
-          {t('addPhotosPrompt.subtitle', { name: params.projectName || t('addPhotosPrompt.yourProject') })}
+          {t('addPhotosPrompt.subtitle', {
+            name: projectName || t('addPhotosPrompt.yourProject'),
+          })}
         </Text>
 
+        {/* Botones de acción */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity 
-            style={[styles.button, { backgroundColor: colors.primary }]} 
-            onPress={handleAddPhotos}
+
+          {/* Tomar Foto */}
+          <TouchableOpacity
+            style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+            onPress={handleCamera}
+            activeOpacity={0.85}
           >
             <IconSymbol name="camera.fill" size={20} color="#FFF" />
-            <Text style={styles.buttonText}>{t('addPhotosPrompt.addNow')}</Text>
+            <Text style={styles.primaryButtonText}>
+              {t('addPhotosPrompt.takePhoto')}
+            </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.secondaryButton, { borderColor: colors.border }]} 
-            onPress={handleSkip}
+          {/* Seleccionar de la Galería */}
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.border, backgroundColor: colors.surface }, cardElevation]}
+            onPress={handleGallery}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.secondaryButtonText, { color: colors.muted }]}>
+            <IconSymbol name="photo.on.rectangle" size={20} color={colors.primary} />
+            <Text style={[styles.secondaryButtonText, { color: colors.foreground }]}>
+              {t('addPhotosPrompt.selectFromGallery')}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Ver Detalles del Proyecto */}
+          <TouchableOpacity
+            style={styles.ghostButton}
+            onPress={handleViewDetails}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.ghostButtonText, { color: colors.muted }]}>
               {t('addPhotosPrompt.viewDetails')}
             </Text>
           </TouchableOpacity>
+
         </View>
       </View>
     </SafeAreaView>
@@ -96,17 +148,22 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     width: '100%',
-    gap: 16,
+    gap: 14,
   },
-  button: {
+  primaryButton: {
     height: 56,
     borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  buttonText: {
+  primaryButtonText: {
     color: '#FFF',
     fontSize: 17,
     fontWeight: '700',
@@ -114,12 +171,24 @@ const styles = StyleSheet.create({
   secondaryButton: {
     height: 56,
     borderRadius: 16,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
     borderWidth: 1,
   },
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  ghostButton: {
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  ghostButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
   },
 });

@@ -10,7 +10,7 @@ import {
   Alert,
   Platform
 } from 'react-native';
-import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Circle } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +18,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColors } from '@/hooks/use-colors';
 import { BlurView } from 'expo-blur';
 import { AppAlert } from '@/components/ui/app-alert';
+import { reverseGeocode } from '@/utils/geo.utils';
 
 const { width, height } = Dimensions.get('window');
 
@@ -109,32 +110,28 @@ export default function CreateProjectLocationScreen() {
         longitude: currentLocation.coords.longitude,
       });
       setLoading(false);
-      reverseGeocode(currentLocation.coords.latitude, currentLocation.coords.longitude);
+      const addr = await reverseGeocode(currentLocation.coords.latitude, currentLocation.coords.longitude);
+      checkAddr(addr)
+
     })();
   }, []);
 
-  const reverseGeocode = async (lat: number, lon: number) => {
-    try {
-      const result = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
-      if (result.length > 0) {
-        const addr = result[0];
-        const fullAddress = `${addr.street || ''} ${addr.streetNumber || ''}, ${addr.postalCode || ''}`;
-        console.log(fullAddress);
-        setAddress(fullAddress.trim() || t('createProject.unknownLocation'));
-        setCity(addr.city || addr.subregion || '');
-        setPostalCode(addr.postalCode || '');
-      }
-    } catch (e) {
-      setAddress(t('createProject.addressNotFound'));
-    }
-  };
+const checkAddr = (addr: any) => {
+  if (addr) {
+    const fullAddress = `${addr.street || ''} ${addr.streetNumber || ''}, ${addr.postalCode || ''}`;
+    setAddress(fullAddress.trim() || t('createProject.unknownLocation'));
+    setCity(addr.city || addr.subregion || '');
+    setPostalCode(addr.postalCode || '');
+  }
+}
 
-  const onRegionChangeComplete = (newRegion: any) => {
+  const onRegionChangeComplete = async (newRegion: any) => {
     setSelectedLocation({
       latitude: newRegion.latitude,
       longitude: newRegion.longitude,
     });
-    reverseGeocode(newRegion.latitude, newRegion.longitude);
+    const addr = await reverseGeocode(newRegion.latitude, newRegion.longitude);
+    checkAddr(addr)
     // También chequear proyectos cercanos al mover el picker manual
     checkNearbyProject(newRegion.latitude, newRegion.longitude);
   };

@@ -61,220 +61,219 @@ export default function RootLayout() {
     if (!i18nReady) return null;
 
     const content = (
-        <GestureHandlerRootView style={S.flex1}>
-            <AppAlertProvider>
-            <ApolloProvider client={apolloClient}>
-                <AuthProvider>
-                        <Stack screenOptions={{headerShown: false}}>
-                            <Stack.Screen
-                                name="onboarding"
-                                options={{
-                                    animation: 'fade',
-                                    gestureEnabled: false,
-                                }}
-                            />
-                            <Stack.Screen name="auth/login"/>
-                            <Stack.Screen name="auth/register"/>
-                            <Stack.Screen name="auth/forgot-password"/>
-                            <Stack.Screen name="auth/confirm-email"/>
-                            <Stack.Screen
-                                name="(tabs)"
-                                options={{ animation: 'fade' }}
-                            />
-                            {/* oauth/callback removed — handled by AuthProvider */}
-                            <Stack.Screen
-                                name="company-cam-clone"
-                                options={{
-                                    headerShown: false,
-                                    presentation: 'fullScreenModal',
-                                    animation: 'slide_from_bottom',
-                                }}
-                            />
-                            <Stack.Screen
-                                name="add-photo-modal"
-                                options={{
-                                    headerShown: false,
-                                    presentation: 'fullScreenModal',
-                                    animation: 'slide_from_bottom',
-                                }}
-                            />
-                            <Stack.Screen
-                                name="image-editor"
-                                options={{
-                                    headerShown: false,
-                                    presentation: 'fullScreenModal',
-                                    animation: 'slide_from_bottom',
-                                    contentStyle: {backgroundColor: "#000"},
-                                }}
-                            />
-                            {/* ── Modal screens ── */}
-                            <Stack.Screen
-                                name="modals/privacy-modal"
-                                options={{
-                                    presentation: "modal",
-                                    headerShown: false,
-                                    contentStyle: {backgroundColor: sheetBg},
-
-                                }}
-                            />
-                            <Stack.Screen
-                                name="modals/terms-modal"
-                                options={{
-                                    presentation: "modal",
-                                    headerShown: false,
-                                    contentStyle: {backgroundColor: sheetBg},
-
-                                }}
-                            />
-                            <Stack.Screen
-                                name="modals/annotation-text"
-                                options={{
-                                    presentation: "formSheet",
-                                    // 'large' = ocupa toda la altura disponible en iPhone
-                                    // y garantiza ancho completo sin bordes laterales
-                                    // [1.0] = altura completa disponible → sin bordes laterales en iPhone
-                                    sheetAllowedDetents: [0.65],
-                                    sheetGrabberVisible: true,
-                                    headerShown: false,
-                                    contentStyle: {backgroundColor: sheetBg},
-                                }}
-                            />
-                            <Stack.Screen
-                                name="modals/annotation-measure"
-                                options={{
-                                    presentation: "formSheet",
-                                    sheetAllowedDetents: "fitToContents",
-                                    sheetGrabberVisible: true,
-                                    headerShown: false,
-                                    contentStyle: {backgroundColor: sheetBg},
-                                }}
-                            />
-                            <Stack.Screen
-                                name="modals/photo-lightbox"
-                                options={{
-                                    presentation: "fullScreenModal",
-                                    headerShown: false,
-                                    animation: "fade",
-                                    contentStyle: {backgroundColor: "#000"},
-                                }}
-                            />
-                            <Stack.Screen
-                                name="modals/add-note"
-                                options={{
-                                    presentation: "formSheet",
-                                    sheetAllowedDetents: [0.50],
-                                    sheetGrabberVisible: true,
-                                    headerShown: false,
-                                    contentStyle: {backgroundColor: sheetBg},
-                                }}
-                            />
-                            <Stack.Screen
-                                name="modals/invite-member"
-                                options={{
-                                    presentation: "formSheet",
-                                    sheetAllowedDetents: [0.70],
-                                    sheetGrabberVisible: true,
-                                    headerShown: false,
-                                    contentStyle: {backgroundColor: sheetBg},
-                                }}
-                            />
-                            <Stack.Screen
-                                name="modals/project-settings"
-                                options={{
-                                    presentation: "modal",
-                                    sheetAllowedDetents: [1.0],
-                                    sheetGrabberVisible: true,
-                                    headerShown: false,
-                                }}
-                            />
-                            <Stack.Screen
-                                name="modals/invite-global"
-                                options={{
-                                    presentation: "modal",
-                                    headerShown: false,
-                                    contentStyle: {backgroundColor: sheetBg},
-                                }}
-                            />
-                            <Stack.Screen
-                                name="modals/team-members"
-                                options={{
-                                    presentation: "modal",
-                                    headerShown: false,
-                                }}
-                            />
-                            <Stack.Screen
-                                name="modals/edit-project"
-                                options={{
-                                    presentation: "formSheet",
-                                    sheetAllowedDetents: [0.85],
-                                    sheetGrabberVisible: true,
-                                    headerShown: false,
-                                    contentStyle: {backgroundColor: sheetBg},
-                                }}
-                            />
-                            <Stack.Screen
-                                name="modals/project-tags"
-                                options={{
-                                    presentation: "formSheet",
-                                    sheetAllowedDetents: [0.75],
-                                    sheetGrabberVisible: true,
-                                    headerShown: false,
-                                    contentStyle: {backgroundColor: sheetBg},
-                                }}
-                            />
-                            <Stack.Screen
-                                name="modals/project-description"
-                                options={{
-                                    presentation: "formSheet",
-                                    sheetAllowedDetents: [0.70],
-                                    sheetGrabberVisible: true,
-                                    headerShown: false,
-                                    contentStyle: {backgroundColor: sheetBg},
-                                }}
-                            />
-                            <Stack.Screen
-                                name="modals/project-contacts"
-                                options={{
-                                    presentation: "modal",
-                                    sheetAllowedDetents: [1.0],
-                                    sheetGrabberVisible: true,
-                                    headerShown: false,
-                                }}
-                            />
-                            <Stack.Screen
-                                name="modals/project-export"
-                                options={{
-                                    presentation: "formSheet",
-                                    sheetAllowedDetents: [0.80],
-                                    sheetGrabberVisible: true,
-                                    headerShown: false,
-                                    contentStyle: {backgroundColor: sheetBg},
-                                }}
-                            />
-                            <Stack.Screen
-                                name="modals/project-share"
-                                options={{
-                                    presentation: "formSheet",
-                                    sheetAllowedDetents: [0.85],
-                                    sheetGrabberVisible: true,
-                                    headerShown: false,
-                                    contentStyle: {backgroundColor: sheetBg},
-                                }}
-                            />
-                            <Stack.Screen
-                                name="location-map"
-                                options={{
-                                    headerShown: false,
-                                    animation: 'slide_from_right',
-                                }}
-                            />
-                        </Stack>
-                        <StatusBar style="auto"/>
-                </AuthProvider>
-            </ApolloProvider>
-            <AppAlertBridge />
-            </AppAlertProvider>
-        </GestureHandlerRootView>
+      <GestureHandlerRootView style={S.flex1}>
+        <AppAlertProvider>
+          <ApolloProvider client={apolloClient}>
+            <AuthProvider>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen
+                  name="onboarding"
+                  options={{
+                    animation: 'fade',
+                    gestureEnabled: false,
+                  }}
+                />
+                <Stack.Screen name="auth/login" />
+                <Stack.Screen name="auth/register" />
+                <Stack.Screen name="auth/forgot-password" />
+                <Stack.Screen name="auth/confirm-email" />
+                <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+                {/* oauth/callback removed — handled by AuthProvider */}
+                <Stack.Screen
+                  name="company-cam-clone"
+                  options={{
+                    headerShown: false,
+                    presentation: 'fullScreenModal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+                <Stack.Screen
+                  name="add-photos-prompt"
+                  options={{
+                    headerShown: false,
+                    presentation: 'fullScreenModal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+                <Stack.Screen
+                  name="add-photo-modal"
+                  options={{
+                    headerShown: false,
+                    presentation: 'fullScreenModal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+                <Stack.Screen
+                  name="image-editor"
+                  options={{
+                    headerShown: false,
+                    presentation: 'fullScreenModal',
+                    animation: 'slide_from_bottom',
+                    contentStyle: { backgroundColor: '#000' },
+                  }}
+                />
+                {/* ── Modal screens ── */}
+                <Stack.Screen
+                  name="modals/privacy-modal"
+                  options={{
+                    presentation: 'modal',
+                    headerShown: false,
+                    contentStyle: { backgroundColor: sheetBg },
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/terms-modal"
+                  options={{
+                    presentation: 'modal',
+                    headerShown: false,
+                    contentStyle: { backgroundColor: sheetBg },
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/annotation-text"
+                  options={{
+                    presentation: 'formSheet',
+                    // 'large' = ocupa toda la altura disponible en iPhone
+                    // y garantiza ancho completo sin bordes laterales
+                    // [1.0] = altura completa disponible → sin bordes laterales en iPhone
+                    sheetAllowedDetents: [0.65],
+                    sheetGrabberVisible: true,
+                    headerShown: false,
+                    contentStyle: { backgroundColor: sheetBg },
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/annotation-measure"
+                  options={{
+                    presentation: 'formSheet',
+                    sheetAllowedDetents: 'fitToContents',
+                    sheetGrabberVisible: true,
+                    headerShown: false,
+                    contentStyle: { backgroundColor: sheetBg },
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/photo-lightbox"
+                  options={{
+                    presentation: 'fullScreenModal',
+                    headerShown: false,
+                    animation: 'fade',
+                    contentStyle: { backgroundColor: '#000' },
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/add-note"
+                  options={{
+                    presentation: 'formSheet',
+                    sheetAllowedDetents: [0.5],
+                    sheetGrabberVisible: true,
+                    headerShown: false,
+                    contentStyle: { backgroundColor: sheetBg },
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/invite-member"
+                  options={{
+                    presentation: 'formSheet',
+                    sheetAllowedDetents: [0.7],
+                    sheetGrabberVisible: true,
+                    headerShown: false,
+                    contentStyle: { backgroundColor: sheetBg },
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/project-settings"
+                  options={{
+                    presentation: 'modal',
+                    sheetAllowedDetents: [1.0],
+                    sheetGrabberVisible: true,
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/invite-global"
+                  options={{
+                    presentation: 'modal',
+                    headerShown: false,
+                    contentStyle: { backgroundColor: sheetBg },
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/team-members"
+                  options={{
+                    presentation: 'modal',
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/edit-project"
+                  options={{
+                    presentation: 'modal',
+                    headerShown: false,
+                    contentStyle: { backgroundColor: sheetBg },
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/project-tags"
+                  options={{
+                    presentation: 'modal',
+                    headerShown: false,
+                    contentStyle: { backgroundColor: sheetBg },
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/project-description"
+                  options={{
+                    presentation: 'formSheet',
+                    sheetAllowedDetents: [0.5],
+                    sheetGrabberVisible: true,
+                    headerShown: false,
+                    contentStyle: { backgroundColor: sheetBg },
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/project-contacts"
+                  options={{
+                    presentation: 'modal',
+                    sheetAllowedDetents: [1.0],
+                    sheetGrabberVisible: true,
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/project-export"
+                  options={{
+                    presentation: 'formSheet',
+                    sheetAllowedDetents: [0.8],
+                    sheetGrabberVisible: true,
+                    headerShown: false,
+                    contentStyle: { backgroundColor: sheetBg },
+                  }}
+                />
+                <Stack.Screen
+                  name="modals/project-share"
+                  options={{
+                    presentation: 'formSheet',
+                    sheetAllowedDetents: [0.85],
+                    sheetGrabberVisible: true,
+                    headerShown: false,
+                    contentStyle: { backgroundColor: sheetBg },
+                  }}
+                />
+                <Stack.Screen
+                  name="location-map"
+                  options={{
+                    headerShown: false,
+                    animation: 'slide_from_right',
+                  }}
+                />
+              </Stack>
+              <StatusBar style="auto" />
+            </AuthProvider>
+          </ApolloProvider>
+          <AppAlertBridge />
+        </AppAlertProvider>
+      </GestureHandlerRootView>
     );
 
     const shouldOverrideSafeArea = Platform.OS === "web";

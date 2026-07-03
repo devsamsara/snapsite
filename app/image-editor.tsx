@@ -35,7 +35,6 @@ import React, {
   useState,
   useRef,
   useEffect,
-  useLayoutEffect,
   useCallback,
 } from "react";
 import {
@@ -50,7 +49,6 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams, Stack, useFocusEffect } from "expo-router";
 import { annotationTextStore, annotationMeasureStore } from "@/lib/modal-stores";
-import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // ─── react-native-svg (reemplaza @shopify/react-native-skia) ──────────────────
@@ -82,9 +80,7 @@ import * as Haptics from "expo-haptics";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppAlert } from '@/components/ui/app-alert';
-import { uploadPhoto } from '@/lib/upload-service';
-import { CameraView, useCameraPermissions, type FlashMode } from 'expo-camera';
-import * as ImagePicker from 'expo-image-picker';
+import { ensureFileUri, uploadPhoto } from '@/lib/upload-service';
 import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 
@@ -391,33 +387,21 @@ function CropCorner({
   );
 }
 
-// ─── Screen mode ─────────────────────────────────────────────────────────────
-// "picker"  → pantalla inicial: elegir Cámara o Galería (sin imageUri)
-// "camera"  → CameraView a pantalla completa
-// "editor"  → editor de imagen con anotaciones
-type ScreenMode = 'picker' | 'camera' | 'editor';
-
-// ─── Main Screen ──────────────────────────────────────────────────────────────
+// ─── Main Screen ─────────────────────────────────────────────────────────────
+// El image-editor siempre arranca en modo editor.
+// La selección de cámara/galería ocurre en add-photo-modal (ruta anterior).
 export default function ImageEditorScreen() {
   const router     = useRouter();
-  const navigation = useNavigation();
   const insets     = useSafeAreaInsets();
   const colors     = useColors();
-  const { imageUri, projectId } = useLocalSearchParams<{ imageUri: string; projectId?: string }>();
+  const { imageUri, projectId, photoId, source } = useLocalSearchParams<{
+    imageUri: string;
+    projectId?: string;
+    photoId?: string;
+    source?: string;
+  }>();
 
-  // Si viene con imageUri, empieza directamente en el editor.
-  // Si no, muestra el picker para elegir cámara o galería.
-  const [mode, setMode] = React.useState<ScreenMode>(
-    imageUri ? 'editor' : 'picker'
-  );
-
-  // ── Camera state ────────────────────────────────────────────────────────────
-  const cameraRef2 = useRef<CameraView>(null);
-  const [camReady, setCamReady] = React.useState(false);
-  const [facing, setFacing] = React.useState<'back' | 'front'>('back');
-  const [flashMode, setFlashMode] = React.useState<FlashMode>('off');
-  const [lastPhoto, setLastPhoto] = React.useState<string | null>(null);
-  const [permission, requestPermission] = useCameraPermissions();
+  // Image state (imageUri viene del add-photo-modal vía router.replace)
 
   // Image state
   const [imgUri, setImgUri]   = useState(imageUri ?? "");
@@ -489,58 +473,69 @@ export default function ImageEditorScreen() {
 
   // ── Actions ─────────────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
-    setProc(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    try {
-      // 1. Capturar la vista como imagen JPEG (incluye todas las anotaciones SVG)
-      const uri = await captureRef(viewRef, { format: "jpg", quality: 0.95 });
 
-      // 2. Si hay un projectId, subir la foto al backend → S3 (presigned URL)
+    try {
+      // 1. Capturar PRIMERO mientras la vista está intacta
+      const uri = await captureRef(viewRef, { format: 'jpg', quality: 0.95 });
+
+      // 2. Ahora sí limpiar animaciones y mostrar loader
+      setTool(null);
+      cT.value = 0;
+      cL.value = 0;
+      cR.value = 0;
+      cB.value = 0;
+      setProc(true);
+
+      const safeUri = await ensureFileUri(uri);
+
       if (projectId) {
         try {
-          // Flujo presigned URL:
-          //   a) getUploadUrl(projectId, fileName, mimeType) → { uploadUrl, fileUrl }
-          //   b) PUT uploadUrl ← blob de la imagen (directo a S3)
-          //   c) addPhoto(projectId, url: fileUrl) → registra en BD
           await uploadPhoto({
-            localUri: uri,
+            localUri: safeUri,
             projectId,
-            caption: '',
+            photoId,
+            caption: `Picture_${Date.now()}.jpg`,
             tags: [],
           });
-
-          AppAlert.alert('¡Foto subida!', 'La foto se subió al proyecto correctamente.', [{
-            text: 'OK',
-            onPress: () => router.back(),
-          }]);
+          AppAlert.alert(
+            '¡Foto guardada!',
+            'La foto se guardó correctamente.',
+            [
+              {
+                text: 'OK',
+                onPress: () => router.back(),
+              },
+            ]
+          );
         } catch (uploadErr: any) {
-          // Si el upload falla, guardar localmente como fallback
-          console.warn('[ImageEditor] Upload failed, saving locally:', uploadErr?.message);
+          console.warn('[ImageEditor] Upload failed:', uploadErr?.message);
           const { status } = await MediaLibrary.requestPermissionsAsync();
-          if (status === 'granted') {
-            await MediaLibrary.saveToLibraryAsync(uri);
-          }
+          if (status === 'granted') await MediaLibrary.saveToLibraryAsync(uri);
           AppAlert.alert(
             'Error al subir',
-            `No se pudo subir la foto al servidor. ${uploadErr?.message ?? ''}\n\nLa imagen se guardó en tu galería.`,
-            [{
-              text: 'OK',
-              onPress: () => router.back(),
-            }],
+            `${uploadErr?.message ?? ''}\n\nLa imagen se guardó en tu galería.`,
+            [
+              {
+                text: 'OK',
+                onPress: () => router.back(),
+              },
+            ]
           );
         }
       } else {
-        // Sin projectId: guardar solo en la galería del dispositivo
         const { status } = await MediaLibrary.requestPermissionsAsync();
         if (status !== 'granted') {
-          AppAlert.alert('Permiso denegado', 'Se necesita acceso a la galería.');
+          AppAlert.alert(
+            'Permiso denegado',
+            'Se necesita acceso a la galería.'
+          );
           return;
         }
         await MediaLibrary.saveToLibraryAsync(uri);
-        AppAlert.alert('¡Guardado!', 'La imagen se guardó en tu galería.', [{
-          text: 'OK',
-          onPress: () => router.back(),
-        }]);
+        AppAlert.alert('¡Guardado!', 'La imagen se guardó en tu galería.', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
       }
     } catch (err: any) {
       console.error('[ImageEditor] handleSave error:', err);
@@ -548,39 +543,18 @@ export default function ImageEditorScreen() {
     } finally {
       setProc(false);
     }
-  }, [projectId, router]);
-
-  // El image-editor es ahora un fullScreenModal: router.back() lo cierra limpiamente
-  // sin acumular historial, independientemente de si viene de un proyecto o no.
+  }, [projectId, photoId, router, cT, cL, cR, cB]);
+  // Al cancelar: si viene desde add-photos-prompt, ir al inicio.
+  // En cualquier otro caso, router.back() cierra el editor limpiamente.
   const handleCancel = useCallback(() => {
-    router.back();
-  }, [router]);
-
-  // ── Native header buttons via useLayoutEffect ────────────────────────────────
-  useLayoutEffect(() => {
-    if (mode === 'picker' || mode === 'camera') {
-      navigation.setOptions({ headerShown: false });
-      return;
+    if (source === 'add-photos-prompt') {
+      router.replace('/(tabs)');
+    } else {
+      router.back();
     }
-    navigation.setOptions({
-      headerShown: true,
-      title: "Anotar Foto",
-      headerStyle: { backgroundColor: "#111" },
-      headerTintColor: "#FFF",
-      headerTitleStyle: { fontWeight: "600", fontSize: 17 },
-      headerLeft: () => (
-        <TouchableOpacity onPress={handleCancel} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
-          <Text style={{ color: "#FFF", fontSize: 17, fontWeight: "400", marginLeft: 4 }}>Cancelar</Text>
-        </TouchableOpacity>
-      ),
-      headerRight: () => (
-        <TouchableOpacity onPress={handleSave} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
-          <Text style={{ color: "#007AFF", fontSize: 17, fontWeight: "600", marginRight: 4 }}>Guardar</Text>
-        </TouchableOpacity>
-      ),
-      headerBackVisible: false,
-    });
-  }, [navigation, handleCancel, handleSave, mode]);
+  }, [router, source]);
+
+
 
   const undo = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -696,179 +670,30 @@ export default function ImageEditorScreen() {
     : Gesture.Tap();
 
     // ── Camera helpers ────────────────────────────────────────────────────────────
-  const goToEditor = (uri: string) => {
-    setImgUri(uri);
-    Image.getSize(uri, (w, h) => { setImgW(w); setImgH(h); });
-    setMode('editor');
-  };
-
-  const handleCameraOption = async () => {
-    if (!permission?.granted) {
-      const r = await requestPermission();
-      if (!r.granted) {
-        AppAlert.alert('Permiso requerido', 'Necesitamos acceso a la cámara.');
-        return;
-      }
-    }
-    setMode('camera');
-  };
-
-  const handleGalleryOption = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      AppAlert.alert('Permiso requerido', 'Necesitamos acceso a tu galería.');
-      return;
-    }
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: false,
-        quality: 1,
-      });
-      if (!result.canceled && result.assets?.[0]) {
-        goToEditor(result.assets[0].uri);
-      }
-    } catch {
-      AppAlert.alert('Error', 'No se pudo abrir la galería.');
-    }
-  };
-
-  const takePicture = async () => {
-    if (!cameraRef2.current || !camReady) return;
-    try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const photo = await cameraRef2.current.takePictureAsync({ quality: 1, base64: false });
-      if (photo) {
-        setLastPhoto(photo.uri);
-        goToEditor(photo.uri);
-      }
-    } catch {
-      AppAlert.alert('Error', 'No se pudo capturar la foto.');
-    }
-  };
-
-  const pickFromCamera = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: false,
-      quality: 1,
-    });
-    if (!result.canceled && result.assets?.[0]) goToEditor(result.assets[0].uri);
-  };
-
-  const flashIcon = flashMode === 'on' ? 'bolt.fill' : flashMode === 'auto' ? 'bolt.badge.a.fill' : 'bolt.slash.fill';
-
-  // ── Render: PICKER ────────────────────────────────────────────────────────────
-  if (mode === 'picker') {
-    return (
-      <View style={[S.root, { backgroundColor: colors.background }]}>
-        {/* Header del picker */}
-        <View style={[S.pickerHeader, { paddingTop: insets.top + 16 }]}>
-          <Text style={[S.pickerTitle, { color: colors.foreground }]}>Agregar Foto</Text>
-          <TouchableOpacity onPress={() => router.back()} style={[S.pickerClose, { backgroundColor: colors.surface }]}>
-            <IconSymbol name="xmark" size={16} color={colors.foreground} />
-          </TouchableOpacity>
-        </View>
-        {/* Opciones */}
-        <View style={S.pickerOptions}>
-          <TouchableOpacity
-            onPress={handleCameraOption}
-            style={[S.pickerCard, S.pickerCardGap, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          >
-            <View style={[S.pickerIcon, { backgroundColor: colors.primary + '20' }]}>
-              <IconSymbol name="camera.fill" size={28} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[S.pickerCardTitle, { color: colors.foreground }]}>Tomar Foto</Text>
-              <Text style={[S.pickerCardDesc, { color: colors.muted }]}>Usa la cámara para capturar una nueva foto</Text>
-            </View>
-            <IconSymbol name="chevron.right" size={20} color={colors.muted} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleGalleryOption}
-            style={[S.pickerCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          >
-            <View style={[S.pickerIcon, { backgroundColor: '#34C75920' }]}>
-              <IconSymbol name="photo.on.rectangle" size={28} color="#34C759" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[S.pickerCardTitle, { color: colors.foreground }]}>Seleccionar de Galería</Text>
-              <Text style={[S.pickerCardDesc, { color: colors.muted }]}>Elige una foto de tu biblioteca</Text>
-            </View>
-            <IconSymbol name="chevron.right" size={20} color={colors.muted} />
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
-  // ── Render: CAMERA ────────────────────────────────────────────────────────────
-  if (mode === 'camera') {
-    if (!permission?.granted) {
-      return (
-        <View style={[S.root, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
-          <Text style={{ color: '#FFF', fontSize: 16, textAlign: 'center', marginBottom: 20 }}>Necesitamos permiso para usar la cámara</Text>
-          <TouchableOpacity onPress={requestPermission} style={{ backgroundColor: '#007AFF', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 }}>
-            <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Conceder Permiso</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-    return (
-      <View style={S.root}>
-        <CameraView
-          ref={cameraRef2}
-          style={{ flex: 1 }}
-          facing={facing}
-          flash={flashMode}
-          onCameraReady={() => setCamReady(true)}
-        >
-          {/* Top controls */}
-          <View style={[S.camTop, { paddingTop: insets.top + 8 }]}>
-            <TouchableOpacity onPress={() => setMode('picker')} style={S.camIconBtn}>
-              <IconSymbol name="xmark" size={22} color="#FFF" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setFlashMode(f => f === 'off' ? 'on' : f === 'on' ? 'auto' : 'off')}
-              style={S.camIconBtn}
-            >
-              <IconSymbol name={flashIcon} size={22} color={flashMode !== 'off' ? '#FFD60A' : '#FFF'} />
-            </TouchableOpacity>
-          </View>
-          {/* Bottom controls */}
-          <View style={[S.camBottom, { paddingBottom: insets.bottom + 16 }]}>
-            <View style={S.camRow}>
-              {/* Gallery thumbnail */}
-              <TouchableOpacity onPress={pickFromCamera} style={S.camGalleryBtn}>
-                {lastPhoto ? (
-                  <Image source={{ uri: lastPhoto }} style={{ width: '100%', height: '100%' }} />
-                ) : (
-                  <IconSymbol name="photo.on.rectangle" size={24} color="#FFF" />
-                )}
-              </TouchableOpacity>
-              {/* Shutter */}
-              <TouchableOpacity onPress={takePicture} style={S.camShutterOuter}>
-                <View style={S.camShutterInner} />
-              </TouchableOpacity>
-              {/* Flip */}
-              <TouchableOpacity
-                onPress={() => { setFacing(f => f === 'back' ? 'front' : 'back'); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                style={S.camIconBtn}
-              >
-                <IconSymbol name="arrow.triangle.2.circlepath" size={26} color="#FFF" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </CameraView>
-      </View>
-    );
-  }
-
   // ── Render: EDITOR ────────────────────────────────────────────────────────────
   return (
     <GestureHandlerRootView style={S.root}>
-      <SafeAreaView style={S.root} edges={["bottom"]}>
+      <SafeAreaView style={S.root} edges={["top", "bottom"]}>
 
+        {/* ── Custom header ── */}
+        <View style={S.editorHeader}>
+          <TouchableOpacity
+            onPress={handleCancel}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={S.editorHeaderBtn}
+          >
+            <Text style={S.editorHeaderCancel}>Cancelar</Text>
+          </TouchableOpacity>
+          <Text style={S.editorHeaderTitle}>Anotar Foto</Text>
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={processing}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={S.editorHeaderBtn}
+          >
+            <Text style={[S.editorHeaderSave, processing && { opacity: 0.4 }]}>Guardar</Text>
+          </TouchableOpacity>
+        </View>
         {/* ── Image area — flex:1 so it fills all space between header and toolbar ── */}
         <View
           style={S.canvasArea}
@@ -943,7 +768,7 @@ export default function ImageEditorScreen() {
         </View>
 
         {/* ── Bottom Toolbar (iOS Markup style) ── */}
-        <View style={S.toolbar}>
+        <View style={[S.toolbar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
 
           {/* Options row — only shown when a tool that needs options is active */}
           {tool !== null && tool !== "crop" && (
@@ -1035,6 +860,40 @@ export default function ImageEditorScreen() {
 
 const S = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#000" },
+  // Custom header
+  editorHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#111",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(255,255,255,0.12)",
+    paddingHorizontal: 8,
+    height: 52,
+  },
+  editorHeaderBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minWidth: 80,
+  },
+  editorHeaderTitle: {
+    color: "#FFF",
+    fontSize: 17,
+    fontWeight: "600",
+    flex: 1,
+    textAlign: "center",
+  },
+  editorHeaderCancel: {
+    color: "#FFF",
+    fontSize: 17,
+    fontWeight: "400",
+  },
+  editorHeaderSave: {
+    color: "#007AFF",
+    fontSize: 17,
+    fontWeight: "600",
+    textAlign: "right",
+  },
 
   canvasArea: {
     flex: 1,
@@ -1100,71 +959,4 @@ const S = StyleSheet.create({
   // Loader
   loader: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.72)", justifyContent: "center", alignItems: "center", zIndex: 1000 },
   loaderTxt: { color: "#FFF", fontWeight: "600", marginTop: 12, fontSize: 15 },
-  // ── Picker styles
-  pickerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
-  pickerTitle: { fontSize: 20, fontWeight: '700' },
-  pickerClose: {
-    width: 32, height: 32, borderRadius: 16,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  pickerOptions: { paddingHorizontal: 16 },
-  pickerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    padding: 18,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  pickerCardGap: { marginBottom: 12 },
-  pickerIcon: {
-    width: 52, height: 52, borderRadius: 14,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  pickerCardTitle: { fontSize: 16, fontWeight: '600', marginBottom: 3 },
-  pickerCardDesc: { fontSize: 13 },
-  // ── Camera styles
-  camTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 8,
-  },
-  camBottom: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    paddingHorizontal: 20,
-  },
-  camRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  camIconBtn: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  camGalleryBtn: {
-    width: 52, height: 52, borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    overflow: 'hidden',
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)',
-  },
-  camShutterOuter: {
-    width: 76, height: 76, borderRadius: 38,
-    borderWidth: 4, borderColor: '#FFF',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  camShutterInner: {
-    width: 62, height: 62, borderRadius: 31,
-    backgroundColor: '#FFF',
-  },
 });
