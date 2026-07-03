@@ -24,7 +24,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
 import { useCardStyle } from "@/hooks/use-card-style";
 import { useAuth } from "@/lib/auth-context";
-import { UserRole, UpdateUserDocument, GetUploadUrlDocument, User } from '@/gql/graphql';
+import { UserRole, UpdateUserDocument, UpdateUserPictureDocument, GetUploadUrlDocument, User } from '@/gql/graphql';
 import { ensureFileUri } from '@/lib/upload-service';
 import { apolloClient } from "@/lib/graphql-client";
 import { AppAlert } from '@/components/ui/app-alert';
@@ -148,15 +148,15 @@ export default function EditProfileScreen() {
       const remoteUrl = await uploadAvatarToS3(localUri);
 
       const { data: response } = await apolloClient.mutate({
-        mutation: UpdateUserDocument,
+        mutation: UpdateUserPictureDocument,
         variables: {
-          updateUserId: user!.id,
-          input: { avatarUrl: remoteUrl },
+          userId: user!.id,
+          picture: remoteUrl,
         },
       });
 
-      if (response?.updateUser) {
-        updateUser(response.updateUser as User);
+      if (response?.updateUserPicture) {
+        updateUser({ ...user!, avatarUrl: response.updateUserPicture.avatarUrl ?? remoteUrl });
         setAvatarUri(remoteUrl);
       }
     } catch (err: any) {
