@@ -25,6 +25,7 @@ import { useColors } from "@/hooks/use-colors";
 import { useCardStyle } from "@/hooks/use-card-style";
 import { useAuth } from "@/lib/auth-context";
 import { UserRole, UpdateUserDocument, GetUploadUrlDocument, User } from '@/gql/graphql';
+import { ensureFileUri } from '@/lib/upload-service';
 import { apolloClient } from "@/lib/graphql-client";
 import { AppAlert } from '@/components/ui/app-alert';
 
@@ -66,30 +67,45 @@ export default function EditProfileScreen() {
     mode: "onChange",
   });
 
-  // ── Upload avatar to S3 ────────────────────────────────────────────────────
+  // ── Upload avatar to S3 (mismo patrón que project/[id] con ensureFileUri) ────
   const uploadAvatarToS3 = async (localUri: string): Promise<string> => {
-    const ext = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
-    const mime = ext === 'png' ? 'image/png' : 'image/jpeg';
-    const filename = `avatar_${user?.id}_${Date.now()}.${ext}`;
+    // Paso 0: normalizar URI a file:// igual que en project/[id]
+    const safeUri = await ensureFileUri(localUri);
 
+    const ext = safeUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+    const mimeMap: Record<string, string> = {
+      jpg: 'image/jpeg', jpeg: 'image/jpeg',
+      png: 'image/png', webp: 'image/webp',
+      heic: 'image/heic', heif: 'image/heif',
+    };
+    const mimeType = mimeMap[ext] ?? 'image/jpeg';
+    const fileName = `avatar_${user?.id}_${Date.now()}.${ext === 'jpeg' ? 'jpg' : ext}`;
+
+    // Paso 1: obtener presigned URL del backend
     const { data: urlData } = await apolloClient.query({
       query: GetUploadUrlDocument,
-      variables: { filename, projectId: '' },
+      variables: { projectId: '', fileName, mimeType },
       fetchPolicy: 'no-cache',
     });
-
     if (!urlData?.getUploadUrl?.uploadUrl) throw new Error('No upload URL');
-
     const { uploadUrl, fileUrl } = urlData.getUploadUrl;
 
-    const blob = await fetch(localUri).then(r => r.blob());
-    const uploadResp = await fetch(uploadUrl, {
-      method: 'PUT',
-      headers: { 'Content-Type': mime },
-      body: blob,
-    });
+    // Paso 2: leer como blob con fetch (igual que upload-service)
+    const localResponse = await fetch(safeUri);
+    if (!localResponse.ok) throw new Error(`No se pudo leer el archivo: ${safeUri}`);
+    const blob = await localResponse.blob();
 
-    if (!uploadResp.ok) throw new Error(`Upload failed: ${uploadResp.status}`);
+    // Paso 3: PUT directo a S3
+    const s3Response = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: blob,
+      headers: { 'Content-Type': mimeType },
+    });
+    if (!s3Response.ok) {
+      const xml = await s3Response.text().catch(() => '');
+      throw new Error(`S3 upload error ${s3Response.status}: ${xml}`);
+    }
+
     return fileUrl;
   };
 
