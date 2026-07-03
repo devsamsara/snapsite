@@ -1,6 +1,6 @@
 /**
  * (tabs)/settings.tsx — Ajustes + Perfil unificados
- * Secciones: CUENTA · EMPRESA · APARIENCIA · NOTIFICACIONES · GENERAL · SESIÓN · ZONA PELIGROSA
+ * Secciones: PERFIL · EMPRESA · APARIENCIA · NOTIFICACIONES · GENERAL · SESIÓN · ZONA PELIGROSA
  */
 import {
   ScrollView, StyleSheet, Text, View, TouchableOpacity, Switch,
@@ -8,7 +8,7 @@ import {
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import i18n, { changeLanguage } from "@/lib/i18n";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
@@ -27,6 +27,18 @@ function initials(name?: string | null): string {
   return name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
 }
 
+/** Hook para evitar doble tap en botones de navegación */
+function useNavLock(delay = 600) {
+  const locked = useRef(false);
+  const navigate = useCallback((fn: () => void) => {
+    if (locked.current) return;
+    locked.current = true;
+    fn();
+    setTimeout(() => { locked.current = false; }, delay);
+  }, [delay]);
+  return navigate;
+}
+
 export default function SettingsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -36,6 +48,7 @@ export default function SettingsScreen() {
   const cardElevation = useCardStyle();
   const { expoPushToken } = useNotifications();
   const { signOut, user } = useAuth();
+  const nav = useNavLock();
 
   const isOwner = user?.role === UserRole.Root;
   const userName = user?.name ?? user?.nickname ?? null;
@@ -67,7 +80,11 @@ export default function SettingsScreen() {
 
   const handleEmailNotificationsToggle = (value: boolean) => {
     setEmailNotifications(value);
-    AppAlert.alert(value ? t("settings.notifications.emailEnabledTitle") : t("settings.notifications.emailDisabledTitle"), value ? t("settings.notifications.emailEnabledMessage") : t("settings.notifications.emailDisabledMessage"), [{ text: t("common.ok") }]);
+    AppAlert.alert(
+      value ? t("settings.notifications.emailEnabledTitle") : t("settings.notifications.emailDisabledTitle"),
+      value ? t("settings.notifications.emailEnabledMessage") : t("settings.notifications.emailDisabledMessage"),
+      [{ text: t("common.ok") }],
+    );
   };
 
   const handleLogout = () => {
@@ -80,21 +97,36 @@ export default function SettingsScreen() {
   const handleDeleteAccount = () => {
     AppAlert.alert(t("profile.deleteAccountTitle"), t("profile.deleteAccountMessage"), [
       { text: t("common.cancel"), style: "cancel" },
-      { text: t("profile.deleteAccountButton"), style: "destructive", onPress: async () => { try { const userId = user?.id; if (!userId) throw new Error("No user id"); await apolloClient.mutate({ mutation: DeleteUserDocument, variables: { id: userId } }); await signOut(); } catch { AppAlert.alert(t("common.error"), t("profile.deleteAccountError")); } } },
+      {
+        text: t("profile.deleteAccountButton"), style: "destructive", onPress: async () => {
+          try { const userId = user?.id; if (!userId) throw new Error("No user id"); await apolloClient.mutate({ mutation: DeleteUserDocument, variables: { id: userId } }); await signOut(); }
+          catch { AppAlert.alert(t("common.error"), t("profile.deleteAccountError")); }
+        },
+      },
     ]);
   };
 
   const handleLeaveCompany = () => {
     AppAlert.alert(t("profile.leaveCompanyTitle"), t("profile.leaveCompanyMessage"), [
       { text: t("common.cancel"), style: "cancel" },
-      { text: t("profile.leaveCompanyButton"), style: "destructive", onPress: async () => { try { const userId = user?.id; if (!userId) throw new Error("No user id"); await apolloClient.mutate({ mutation: DeleteUserDocument, variables: { id: userId } }); await signOut(); } catch { AppAlert.alert(t("common.error"), t("profile.leaveCompanyError")); } } },
+      {
+        text: t("profile.leaveCompanyButton"), style: "destructive", onPress: async () => {
+          try { const userId = user?.id; if (!userId) throw new Error("No user id"); await apolloClient.mutate({ mutation: DeleteUserDocument, variables: { id: userId } }); await signOut(); }
+          catch { AppAlert.alert(t("common.error"), t("profile.leaveCompanyError")); }
+        },
+      },
     ]);
   };
 
   const handleDeleteCompany = () => {
     AppAlert.alert(t("profile.deleteCompanyTitle"), t("profile.deleteCompanyMessage"), [
       { text: t("common.cancel"), style: "cancel" },
-      { text: t("profile.deleteCompanyButton"), style: "destructive", onPress: async () => { try { const companyId = user?.company?.id; if (!companyId) throw new Error("No company id"); await apolloClient.mutate({ mutation: DeleteCompanyDocument, variables: { id: companyId } }); await signOut(); } catch { AppAlert.alert(t("common.error"), t("profile.deleteCompanyError")); } } },
+      {
+        text: t("profile.deleteCompanyButton"), style: "destructive", onPress: async () => {
+          try { const companyId = user?.company?.id; if (!companyId) throw new Error("No company id"); await apolloClient.mutate({ mutation: DeleteCompanyDocument, variables: { id: companyId } }); await signOut(); }
+          catch { AppAlert.alert(t("common.error"), t("profile.deleteCompanyError")); }
+        },
+      },
     ]);
   };
 
@@ -113,22 +145,38 @@ export default function SettingsScreen() {
 
         <ScrollView contentContainerStyle={S.scrollContent} showsVerticalScrollIndicator={false}>
 
-          {/* ── CUENTA ─────────────────────────────────────────────────────── */}
-          <SL label={t("settings.sections.account") ?? "Cuenta"} />
-          <View style={[S.card, cardElevation]}>
-            <TouchableOpacity onPress={() => router.push("/edit-profile")} style={[S.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]} activeOpacity={0.7}>
-              <View style={S.rowLeft}>
-                <View style={[S.avatar, { backgroundColor: colors.primary + "20" }]}>
-                  <Text style={[S.avatarText, { color: colors.primary }]}>{initials(userName)}</Text>
-                </View>
-                <View style={S.rowTextBlock}>
-                  <Text style={[S.rowLabel, { color: colors.foreground }]}>{userName ?? "—"}</Text>
-                  <Text style={S.rowSublabel}>{user?.email ?? ""}</Text>
-                </View>
+          {/* ── PERFIL ─────────────────────────────────────────────────────── */}
+          <SL label={t("settings.sections.profile")} />
+          <View style={[S.profileCard, cardElevation]}>
+            {/* Avatar */}
+            <View style={[S.profileAvatar, { backgroundColor: colors.primary }]}>
+              <IconSymbol name="person.fill" size={40} color="#FFFFFF" />
+            </View>
+            {/* User Info */}
+            <Text style={[S.profileName, { color: colors.foreground }]}>{userName ?? "—"}</Text>
+            <Text style={[S.profileEmail, { color: colors.muted }]}>{user?.email ?? ""}</Text>
+            <Text style={[S.profileRole, { color: colors.muted }]}>{isOwner ? t("roles.root") : t("roles.admin")}</Text>
+            {/* Stats */}
+            <View style={[S.statsRow, { borderTopColor: colors.border }]}>
+              <View style={S.statItem}>
+                <Text style={[S.statValue, { color: colors.primary }]}>—</Text>
+                <Text style={[S.statLabel, { color: colors.muted }]}>{t("settings.profile.projects")}</Text>
               </View>
-              <IconSymbol name="chevron.right" size={16} color={colors.muted} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push("/edit-profile")} style={S.row} activeOpacity={0.7}>
+              <View style={[S.statDivider, { backgroundColor: colors.border }]} />
+              <View style={S.statItem}>
+                <Text style={[S.statValue, { color: colors.primary }]}>—</Text>
+                <Text style={[S.statLabel, { color: colors.muted }]}>{t("settings.profile.photos")}</Text>
+              </View>
+              <View style={[S.statDivider, { backgroundColor: colors.border }]} />
+              <View style={S.statItem}>
+                <Text style={[S.statValue, { color: colors.primary }]}>—</Text>
+                <Text style={[S.statLabel, { color: colors.muted }]}>{t("settings.profile.teamMembers")}</Text>
+              </View>
+            </View>
+          </View>
+          {/* Edit Profile row */}
+          <View style={[S.card, cardElevation]}>
+            <TouchableOpacity onPress={() => nav(() => router.push("/edit-profile"))} style={S.row} activeOpacity={0.7}>
               <View style={S.rowLeft}>
                 <IconSymbol name="person.crop.circle" size={20} color={colors.primary} />
                 <Text style={[S.rowLabel, { color: colors.foreground, marginLeft: 16 }]}>{t("profile.editProfile")}</Text>
@@ -149,7 +197,7 @@ export default function SettingsScreen() {
                 </View>
               </View>
             </View>
-            <TouchableOpacity onPress={() => router.push("/modals/team-members" as any)} style={S.row} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => nav(() => router.push("/modals/team-members" as any))} style={S.row} activeOpacity={0.7}>
               <View style={S.rowLeft}>
                 <IconSymbol name="person.2.fill" size={20} color={colors.primary} />
                 <Text style={[S.rowLabel, { color: colors.foreground, marginLeft: 16 }]}>{t("teamMembers.title")}</Text>
@@ -214,15 +262,15 @@ export default function SettingsScreen() {
           {/* ── GENERAL ────────────────────────────────────────────────────── */}
           <SL label={t("settings.sections.general")} />
           <View style={[S.card, cardElevation]}>
-            <TouchableOpacity style={[S.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
+            <TouchableOpacity style={[S.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]} activeOpacity={0.7}>
               <View style={S.rowLeft}><IconSymbol name="lock.fill" size={20} color={colors.primary} /><Text style={[S.rowLabel, { color: colors.foreground, marginLeft: 16 }]}>{t("settings.general.privacy")}</Text></View>
               <IconSymbol name="chevron.right" size={16} color={colors.muted} />
             </TouchableOpacity>
-            <TouchableOpacity style={[S.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
+            <TouchableOpacity style={[S.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]} activeOpacity={0.7}>
               <View style={S.rowLeft}><IconSymbol name="internaldrive.fill" size={20} color={colors.primary} /><Text style={[S.rowLabel, { color: colors.foreground, marginLeft: 16 }]}>{t("settings.general.storage")}</Text></View>
               <View style={S.rowRight}><Text style={S.rowSublabel}>{t("settings.general.storageUsed", { amount: "2.4 GB" })}</Text><IconSymbol name="chevron.right" size={16} color={colors.muted} /></View>
             </TouchableOpacity>
-            <TouchableOpacity style={[S.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
+            <TouchableOpacity style={[S.row, { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]} activeOpacity={0.7}>
               <View style={S.rowLeft}><IconSymbol name="questionmark.circle.fill" size={20} color={colors.primary} /><Text style={[S.rowLabel, { color: colors.foreground, marginLeft: 16 }]}>{t("settings.general.helpSupport")}</Text></View>
               <IconSymbol name="chevron.right" size={16} color={colors.muted} />
             </TouchableOpacity>
@@ -243,7 +291,7 @@ export default function SettingsScreen() {
                 ))}
               </View>
             </View>
-            <TouchableOpacity style={S.row}>
+            <TouchableOpacity style={S.row} activeOpacity={0.7}>
               <View style={S.rowLeft}><IconSymbol name="info.circle.fill" size={20} color={colors.primary} /><Text style={[S.rowLabel, { color: colors.foreground, marginLeft: 16 }]}>{t("settings.general.about")}</Text></View>
               <View style={S.rowRight}><Text style={S.rowSublabel}>v1.0.0</Text><IconSymbol name="chevron.right" size={16} color={colors.muted} /></View>
             </TouchableOpacity>
@@ -322,6 +370,18 @@ const S = StyleSheet.create({
   rowLabel:         { fontSize: 15, fontWeight: "600" },
   rowSublabel:      { fontSize: 12, color: "#8E8E93", marginTop: 1 },
   rowRight:         { flexDirection: "row", alignItems: "center", gap: 6 },
+  // Profile card
+  profileCard:      { borderRadius: 16, padding: 16, alignItems: "center", marginBottom: 4 },
+  profileAvatar:    { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  profileName:      { fontSize: 22, fontWeight: "700", letterSpacing: -0.3 },
+  profileEmail:     { fontSize: 13, marginTop: 2 },
+  profileRole:      { fontSize: 13, marginTop: 2 },
+  statsRow:         { flexDirection: "row", width: "100%", marginTop: 16, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth },
+  statItem:         { flex: 1, alignItems: "center" },
+  statValue:        { fontSize: 22, fontWeight: "700" },
+  statLabel:        { fontSize: 11, marginTop: 2 },
+  statDivider:      { width: StyleSheet.hairlineWidth, height: 36, alignSelf: "center" },
+  // Avatar in account row
   avatar:           { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   avatarText:       { fontSize: 16, fontWeight: "700" },
   cardStyleRow:     { paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
