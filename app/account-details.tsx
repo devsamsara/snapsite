@@ -153,7 +153,7 @@ export default function AccountDetailsScreen() {
   return (
     <View style={[S.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[S.header, { borderBottomColor: colors.border }]}>
+      <View style={[S.header, { borderBottomColor: colors.border, paddingTop: insets.top + 12 }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={[S.backBtn, { backgroundColor: colors.surface }]}
@@ -341,7 +341,6 @@ const S = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
