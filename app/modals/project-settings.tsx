@@ -13,20 +13,11 @@
  *
  * Params recibidos:
  *   - projectId: string
- *   - projectName: string
- *   - projectLocation: string
- *   - projectLatitude: string
- *   - projectLongitude: string
- *   - projectStatus: string
- *   - projectStartDate: string
- *   - projectEndDate: string
- *   - projectDescription: string
- *   - projectTags: string  (JSON.stringify de string[])
  */
 
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -42,8 +33,15 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { ModalBody, ModalHeader, ModalRoot } from "@/components/ui/modal-layout";
 import { useColors } from "@/hooks/use-colors";
 import { AppAlert } from '@/components/ui/app-alert';
-import { useQuery } from '@apollo/client/react';
-import { FindProjectDocument, Project } from '@/gql/graphql';
+import { useMutation, useQuery } from '@apollo/client/react';
+import {
+  ArchiveProjectDocument,
+  DeleteProjectDocument,
+  FindProjectDocument,
+  GetMyProjectsDocument,
+  Project,
+  ProjectStatus,
+} from '@/gql/graphql';
 
 // ─── ActionItem sub-component ─────────────────────────────────────────────────
 
@@ -54,6 +52,7 @@ interface ActionRow {
   onPress: () => void;
   color?: string;
   showChevron?: boolean;
+  loading?: boolean;
 }
 
 function ActionItem({
@@ -63,6 +62,7 @@ function ActionItem({
   onPress,
   color,
   showChevron = true,
+  loading = false,
 }: Readonly<ActionRow>) {
   const colors = useColors();
   return (
@@ -70,6 +70,7 @@ function ActionItem({
       onPress={onPress}
       style={[S.actionRow, { borderBottomColor: colors.border }]}
       activeOpacity={0.65}
+      disabled={loading}
     >
       <View
         style={[
@@ -77,11 +78,15 @@ function ActionItem({
           { backgroundColor: (color ?? colors.primary) + '18' },
         ]}
       >
-        <MaterialIcons
-          name={icon as any}
-          size={20}
-          color={color ?? colors.primary}
-        />
+        {loading ? (
+          <ActivityIndicator size="small" color={color ?? colors.primary} />
+        ) : (
+          <MaterialIcons
+            name={icon as any}
+            size={20}
+            color={color ?? colors.primary}
+          />
+        )}
       </View>
       <View style={S.actionText}>
         <Text style={[S.actionLabel, { color: color ?? colors.foreground }]}>
@@ -93,7 +98,7 @@ function ActionItem({
           </Text>
         )}
       </View>
-      {showChevron && (
+      {showChevron && !loading && (
         <MaterialIcons name="chevron-right" size={20} color={colors.muted} />
       )}
     </TouchableOpacity>
@@ -107,29 +112,36 @@ export default function ProjectSettingsModal() {
   const router   = useRouter();
   const colors   = useColors();
 
-  const {
-    projectId,
-  } = useLocalSearchParams<{
-    projectId:          string;
-  }>();
-  const [project, setProject] = useState<Project| undefined>(undefined);
+  const { projectId } = useLocalSearchParams<{ projectId: string }>();
+
+  const [project, setProject] = useState<Project | undefined>(undefined);
+
   const { data } = useQuery(FindProjectDocument, {
-    variables: {
-      findProjectId: projectId,
-    },
+    variables: { findProjectId: projectId },
   });
-  // ── Handlers ──────────────────────────────────────────────────────────────
+
   useEffect(() => {
-    const loadProyect = () => {
-      if (data) {
-        setProject(data.findProject as Project);
-      }
-    };
-    loadProyect();
-  }, [data, project]);
+    if (data) {
+      setProject(data.findProject as Project);
+    }
+  }, [data]);
+
+  // ── Mutations ──────────────────────────────────────────────────────────────
+
+  const [deleteProject, { loading: deleting }] = useMutation(DeleteProjectDocument, {
+    refetchQueries: [{ query: GetMyProjectsDocument }],
+    awaitRefetchQueries: true,
+  });
+
+  const [archiveProject, { loading: archiving }] = useMutation(ArchiveProjectDocument, {
+    refetchQueries: [{ query: GetMyProjectsDocument }],
+    awaitRefetchQueries: true,
+  });
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleEdit = () => {
-    if(project)
+    if (project)
       router.push({
         pathname: '/modals/edit-project',
         params: {
@@ -141,7 +153,7 @@ export default function ProjectSettingsModal() {
           projectStatus: project.status ?? 'active',
           projectStartDate: project.startDate ?? '',
           projectEndDate: project.endDate ?? '',
-          projectProgress: project.progress ?? 0
+          projectProgress: project.progress ?? 0,
         },
       });
   };
@@ -197,6 +209,41 @@ export default function ProjectSettingsModal() {
   };
 
   const handleArchive = () => {
+    // Si ya está archivado, mostrar opción de restaurar
+    const isArchived = project?.status === ProjectStatus.Archived;
+
+    if (isArchived) {
+      AppAlert.alert(
+        t("projectSettings.restoreTitle", { defaultValue: "Restaurar proyecto" }),
+        t("projectSettings.restoreMsg", { defaultValue: "El proyecto volverá a estar activo." }),
+        [
+          { text: t("common.cancel"), style: "cancel" },
+          {
+            text: t("projectSettings.restoreBtn", { defaultValue: "Restaurar" }),
+            style: "default",
+            onPress: async () => {
+              try {
+                const { errors } = await archiveProject({
+                  variables: {
+                    id: projectId,
+                    input: { status: ProjectStatus.Active },
+                  },
+                });
+                if (errors?.length) throw new Error(errors[0].message);
+                router.back();
+              } catch (err: any) {
+                AppAlert.alert(
+                  t("common.error", { defaultValue: "Error" }),
+                  err?.message ?? t("common.unexpectedError", { defaultValue: "Ha ocurrido un error inesperado." })
+                );
+              }
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     AppAlert.alert(
       t("projectSettings.archiveTitle"),
       t("projectSettings.archiveMsg"),
@@ -205,9 +252,24 @@ export default function ProjectSettingsModal() {
         {
           text: t("projectSettings.archiveBtn"),
           style: "default",
-          onPress: () => {
-            router.back();
-            // TODO: call archive API
+          onPress: async () => {
+            try {
+              const { errors } = await archiveProject({
+                variables: {
+                  id: projectId,
+                  input: { status: ProjectStatus.Archived },
+                },
+              });
+              if (errors?.length) throw new Error(errors[0].message);
+              // Cerrar el modal de settings y volver al listado de proyectos
+              router.dismiss();
+              router.replace('/(tabs)/projects');
+            } catch (err: any) {
+              AppAlert.alert(
+                t("common.error", { defaultValue: "Error" }),
+                err?.message ?? t("common.unexpectedError", { defaultValue: "Ha ocurrido un error inesperado." })
+              );
+            }
           },
         },
       ]
@@ -223,9 +285,21 @@ export default function ProjectSettingsModal() {
         {
           text: t('common.delete'),
           style: 'destructive',
-          onPress: () => {
-            router.back();
-            // TODO: call delete API and navigate back to projects list
+          onPress: async () => {
+            try {
+              const { errors } = await deleteProject({
+                variables: { id: projectId },
+              });
+              if (errors?.length) throw new Error(errors[0].message);
+              // Cerrar el modal de settings y volver al listado de proyectos
+              router.dismiss();
+              router.replace('/(tabs)/projects');
+            } catch (err: any) {
+              AppAlert.alert(
+                t("common.error", { defaultValue: "Error" }),
+                err?.message ?? t("common.unexpectedError", { defaultValue: "Ha ocurrido un error inesperado." })
+              );
+            }
           },
         },
       ]
@@ -233,6 +307,8 @@ export default function ProjectSettingsModal() {
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
+
+  const isArchived = project?.status === ProjectStatus.Archived;
 
   return (
     <KeyboardAvoidingView
@@ -333,12 +409,6 @@ export default function ProjectSettingsModal() {
                 { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
             >
-              {/*<ActionItem
-                icon="contacts"
-                label={t("projectSettings.contacts")}
-                description={t("projectSettings.contactsDesc")}
-                onPress={handleContacts}
-              />*/}
               <ActionItem
                 icon="label"
                 label={t("projectSettings.tags")}
@@ -370,12 +440,21 @@ export default function ProjectSettingsModal() {
               ]}
             >
               <ActionItem
-                icon="archive"
-                label={t("projectSettings.archive")}
-                description={t("projectSettings.archiveDesc")}
+                icon={isArchived ? "unarchive" : "archive"}
+                label={
+                  isArchived
+                    ? t("projectSettings.restore", { defaultValue: "Restaurar proyecto" })
+                    : t("projectSettings.archive")
+                }
+                description={
+                  isArchived
+                    ? t("projectSettings.restoreDesc", { defaultValue: "Volver a activar el proyecto" })
+                    : t("projectSettings.archiveDesc")
+                }
                 onPress={handleArchive}
                 color={colors.warning}
                 showChevron={false}
+                loading={archiving}
               />
               <ActionItem
                 icon="delete-forever"
@@ -384,6 +463,7 @@ export default function ProjectSettingsModal() {
                 onPress={handleDelete}
                 color={colors.error}
                 showChevron={false}
+                loading={deleting}
               />
             </View>
           </ScrollView>

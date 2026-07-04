@@ -138,3 +138,12 @@ mutation UpdateProject($id: ID!, $input: UpdateProjectInput!) {
         endDate
     }
 }
+mutation DeleteProject($id: ID!) {
+    deleteProject(id: $id)
+}
+mutation ArchiveProject($id: ID!, $input: UpdateProjectInput!) {
+    updateProject(id: $id, input: $input) {
+        id
+        status
+    }
+}
