@@ -44,7 +44,6 @@ export default function HomeScreen() {
   const colors = useColors();
   const cardElevation = useCardStyle();
   const cardSmElevation = useCardStyleSm();
-  const [searchQuery, setSearchQuery] = useState('');
   const { isLoading: authLoading } = useAuth();
   const { data, loading, error, refetch } = useQuery(CurrentCompanyDocument, {
     skip: authLoading,
@@ -86,8 +85,8 @@ export default function HomeScreen() {
         name: item.name,
         lastVisit: item.lastVisit,
         projectsCount: String(item.projectsCount),
-        latitude: item.latitude != null ? String(item.latitude) : '',
-        longitude: item.longitude != null ? String(item.longitude) : '',
+        latitude: item.latitude == null ? '' : String(item.latitude),
+        longitude: item.longitude == null ? '' : String(item.longitude),
       },
     });
   };
@@ -391,11 +390,11 @@ export default function HomeScreen() {
             </View>
 
             {/* Search Bar */}
-            <SearchInput
+          {/*  <SearchInput
               placeholder={t('home.searchPlaceholder')}
               value={searchQuery}
               onChangeText={setSearchQuery}
-            />
+            />*/}
           </View>
 
           {/* Content */}

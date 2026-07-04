@@ -51,12 +51,12 @@ export default function HelpSupportModal() {
       sub: 'fieldcam.app/help',
       onPress: () => Linking.openURL('https://fieldcam.app/help'),
     },
-    {
+    /*{
       icon: 'bubble.left.fill' as const,
       label: t('helpSupport.liveChat'),
       sub: t('helpSupport.liveChatSub'),
       onPress: () => Linking.openURL('https://fieldcam.app/chat'),
-    },
+    },*/
   ];
 
   return (

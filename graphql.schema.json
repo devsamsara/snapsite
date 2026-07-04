@@ -779,7 +779,7 @@ export type TogglePinNoteMutation = { __typename?: 'Mutation', togglePinNote: { 
 export type GetMyProjectsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMyProjectsQuery = { __typename?: 'Query', getMyProjects: Array<{ __typename?: 'Project', createdAt: string, description: string, id: string, location: string, name: string, progress: number, startDate: string, thumbnail?: string | null, status: ProjectStatus, members: Array<{ __typename?: 'User', id: string }>, photos: Array<{ __typename?: 'Photo', id: string, createdAt: string, url: string }> }> };
+export type GetMyProjectsQuery = { __typename?: 'Query', getMyProjects: Array<{ __typename?: 'Project', createdAt: string, description: string, id: string, location: string, latitude?: number | null, longitude?: number | null, name: string, progress: number, startDate: string, thumbnail?: string | null, status: ProjectStatus, members: Array<{ __typename?: 'User', id: string }>, photos: Array<{ __typename?: 'Photo', id: string, createdAt: string, url: string }> }> };
 
 export type FindProjectQueryVariables = Exact<{
   findProjectId: Scalars['ID']['input'];

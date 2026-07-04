@@ -18,8 +18,8 @@ import { useColors } from '@/hooks/use-colors';
 import { BlurView } from 'expo-blur';
 import { AppAlert } from '@/components/ui/app-alert';
 import { reverseGeocode } from '@/utils/geo.utils';
-import { useQuery } from '@apollo/client';
 import { GetMyProjectsDocument } from '@/gql/graphql';
+import { useQuery } from '@apollo/client/react';
 
 const { width, height } = Dimensions.get('window');
 

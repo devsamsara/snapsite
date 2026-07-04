@@ -1,36 +1,3 @@
-/**
- * image-editor.tsx — v6  (react-native-svg, sin Skia)
- *
- * Migración: @shopify/react-native-skia → react-native-svg
- * Motivo: Skia + Reanimated + VisionCamera compiten por el mismo recurso JSI,
- * lo que provoca EXC_BAD_ACCESS (SIGSEGV) en producción al inicializar el
- * runtime de Hermes. react-native-svg opera exclusivamente en el hilo de UI
- * mediante el bridge nativo estándar, eliminando el conflicto JSI.
- *
- * Funcionalidades preservadas:
- *   - Dibujo libre (freehand paths en SVG)
- *   - Flechas (línea + cabeza de flecha calculada trigonométricamente)
- *   - Rectángulos y círculos (filled / stroke)
- *   - Anotaciones de medida con etiqueta
- *   - Stickers de texto (drag + pinch con Reanimated/Gesture Handler)
- *   - Recorte interactivo (crop) con 4 esquinas Reanimated
- *   - Rotación de imagen
- *   - Undo / Redo / Clear
- *   - Guardar en galería con react-native-view-shot
- *
- * Layout:
- *   ┌─────────────────────────────┐  ← SafeAreaView top (status bar + notch)
- *   │  [Cancelar]  Anotar  [Guardar] │  ← Stack.Screen header (native nav bar)
- *   ├─────────────────────────────┤
- *   │                             │
- *   │        IMAGE  (contain)     │  ← flex:1, image never overflows
- *   │                             │
- *   ├─────────────────────────────┤
- *   │  [options row if tool active]│  ← color/stroke/size pickers
- *   │  [◉ Draw][T Text][→ Arrow]… │  ← tool strip
- *   └─────────────────────────────┘  ← SafeAreaView bottom (home indicator)
- */
-
 import React, {
   useState,
   useRef,
@@ -49,17 +16,14 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams, Stack, useFocusEffect } from "expo-router";
 import { annotationTextStore, annotationMeasureStore } from "@/lib/modal-stores";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView , useSafeAreaInsets } from "react-native-safe-area-context";
 
 // ─── react-native-svg (reemplaza @shopify/react-native-skia) ──────────────────
 import Svg, {
   Path as SvgPath,
-  Line as SvgLine,
   Rect as SvgRect,
   Ellipse as SvgEllipse,
   G as SvgG,
-  Defs,
-  Marker,
 } from "react-native-svg";
 
 import {
@@ -78,13 +42,12 @@ import * as MediaLibrary from "expo-media-library";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as Haptics from "expo-haptics";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppAlert } from '@/components/ui/app-alert';
 import { ensureFileUri, uploadPhoto } from '@/lib/upload-service';
 import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useApolloClient } from '@apollo/client';
-import { GetMyProjectsDocument } from '@/gql/graphql';
+import { CurrentCompanyDocument, GetMyProjectsDocument } from '@/gql/graphql';
+import { apolloClient } from '@/lib/graphql-client';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -289,8 +252,14 @@ const SvgOverlay = React.memo(function SvgOverlay({
 // ─── Text Sticker — drag + pinch (WhatsApp style) ─────────────────────────────
 
 function TextSticker({
-  ann, onUpdate, active,
-}: { ann: TextAnn; onUpdate: (id: string, p: Partial<TextAnn>) => void; active: boolean }) {
+  ann,
+  onUpdate,
+  active,
+}: Readonly<{
+  ann: TextAnn;
+  onUpdate: (id: string, p: Partial<TextAnn>) => void;
+  active: boolean;
+}>) {
   const tx = useSharedValue(ann.x);
   const ty = useSharedValue(ann.y);
   const sc = useSharedValue(1);
@@ -298,34 +267,57 @@ function TextSticker({
   const bx = useSharedValue(ann.x);
   const by = useSharedValue(ann.y);
 
-  useEffect(() => { tx.value = ann.x; ty.value = ann.y; }, [ann.x, ann.y]);
+  useEffect(() => {
+    tx.value = ann.x;
+    ty.value = ann.y;
+  }, [ann.x, ann.y]);
 
   const pan = Gesture.Pan()
-    .onStart(() => { bx.value = tx.value; by.value = ty.value; })
-    .onUpdate((g) => { tx.value = bx.value + g.translationX; ty.value = by.value + g.translationY; })
-    .onEnd(() => { runOnJS(onUpdate)(ann.id, { x: tx.value, y: ty.value }); });
+    .onStart(() => {
+      bx.value = tx.value;
+      by.value = ty.value;
+    })
+    .onUpdate(g => {
+      tx.value = bx.value + g.translationX;
+      ty.value = by.value + g.translationY;
+    })
+    .onEnd(() => {
+      runOnJS(onUpdate)(ann.id, { x: tx.value, y: ty.value });
+    });
 
   const pinch = Gesture.Pinch()
-    .onStart(() => { sc0.value = sc.value; })
-    .onUpdate((g) => { sc.value = Math.max(0.4, Math.min(6, sc0.value * g.scale)); })
+    .onStart(() => {
+      sc0.value = sc.value;
+    })
+    .onUpdate(g => {
+      sc.value = Math.max(0.4, Math.min(6, sc0.value * g.scale));
+    })
     .onEnd(() => {
       const fs = Math.round(ann.fontSize * sc.value);
       runOnJS(onUpdate)(ann.id, { fontSize: Math.max(8, Math.min(120, fs)) });
-      sc.value = 1; sc0.value = 1;
+      sc.value = 1;
+      sc0.value = 1;
     });
 
   const gesture = active ? Gesture.Simultaneous(pan, pinch) : Gesture.Tap();
 
   const style = useAnimatedStyle(() => ({
-    position: "absolute", left: tx.value, top: ty.value,
-    transform: [{ scale: sc.value }], zIndex: 20,
+    position: 'absolute',
+    left: tx.value,
+    top: ty.value,
+    transform: [{ scale: sc.value }],
+    zIndex: 20,
   }));
 
   return (
     <GestureDetector gesture={gesture}>
       <Animated.View style={style}>
         <View style={S.stickerBg}>
-          <Text style={[S.stickerTxt, { color: ann.color, fontSize: ann.fontSize }]}>{ann.text}</Text>
+          <Text
+            style={[S.stickerTxt, { color: ann.color, fontSize: ann.fontSize }]}
+          >
+            {ann.text}
+          </Text>
         </View>
         {active && (
           <View style={S.stickerDot}>
@@ -396,7 +388,6 @@ export default function ImageEditorScreen() {
   const router     = useRouter();
   const insets     = useSafeAreaInsets();
   const colors     = useColors();
-  const apolloClient = useApolloClient();
   const { imageUri, projectId, photoId, source } = useLocalSearchParams<{
     imageUri: string;
     projectId?: string;
@@ -502,7 +493,11 @@ export default function ImageEditorScreen() {
             tags: [],
           });
           // Refetch projects list so the new photo appears immediately
-          await apolloClient.refetchQueries({ include: [GetMyProjectsDocument] }).catch(() => {});
+          await apolloClient
+            .refetchQueries({
+              include: [GetMyProjectsDocument, CurrentCompanyDocument],
+            })
+            .catch(() => {});
           AppAlert.alert(
             '¡Foto guardada!',
             'La foto se guardó correctamente.',
