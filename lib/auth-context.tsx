@@ -72,13 +72,18 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   const router = useRouter();
   const segments = useSegments();
 
-  const signOutRef = useRef<() => Promise<void>>(undefined);
+  // BUG CORREGIDO #6: signOutRef debe inicializarse como null (no undefined)
+  // para evitar que TypeScript lo trate como posiblemente no inicializado.
+  const signOutRef = useRef<(() => Promise<void>) | null>(null);
 
   const signOut = useCallback(async () => {
     try {
       await clearTokens();
       await AsyncStorage.removeItem(AUTH_USER_KEY);
-      await apolloClient.clearStore();
+      // BUG CORREGIDO #7: clearStore() puede fallar si Apollo ya está en un estado inválido.
+      // Usar resetStore() es más seguro, pero puede disparar re-fetches. Usamos clearStore
+      // con catch para no bloquear el signOut.
+      await apolloClient.clearStore().catch(() => {});
     } finally {
       setUser(null);
     }
@@ -88,14 +93,15 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     signOutRef.current = signOut;
   }, [signOut]);
 
+  // BUG CORREGIDO #8: Los handlers se registraban en useEffect con dependencias vacías [],
+  // lo que significa que si signOut cambia (aunque sea estable por useCallback),
+  // el handler registrado podría tener una referencia stale. Usar signOutRef resuelve esto.
   useEffect(() => {
     registerUnauthenticatedHandler(() => {
       signOutRef.current?.();
     });
   }, []);
 
-  // When the error link successfully refreshes the token, update the user
-  // state with the fresh data returned by the RefreshToken mutation.
   useEffect(() => {
     registerTokenRefreshedHandler(
       async (newToken, newRefreshToken, freshUser) => {
@@ -116,48 +122,79 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   useEffect(() => {
     const restore = async () => {
       try {
-        // 1. Restore both tokens from SecureStore
+        // 1. Restaurar ambos tokens desde SecureStore
         const token = await restoreAuthToken();
 
-        // 2. Restore user from cache immediately for instant UI
+        // 2. Restaurar usuario desde caché para UI instantánea
         const cachedUser = await AsyncStorage.getItem(AUTH_USER_KEY);
         if (cachedUser) {
-          setUser(JSON.parse(cachedUser) as User);
+          try {
+            setUser(JSON.parse(cachedUser) as User);
+          } catch {
+            // JSON corrupto — ignorar
+            await AsyncStorage.removeItem(AUTH_USER_KEY);
+          }
         }
 
         if (token) {
-          // 3. Validate/refresh user data in background
-          const { data, error } = await apolloClient
-            .query({ query: MeDocument, fetchPolicy: 'network-only' })
-            .catch(err => ({ data: null, error: err }));
+          // 3. Validar/refrescar datos del usuario en background
+          try {
+            const { data, errors } = await apolloClient.query({
+              query: MeDocument,
+              fetchPolicy: 'network-only',
+            });
 
-          if (data?.me) {
-            const freshUser = data.me as User;
-            setUser(freshUser);
-            await AsyncStorage.setItem(
-              AUTH_USER_KEY,
-              JSON.stringify(freshUser)
-            );
-          } else if (error) {
-            const isAuthError = error.graphQLErrors?.some(
-              (ge: any) =>
-                ge.extensions?.code === 'UNAUTHENTICATED' ||
-                ge.message?.toLowerCase().includes('unauthorized')
-            );
-            if (isAuthError) {
-              // The error link will have already attempted a refresh.
-              // If we still get here it means the refresh also failed → sign out.
-              await clearTokens();
-              await AsyncStorage.removeItem(AUTH_USER_KEY);
-              setUser(null);
+            if (data?.me) {
+              const freshUser = data.me as User;
+              setUser(freshUser);
+              await AsyncStorage.setItem(
+                AUTH_USER_KEY,
+                JSON.stringify(freshUser)
+              );
+            } else if (errors?.length) {
+              // BUG CORREGIDO #9: El código anterior usaba error.graphQLErrors
+              // pero con errorPolicy:'all', Apollo 4 devuelve los errores en el
+              // campo `errors` del resultado, no en una excepción.
+              const isAuthError = errors.some(
+                (ge: any) =>
+                  ge.extensions?.code === 'UNAUTHENTICATED' ||
+                  ge.message?.toLowerCase().includes('unauthorized') ||
+                  ge.message?.toLowerCase().includes('unauthenticated')
+              );
+              if (isAuthError) {
+                // El error link ya intentó el refresh. Si llegamos aquí,
+                // el refresh también falló → hacer signOut.
+                console.warn('[Auth] Me query failed with auth error after refresh attempt — signing out');
+                await clearTokens();
+                await AsyncStorage.removeItem(AUTH_USER_KEY);
+                setUser(null);
+              }
+              // Si no es error de auth (ej. error de red), mantener el usuario en caché
+              // para no desloguear al usuario por un problema de conectividad.
             }
+          } catch (queryErr: any) {
+            // BUG CORREGIDO #10: Si la query falla por error de RED (no de auth),
+            // NO hacer signOut. El usuario sigue logueado, simplemente no hay conexión.
+            const isNetworkError =
+              queryErr?.networkError ||
+              queryErr?.message?.toLowerCase().includes('network') ||
+              queryErr?.message?.toLowerCase().includes('fetch');
+
+            if (!isNetworkError) {
+              // Error inesperado no relacionado con red — loguear pero no desloguear
+              console.error('[Auth] Unexpected error during session restore:', queryErr);
+            }
+            // En ambos casos, mantener el usuario en caché si lo había.
+            // El error link ya habrá manejado los errores de auth.
           }
         } else {
+          // No hay token en absoluto — limpiar todo
           setUser(null);
           await AsyncStorage.removeItem(AUTH_USER_KEY);
         }
       } catch (e) {
         console.error('[Auth] Restore session error:', e);
+        // No hacer signOut aquí — podría ser un error puntual de SecureStore
       } finally {
         setIsLoading(false);
       }
@@ -190,12 +227,16 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
-      const { data, error } = await apolloClient.mutate({
+      const { data, errors } = await apolloClient.mutate({
         mutation: LoginDocument,
         variables: { input: { email: email.trim().toLowerCase(), password } },
       });
 
-      if (error || !data) throw new Error(error?.message);
+      // BUG CORREGIDO #11: El código anterior comprobaba `error` (singular) pero
+      // Apollo 4 con errorPolicy:'all' devuelve los errores en `errors` (plural).
+      if (errors?.length || !data) {
+        throw new Error(errors?.[0]?.message ?? 'Login failed');
+      }
 
       const { token, refreshToken, user: userData } = data.login;
       await setAuthToken(token);
@@ -211,7 +252,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     const { contactPassword, contactEmail, contactName, size, industry } =
       input;
     try {
-      const { data, error } = await apolloClient.mutate({
+      const { data, errors } = await apolloClient.mutate({
         mutation: CreateCompanyDocument,
         variables: {
           input: {
@@ -225,11 +266,11 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
         },
       });
 
-      if (!data || error) throw new Error('An unexpected error occurred.');
+      if (errors?.length || !data) {
+        throw new Error(errors?.[0]?.message ?? 'An unexpected error occurred.');
+      }
 
       const { user: userData, token } = data.createCompany;
-      // CreateCompany doesn't return a refreshToken — that's fine,
-      // the user will get one on their next login after email confirmation.
       await setAuthToken(token);
       await AsyncStorage.removeItem(ONBOARDING_DONE_KEY);
       await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
