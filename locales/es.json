@@ -291,7 +291,11 @@
     "deleteNoteTitle": "Eliminar nota",
     "deleteNoteConfirm": "¿Estás seguro?",
     "addPhotoTitle": "Adicionar foto",
-    "addPhotoMessage": "Elige cómo quieres agregar tu nueva foto"
+    "addPhotoMessage": "Elige cómo quieres agregar tu nueva foto",
+    "archivedBanner": "Proyecto archivado",
+    "archivedBannerDesc": "Este proyecto está en modo lectura. Desarchívalo para editarlo.",
+    "archivedAction": "Desarchivar",
+    "archivedBlockedMsg": "Este proyecto está archivado y no se puede modificar."
   },
   "team": {
     "title": "Equipo",

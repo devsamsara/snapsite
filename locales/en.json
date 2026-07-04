@@ -291,7 +291,11 @@
     "deleteNoteTitle": "Delete note",
     "deleteNoteConfirm": "Are you sure?",
     "addPhotoTitle": "Add photo",
-    "addPhotoMessage": "Chose how to add your new photo"
+    "addPhotoMessage": "Chose how to add your new photo",
+    "archivedBanner": "Archived project",
+    "archivedBannerDesc": "This project is in read-only mode. Unarchive it to make changes.",
+    "archivedAction": "Unarchive",
+    "archivedBlockedMsg": "This project is archived and cannot be modified."
   },
   "team": {
     "title": "Team",

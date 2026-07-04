@@ -368,7 +368,19 @@ export default function ProjectSettingsModal() {
               </View>
             </View>
 
-            {/* ── Actions section ── */}
+            {/* ── Archived notice ── */}
+            {isArchived && (
+              <View style={[S.archivedNotice, { backgroundColor: '#7C5C1E20', borderColor: '#B8860B' }]}>
+                <MaterialIcons name="lock" size={16} color="#B8860B" style={{ marginRight: 8 }} />
+                <Text style={[S.archivedNoticeText, { color: '#B8860B' }]}>
+                  {t('project.archivedBannerDesc')}
+                </Text>
+              </View>
+            )}
+
+            {/* ── Actions section — oculto si archivado ── */}
+            {!isArchived && (
+              <>
             <Text style={[S.sectionTitle, { color: colors.muted }]}>
               {t("projectSettings.sectionActions")}
             </Text>
@@ -428,6 +440,8 @@ export default function ProjectSettingsModal() {
                 onPress={handleCollaborators}
               />
             </View>
+              </>
+            )}
 
             {/* ── Danger zone ── */}
             <Text style={[S.sectionTitle, { color: colors.muted }]}>
@@ -483,6 +497,23 @@ const S = StyleSheet.create({
   },
 
   flex1: { flex: 1 },
+
+  archivedNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  archivedNoticeText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
   locationRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
 
   infoBox: {
