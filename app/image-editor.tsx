@@ -83,6 +83,8 @@ import { AppAlert } from '@/components/ui/app-alert';
 import { ensureFileUri, uploadPhoto } from '@/lib/upload-service';
 import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useApolloClient } from '@apollo/client';
+import { GetMyProjectsDocument } from '@/gql/graphql';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -394,6 +396,7 @@ export default function ImageEditorScreen() {
   const router     = useRouter();
   const insets     = useSafeAreaInsets();
   const colors     = useColors();
+  const apolloClient = useApolloClient();
   const { imageUri, projectId, photoId, source } = useLocalSearchParams<{
     imageUri: string;
     projectId?: string;
@@ -498,6 +501,8 @@ export default function ImageEditorScreen() {
             caption: `Picture_${Date.now()}.jpg`,
             tags: [],
           });
+          // Refetch projects list so the new photo appears immediately
+          await apolloClient.refetchQueries({ include: [GetMyProjectsDocument] }).catch(() => {});
           AppAlert.alert(
             '¡Foto guardada!',
             'La foto se guardó correctamente.',
