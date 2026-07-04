@@ -27,6 +27,7 @@ import {
   GetMyProjectsDocument,
   Photo,
   Project,
+  ProjectStatus,
   TimelineEvent,
   TogglePinNoteDocument,
 } from '@/gql/graphql';
@@ -116,6 +117,16 @@ export default function ProjectDetailScreen() {
     loadProyect();
   }, [data, project]);
 
+  const isArchived = project?.status === ProjectStatus.Archived;
+
+  const handleArchivedBlock = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    AppAlert.alert(
+      t('project.archivedBanner'),
+      t('project.archivedBlockedMsg')
+    );
+  };
+
   const switchTab = (tab: TabId) => {
     Haptics.selectionAsync();
     setActiveTab(tab);
@@ -193,6 +204,7 @@ export default function ProjectDetailScreen() {
 
   const handleAddPhoto = () => {
     if (!project) return;
+    if (isArchived) { handleArchivedBlock(); return; }
     Haptics.selectionAsync();
     AppAlert.alert(
       t('project.addPhotoTitle'),
@@ -213,6 +225,7 @@ export default function ProjectDetailScreen() {
 
   const handleChangeThumbnail = useCallback(() => {
     if (!project) return;
+    if (isArchived) { handleArchivedBlock(); return; }
     Haptics.selectionAsync();
 
     AppAlert.alert(t('project.addPhotoTitle'), t('project.addPhotoMessage'), [
@@ -229,6 +242,7 @@ export default function ProjectDetailScreen() {
   }, [project, t, pickAndUploadPhoto]);
 
   const openInviteModal = useCallback(() => {
+    if (isArchived) { handleArchivedBlock(); return; }
     router.push({
       pathname: '/modals/invite-member',
       params: { projectId: project!.id },
@@ -236,6 +250,7 @@ export default function ProjectDetailScreen() {
   }, [project, router]);
 
   const openNoteModal = useCallback(() => {
+    if (isArchived) { handleArchivedBlock(); return; }
     router.push({
       pathname: '/modals/add-note',
       params: { projectId: project!.id },
@@ -254,6 +269,7 @@ export default function ProjectDetailScreen() {
             tags: JSON.stringify(photo.tags),
             photoId: photo.id,
             projectId: project.id,
+            projectStatus: project.status,
           },
         });
     },
@@ -261,6 +277,7 @@ export default function ProjectDetailScreen() {
   );
 
   const togglePin = async (noteId: string) => {
+    if (isArchived) { handleArchivedBlock(); return; }
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     await togglePinNote({
@@ -272,6 +289,7 @@ export default function ProjectDetailScreen() {
   };
 
   const deleteNote = (noteId: string) => {
+    if (isArchived) { handleArchivedBlock(); return; }
     AppAlert.alert(
       t('project.deleteNoteTitle'),
       t('project.deleteNoteConfirm'),
@@ -379,6 +397,7 @@ export default function ProjectDetailScreen() {
                   {relativeDate(Number.parseInt(photo.createdAt))}
                 </Text>
               </View>
+              {!isArchived && (
               <TouchableOpacity
                 onPress={() =>
                   router.push({
@@ -395,6 +414,7 @@ export default function ProjectDetailScreen() {
               >
                 <MaterialIcons name="edit" size={14} color="#FFF" />
               </TouchableOpacity>
+              )}
             </TouchableOpacity>
           ))}
         </View>
@@ -422,7 +442,7 @@ export default function ProjectDetailScreen() {
                 {t('project.noPhotosHint')}
               </Text>
             )}
-            {!filterTag && (
+            {!filterTag && !isArchived && (
               <TouchableOpacity
                 onPress={handleAddPhoto}
                 style={[S.emptyBtn, { backgroundColor: colors.primary }]}
@@ -604,12 +624,14 @@ export default function ProjectDetailScreen() {
         ))}
       </ScrollView>
 
-      <TouchableOpacity
-        onPress={openInviteModal}
-        style={[S.fab, { backgroundColor: colors.primary }]}
-      >
-        <MaterialIcons name="person-add" size={26} color="#FFF" />
-      </TouchableOpacity>
+        {!isArchived && (
+        <TouchableOpacity
+          onPress={openInviteModal}
+          style={[S.fab, { backgroundColor: colors.primary }]}
+        >
+          <MaterialIcons name="person-add" size={26} color="#FFF" />
+        </TouchableOpacity>
+        )}
     </View>
   );
   const sortedNotes = [...(project?.notes ?? [])].sort(
@@ -639,6 +661,7 @@ export default function ProjectDetailScreen() {
               <Text style={[S.emptyHint, { color: colors.muted }]}>
                 {t('project.noNotesHint')}
               </Text>
+              {!isArchived && (
               <TouchableOpacity
                 onPress={() => openNoteModal()}
                 style={[S.emptyBtn, { backgroundColor: colors.primary }]}
@@ -646,6 +669,7 @@ export default function ProjectDetailScreen() {
                 <MaterialIcons name="add" size={16} color="#FFF" />
                 <Text style={S.emptyBtnText}>{t('project.addFirstNote')}</Text>
               </TouchableOpacity>
+              )}
             </View>
           )}
           {sortedNotes.map(note => (
@@ -726,12 +750,14 @@ export default function ProjectDetailScreen() {
           ))}
         </ScrollView>
 
+        {!isArchived && (
         <TouchableOpacity
           onPress={() => openNoteModal()}
           style={[S.fab, { backgroundColor: colors.primary }]}
         >
           <MaterialIcons name="add" size={28} color="#FFF" />
         </TouchableOpacity>
+        )}
       </View>
     );
 
@@ -790,6 +816,7 @@ export default function ProjectDetailScreen() {
             </View>
             <View style={S.headerActions}>
               {/* Cámara del header → vuelve a abrir el modal de añadir foto */}
+              {!isArchived && (
               <TouchableOpacity
                 onPress={handleAddPhoto}
                 style={[
@@ -803,6 +830,7 @@ export default function ProjectDetailScreen() {
                   color={colors.primary}
                 />
               </TouchableOpacity>
+              )}
               <TouchableOpacity
                 onPress={() =>
                   router.push({
@@ -838,6 +866,23 @@ export default function ProjectDetailScreen() {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* ── Archived banner ── */}
+          {isArchived && (
+            <View style={[S.archivedBanner, { backgroundColor: '#7C5C1E20', borderColor: '#B8860B' }]}>
+              <View style={[S.archivedBannerIcon, { backgroundColor: '#B8860B22' }]}>
+                <MaterialIcons name="archive" size={20} color="#B8860B" />
+              </View>
+              <View style={S.archivedBannerText}>
+                <Text style={[S.archivedBannerTitle, { color: '#B8860B' }]}>
+                  {t('project.archivedBanner')}
+                </Text>
+                <Text style={[S.archivedBannerDesc, { color: '#B8860B99' }]}>
+                  {t('project.archivedBannerDesc')}
+                </Text>
+              </View>
+            </View>
+          )}
 
           {/* ── Hero card ── */}
           <View style={S.heroWrapper}>
@@ -881,7 +926,8 @@ export default function ProjectDetailScreen() {
                   </View>
                 )}
 
-                {/* Botón flotante — abre el action sheet (cámara/galería) y sube vía uploadPhoto */}
+                {/* Botón flotante — solo visible si el proyecto NO está archivado */}
+                {!isArchived && (
                 <TouchableOpacity
                   onPress={handleChangeThumbnail}
                   disabled={isUploadingPhoto}
@@ -893,6 +939,7 @@ export default function ProjectDetailScreen() {
                     <MaterialIcons name="add-a-photo" size={16} color="#FFF" />
                   )}
                 </TouchableOpacity>
+                )}
               </View>
 
               <View style={S.heroBody}>
@@ -1278,6 +1325,30 @@ const S = StyleSheet.create({
   noteDate: { fontSize: 11 },
   noteAction: { padding: 6 },
   noteContent: { fontSize: 14, lineHeight: 20 },
+
+  // Archived banner
+  archivedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 2,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 12,
+  },
+  archivedBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  archivedBannerText: { flex: 1 },
+  archivedBannerTitle: { fontSize: 13, fontWeight: '700' },
+  archivedBannerDesc: { fontSize: 12, marginTop: 2, lineHeight: 16 },
 
   // FAB
   fab: {

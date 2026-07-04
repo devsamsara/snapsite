@@ -66,7 +66,17 @@ export default function PhotoLightboxModal() {
     tags: string;
     photoId: string;
     projectId: string;
+    projectStatus?: string;
   }>();
+
+  const isArchived = params.projectStatus === 'archived';
+
+  const handleArchivedBlock = () => {
+    AppAlert.alert(
+      t('project.archivedBanner'),
+      t('project.archivedBlockedMsg')
+    );
+  };
 
   const [deletePhoto] = useMutation(DeletePhotoDocument, {
     refetchQueries: [
@@ -87,6 +97,7 @@ export default function PhotoLightboxModal() {
   })();
 
   const handleAnnotate = () => {
+    if (isArchived) { handleArchivedBlock(); return; }
     router.replace({
       pathname: '/image-editor',
       params: {
@@ -100,6 +111,7 @@ export default function PhotoLightboxModal() {
 
   const handleDelete = () => {
     if (!params.photoId) return;
+    if (isArchived) { handleArchivedBlock(); return; }
     AppAlert.alert(
       t('lightbox.deleteTitle', 'Eliminar foto'),
       t(
@@ -153,8 +165,8 @@ export default function PhotoLightboxModal() {
             {params.caption}
           </Text>
 
-          {/* Botón eliminar en la esquina derecha del header */}
-          {params.photoId ? (
+          {/* Botón eliminar en la esquina derecha del header — oculto si archivado */}
+          {params.photoId && !isArchived ? (
             <TouchableOpacity
               onPress={handleDelete}
               style={S.deleteBtn}
@@ -250,13 +262,23 @@ export default function PhotoLightboxModal() {
           },
         ]}
       >
-        <Button
-          title={t('lightbox.annotate')}
-          onPress={handleAnnotate}
-          variant="primary"
-          size="lg"
-          leftIcon="edit"
-        />
+        {isArchived ? (
+          <Button
+            title={t('project.archivedAction')}
+            onPress={() => router.back()}
+            variant="secondary"
+            size="lg"
+            leftIcon="archive"
+          />
+        ) : (
+          <Button
+            title={t('lightbox.annotate')}
+            onPress={handleAnnotate}
+            variant="primary"
+            size="lg"
+            leftIcon="edit"
+          />
+        )}
       </View>
     </View>
   );
