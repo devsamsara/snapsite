@@ -819,6 +819,45 @@
     "documentationDesc": "Full guides and tutorials",
     "changelog": "What's new",
     "changelogDesc": "Latest updates and improvements",
-    "close": "Close"
+    "close": "Close",
+    "faqs": [
+      {
+        "q": "How do I create a new project?",
+        "a": "Go to the Projects screen and tap the '+' button. Fill in the project name, location and dates. You can add team members and a description before saving."
+      },
+      {
+        "q": "How do I add photos to a project?",
+        "a": "Open the project and tap the camera button. You can take a photo directly or select one from your gallery. Photos are automatically uploaded to the cloud and linked to the project."
+      },
+      {
+        "q": "How do I invite members to my team?",
+        "a": "From a project screen, tap the people icon to open the members panel. Enter the collaborator's email and select their role. They will receive an email invitation."
+      },
+      {
+        "q": "Can I edit or annotate photos?",
+        "a": "Yes. When you open a photo in the editor, you can add text annotations, measurements and markers. Changes are saved alongside the original photo in the project."
+      },
+      {
+        "q": "How do I change the project cover image?",
+        "a": "On the project screen, tap the camera button that appears over the cover image. You can take a new photo or choose one from your gallery."
+      },
+      {
+        "q": "How do I update project progress?",
+        "a": "On the project screen, tap the progress bar or percentage. Slide the control to adjust the completion percentage and confirm."
+      },
+      {
+        "q": "Are my photos and data secure?",
+        "a": "Yes. All photos and data are stored encrypted in the cloud with access restricted to your company members. They are never shared with third parties."
+      },
+      {
+        "q": "What if I forgot my password?",
+        "a": "On the login screen, tap 'Forgot your password?' and enter your email. You will receive a reset link within a few minutes."
+      }
+    ],
+    "faqTitle": "Frequently Asked Questions",
+    "emailSupport": "Email Support",
+    "helpCenter": "Help Center",
+    "liveChat": "Live Chat",
+    "liveChatSub": "Available 9am to 6pm"
   }
 }

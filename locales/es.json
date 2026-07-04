@@ -819,6 +819,45 @@
     "documentationDesc": "Guías y tutoriales completos",
     "changelog": "Novedades",
     "changelogDesc": "Últimas actualizaciones y mejoras",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "faqs": [
+      {
+        "q": "¿Cómo creo un nuevo proyecto?",
+        "a": "Ve a la pantalla de Proyectos y pulsa el botón '+'. Rellena el nombre, ubicación y fechas del proyecto. Puedes añadir miembros del equipo y una descripción antes de guardar."
+      },
+      {
+        "q": "¿Cómo añado fotos a un proyecto?",
+        "a": "Abre el proyecto y pulsa el botón de cámara. Puedes tomar una foto directamente o seleccionarla de tu galería. Las fotos se suben automáticamente a la nube y quedan asociadas al proyecto."
+      },
+      {
+        "q": "¿Cómo invito a miembros a mi equipo?",
+        "a": "Desde la pantalla de un proyecto, pulsa el icono de personas para abrir el panel de miembros. Introduce el email del colaborador y selecciona su rol. Recibirá una invitación por correo."
+      },
+      {
+        "q": "¿Puedo editar o anotar las fotos?",
+        "a": "Sí. Al abrir una foto en el editor, puedes añadir anotaciones de texto, mediciones y marcadores. Los cambios se guardan junto a la foto original en el proyecto."
+      },
+      {
+        "q": "¿Cómo cambio la imagen de portada del proyecto?",
+        "a": "En la pantalla del proyecto, pulsa el botón de cámara que aparece sobre la imagen de portada. Puedes tomar una foto nueva o elegir una de la galería."
+      },
+      {
+        "q": "¿Cómo actualizo el progreso de un proyecto?",
+        "a": "En la pantalla del proyecto, pulsa sobre la barra de progreso o el porcentaje. Desliza el control para ajustar el porcentaje completado y confirma."
+      },
+      {
+        "q": "¿Mis fotos y datos están seguros?",
+        "a": "Sí. Todas las fotos y datos se almacenan cifrados en la nube con acceso restringido a los miembros de tu empresa. Nunca se comparten con terceros."
+      },
+      {
+        "q": "¿Qué hago si olvidé mi contraseña?",
+        "a": "En la pantalla de inicio de sesión, pulsa '¿Olvidaste tu contraseña?' e introduce tu email. Recibirás un enlace para restablecerla en pocos minutos."
+      }
+    ],
+    "faqTitle": "Preguntas frecuentes",
+    "emailSupport": "Soporte por email",
+    "helpCenter": "Centro de ayuda",
+    "liveChat": "Chat en vivo",
+    "liveChatSub": "Disponible de 9h a 18h"
   }
 }
