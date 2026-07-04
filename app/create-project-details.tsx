@@ -58,8 +58,8 @@ export default function CreateProjectDetailsScreen() {
     try {
       const newProject = {
         ...data,
-        latitude:  parseFloat(params.latitude),
-        longitude: parseFloat(params.longitude),
+        latitude: Number.parseFloat(params.latitude),
+        longitude: Number.parseFloat(params.longitude),
       };
 
       const res = await createProject({

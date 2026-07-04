@@ -1,19 +1,3 @@
-/**
- * modals/project-settings.tsx
- *
- * Stack.Screen modal — Menú de configuración del proyecto.
- *
- * Secciones:
- *   - Info del proyecto (nombre + ubicación)
- *   - Acciones rápidas: Editar, Compartir, Exportar PDF
- *   - Gestión: Contactos, Etiquetas, Descripción, Colaboradores
- *   - Zona de peligro: Archivar, Eliminar
- *
- * Cada opción navega a su propio modal funcional.
- *
- * Params recibidos:
- *   - projectId: string
- */
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -223,14 +207,12 @@ export default function ProjectSettingsModal() {
             style: "default",
             onPress: async () => {
               try {
-                const { errors } = await archiveProject({
+                const { error: errors } = await archiveProject({
                   variables: {
                     id: projectId,
                     input: { status: ProjectStatus.Active },
                   },
                 });
-                if (errors?.length) throw new Error(errors[0].message);
-                router.back();
               } catch (err: any) {
                 AppAlert.alert(
                   t("common.error", { defaultValue: "Error" }),
@@ -254,13 +236,13 @@ export default function ProjectSettingsModal() {
           style: "default",
           onPress: async () => {
             try {
-              const { errors } = await archiveProject({
+              const { error: errors } = await archiveProject({
                 variables: {
                   id: projectId,
                   input: { status: ProjectStatus.Archived },
                 },
               });
-              if (errors?.length) throw new Error(errors[0].message);
+              if (errors) throw new Error(errors.message);
               // Cerrar el modal de settings y volver al listado de proyectos
               router.dismiss();
               router.replace('/(tabs)/projects');
@@ -287,10 +269,10 @@ export default function ProjectSettingsModal() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const { errors } = await deleteProject({
+              const { error: errors } = await deleteProject({
                 variables: { id: projectId },
               });
-              if (errors?.length) throw new Error(errors[0].message);
+              if (errors) throw new Error(errors?.message);
               // Cerrar el modal de settings y volver al listado de proyectos
               router.dismiss();
               router.replace('/(tabs)/projects');

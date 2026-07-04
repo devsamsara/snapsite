@@ -839,6 +839,21 @@ export type UpdateProjectMutationVariables = Exact<{
 
 export type UpdateProjectMutation = { __typename?: 'Mutation', updateProject: { __typename?: 'Project', id: string, name: string, location: string, latitude?: number | null, longitude?: number | null, status: ProjectStatus, startDate: string, endDate?: string | null } };
 
+export type DeleteProjectMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteProjectMutation = { __typename?: 'Mutation', deleteProject: boolean };
+
+export type ArchiveProjectMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateProjectInput;
+}>;
+
+
+export type ArchiveProjectMutation = { __typename?: 'Mutation', updateProject: { __typename?: 'Project', id: string, status: ProjectStatus } };
+
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 

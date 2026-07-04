@@ -31,13 +31,19 @@ function getInitials(name: string): string {
 }
 
 /** Marcador de proyecto: thumbnail o iniciales */
-function ProjectMarker({ name, thumbnail, isNearby, primaryColor, successColor }: {
+function ProjectMarker({
+  name,
+  thumbnail,
+  isNearby,
+  primaryColor,
+  successColor,
+}: Readonly<{
   name: string;
   thumbnail?: string | null;
   isNearby: boolean;
   primaryColor: string;
   successColor: string;
-}) {
+}>) {
   const borderColor = isNearby ? successColor : primaryColor;
   return (
     <View style={mk.container}>

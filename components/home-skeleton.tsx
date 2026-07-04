@@ -36,7 +36,13 @@ interface ShimmerBoxProps {
   shimmerValue: Animated.SharedValue<number>;
 }
 
-function ShimmerBox({ width, height, borderRadius = 8, style, shimmerValue }: ShimmerBoxProps) {
+function ShimmerBox({
+  width,
+  height,
+  borderRadius = 8,
+  style,
+  shimmerValue,
+}: Readonly<ShimmerBoxProps>) {
   const colors = useColors();
   const animStyle = useAnimatedStyle(() => ({ opacity: shimmerValue.value }));
 

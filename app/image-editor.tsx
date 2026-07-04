@@ -519,13 +519,13 @@ export default function ImageEditorScreen() {
               {
                 text: 'OK',
                 onPress: () => {
-                  router.dismissAll()
-                  router.push('/projects');
-                 /* if (source === 'project' && resolvedProjectId) {
-                    router.replace({ pathname: `/project/${resolvedProjectId}` as any });
+                  router.dismiss(5);
+                  if (source === 'project' && resolvedProjectId) {
                   } else {
-                    router.back();
-                  }*/
+                    router.replace({
+                      pathname: `/project/${resolvedProjectId}` as any,
+                    });
+                  }
                 },
               },
             ]
