@@ -261,6 +261,14 @@ export default function RootLayout() {
                   }}
                 />
                 <Stack.Screen
+                  name="project/[id]"
+                  options={{
+                    headerShown: false,
+                    animation: 'slide_from_right',
+                    gestureEnabled: false,
+                  }}
+                />
+                <Stack.Screen
                   name="location-map"
                   options={{
                     headerShown: false,
