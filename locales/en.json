@@ -289,7 +289,9 @@
     "addFirstNote": "Add note",
     "pinned": "PINNED",
     "deleteNoteTitle": "Delete note",
-    "deleteNoteConfirm": "Are you sure?"
+    "deleteNoteConfirm": "Are you sure?",
+    "addPhotoTitle": "Add photo",
+    "addPhotoMessage": "Chose how to add your new photo"
   },
   "team": {
     "title": "Team",

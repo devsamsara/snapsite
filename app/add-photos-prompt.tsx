@@ -60,6 +60,7 @@ export default function AddPhotosPromptScreen() {
   // router.replace elimina add-photos-prompt del stack y navega directamente.
   const handleViewDetails = () => {
     if (!projectId) return;
+    router.dismissAll();
     router.replace({
       pathname: `/project/${projectId}` as any,
       params: { source: 'home' },

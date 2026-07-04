@@ -289,7 +289,9 @@
     "addFirstNote": "Añadir nota",
     "pinned": "FIJADA",
     "deleteNoteTitle": "Eliminar nota",
-    "deleteNoteConfirm": "¿Estás seguro?"
+    "deleteNoteConfirm": "¿Estás seguro?",
+    "addPhotoTitle": "Adicionar foto",
+    "addPhotoMessage": "Elige cómo quieres agregar tu nueva foto"
   },
   "team": {
     "title": "Equipo",

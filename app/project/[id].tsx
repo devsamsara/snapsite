@@ -81,11 +81,8 @@ export default function ProjectDetailScreen() {
   const { id, source } = useLocalSearchParams<{ id: string; source?: string }>();
   // Volver: pop nativo si hay historial, replace al listado si no lo hay
   const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(tabs)/projects');
-    }
+    router.dismissAll()
+    router.push('/(tabs)/projects');
   };
   const [removeNote] = useMutation(DeleteNoteDocument);
   const [togglePinNote] = useMutation(TogglePinNoteDocument);
