@@ -518,7 +518,13 @@ export default function ImageEditorScreen() {
             [
               {
                 text: 'OK',
-                onPress: () => router.back(),
+                onPress: () => {
+                  if (source === 'project' && resolvedProjectId) {
+                    router.replace({ pathname: `/project/${resolvedProjectId}` as any });
+                  } else {
+                    router.back();
+                  }
+                },
               },
             ]
           );
@@ -557,9 +563,8 @@ export default function ImageEditorScreen() {
     } finally {
       setProc(false);
     }
-  }, [projectId, photoId, router, cT, cL, cR, cB]);
-  // Al cancelar: si viene desde add-photos-prompt, ir al inicio.
-  // En cualquier otro caso, router.back() cierra el editor limpiamente.
+  }, [projectId, photoId, source, router, cT, cL, cR, cB]);
+  // Al cancelar: volver al origen correcto según source.
   const handleCancel = useCallback(() => {
     if (source === 'add-photos-prompt') {
       router.replace('/(tabs)');

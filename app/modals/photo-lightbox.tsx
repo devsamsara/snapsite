@@ -93,6 +93,7 @@ export default function PhotoLightboxModal() {
         imageUri: params.url,
         projectId: params.projectId,
         photoId: params.photoId,
+        source: 'project',
       },
     });
   };

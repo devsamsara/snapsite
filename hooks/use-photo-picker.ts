@@ -22,6 +22,11 @@ interface UsePhotoPickerOptions {
   /** ID del proyecto al que se asociará la foto. Puede ser vacío si se seleccionará después. */
   projectId?: string;
   /**
+   * Source que se pasa al editor para que sepa a dónde volver al cancelar/guardar.
+   * Ej: 'add-photos-prompt' para volver al inicio, 'project' para volver al proyecto.
+   */
+  source?: string;
+  /**
    * Callback ejecutado justo antes de navegar al editor.
    * Útil para cerrar modales o limpiar el stack.
    * Si devuelve false, se cancela la navegación.
@@ -29,7 +34,7 @@ interface UsePhotoPickerOptions {
   onBeforeNavigate?: () => void | boolean | Promise<void | boolean>;
 }
 
-export function usePhotoPicker({ projectId, onBeforeNavigate }: UsePhotoPickerOptions = {}) {
+export function usePhotoPicker({ projectId, source, onBeforeNavigate }: UsePhotoPickerOptions = {}) {
   const router = useRouter();
 
   const goToEditor = useCallback(
@@ -43,10 +48,11 @@ export function usePhotoPicker({ projectId, onBeforeNavigate }: UsePhotoPickerOp
         params: {
           imageUri,
           projectId: projectId ?? '',
+          ...(source ? { source } : {}),
         },
       });
     },
-    [router, projectId, onBeforeNavigate]
+    [router, projectId, source, onBeforeNavigate]
   );
 
   const openCamera = useCallback(async () => {

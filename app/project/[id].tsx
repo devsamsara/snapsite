@@ -79,9 +79,13 @@ export default function ProjectDetailScreen() {
   const cardElevation = useCardStyle();
   const cardSmElevation = useCardStyleSm();
   const { id, source } = useLocalSearchParams<{ id: string; source?: string }>();
-  // Volver siempre al listado de proyectos limpiando el historial
+  // Volver: pop nativo si hay historial, replace al listado si no lo hay
   const handleBack = () => {
-    router.replace('/(tabs)/projects');
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/projects');
+    }
   };
   const [removeNote] = useMutation(DeleteNoteDocument);
   const [togglePinNote] = useMutation(TogglePinNoteDocument);
@@ -191,7 +195,7 @@ export default function ProjectDetailScreen() {
 
   // ── Selector de foto unificado (usePhotoPicker) ────────────────────────────
   const { openCamera: _openCameraForPhoto, openGallery: _openGalleryForPhoto } =
-    usePhotoPicker({ projectId: project?.id ?? '' });
+    usePhotoPicker({ projectId: project?.id ?? '', source: 'project' });
 
   // Header — action sheet para elegir cámara o galería
   const handleAddPhoto = () => {
@@ -392,6 +396,7 @@ export default function ProjectDetailScreen() {
                       imageUri: photo.url,
                       projectId: project!.id,
                       photoId: photo.id,
+                      source: 'project',
                     },
                   })
                 }
