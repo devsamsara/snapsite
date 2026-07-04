@@ -60,9 +60,9 @@ export default function AddPhotoModal() {
 
   const [permission, requestPermission] = useCameraPermissions();
 
-  // ── Navegar al editor reemplazando este modal ────────────────────────────────
+  // ── Navegar al editor ──────────────────────────────────────────────────────
   const goToEditor = (imageUri: string) => {
-    router.replace({
+    router.push({
       pathname: '/image-editor',
       params: {
         imageUri,
