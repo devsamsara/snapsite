@@ -426,18 +426,22 @@ export default function HomeScreen() {
                           >
                             {t(item.nameKey)}
                           </Text>
-                          <View
-                            style={[
-                              S.statusIconBg,
-                              { backgroundColor: colors.primary + '20' },
-                            ]}
-                          >
-                            <IconSymbol
-                              name="plus"
-                              size={14}
-                              color={colors.primary}
-                            />
-                          </View>
+                          {(() => {
+                            const k = (item.nameKey ?? '').toLowerCase();
+                            const cfg: { icon: any; color: string } =
+                              k.includes('active')    ? { icon: 'bolt.fill',                    color: '#007AFF' } :
+                              k.includes('ongoing')   ? { icon: 'arrow.2.circlepath',           color: '#34C759' } :
+                              k.includes('paused')    ? { icon: 'pause.circle.fill',            color: '#FF9500' } :
+                              k.includes('completed') ? { icon: 'checkmark.seal.fill',          color: '#30D158' } :
+                              k.includes('archived')  ? { icon: 'archivebox.fill',              color: '#8E8E93' } :
+                              k.includes('cancel')    ? { icon: 'xmark.circle.fill',            color: '#FF3B30' } :
+                                                        { icon: 'folder.fill',                  color: colors.primary };
+                            return (
+                              <View style={[S.statusIconBg, { backgroundColor: cfg.color + '22' }]}>
+                                <IconSymbol name={cfg.icon} size={16} color={cfg.color} />
+                              </View>
+                            );
+                          })()}
                         </View>
                         <Text
                           style={[
