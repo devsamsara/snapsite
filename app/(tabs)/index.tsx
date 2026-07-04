@@ -378,7 +378,7 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-              <TouchableOpacity
+              {/*<TouchableOpacity
                 onPress={()=>handleProfileTap()}
                 style={[S.settingsBtn, { backgroundColor: colors.surface }]}
               >
@@ -387,7 +387,7 @@ export default function HomeScreen() {
                   size={20}
                   color={colors.foreground}
                 />
-              </TouchableOpacity>
+              </TouchableOpacity>*/}
             </View>
 
             {/* Search Bar */}

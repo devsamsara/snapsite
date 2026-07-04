@@ -25,7 +25,6 @@ import {
   ForgotPasswordDocument,
   LoginDocument,
   MeDocument,
-  RegisterDocument,
   User,
 } from '@/gql/graphql';
 
@@ -67,13 +66,13 @@ function extractMessage(error: any): string {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const segments = useSegments();
 
-  const signOutRef = useRef<() => Promise<void>>();
+  const signOutRef = useRef<() => Promise<void>>(undefined);
 
   const signOut = useCallback(async () => {
     try {
@@ -98,15 +97,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // When the error link successfully refreshes the token, update the user
   // state with the fresh data returned by the RefreshToken mutation.
   useEffect(() => {
-    registerTokenRefreshedHandler(async (newToken, newRefreshToken, freshUser) => {
-      try {
-        const userToStore = freshUser as unknown as User;
-        setUser(userToStore);
-        await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userToStore));
-      } catch (e) {
-        console.error('[Auth] Failed to update user after token refresh:', e);
+    registerTokenRefreshedHandler(
+      async (newToken, newRefreshToken, freshUser) => {
+        try {
+          const userToStore = freshUser as unknown as User;
+          setUser(userToStore);
+          await AsyncStorage.setItem(
+            AUTH_USER_KEY,
+            JSON.stringify(userToStore)
+          );
+        } catch (e) {
+          console.error('[Auth] Failed to update user after token refresh:', e);
+        }
       }
-    });
+    );
   }, []);
 
   useEffect(() => {
@@ -125,12 +129,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // 3. Validate/refresh user data in background
           const { data, error } = await apolloClient
             .query({ query: MeDocument, fetchPolicy: 'network-only' })
-            .catch((err) => ({ data: null, error: err }));
+            .catch(err => ({ data: null, error: err }));
 
           if (data?.me) {
             const freshUser = data.me as User;
             setUser(freshUser);
-            await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(freshUser));
+            await AsyncStorage.setItem(
+              AUTH_USER_KEY,
+              JSON.stringify(freshUser)
+            );
           } else if (error) {
             const isAuthError = error.graphQLErrors?.some(
               (ge: any) =>
@@ -161,8 +168,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup   = segments[0] === 'auth';
-    const inOnboarding  = segments[0] === 'onboarding';
+    const inAuthGroup = segments[0] === 'auth';
+    const inOnboarding = segments[0] === 'onboarding';
     const inPublicModal =
       segments[0] === 'modals' &&
       (segments[1] === 'terms-modal' || segments[1] === 'privacy-modal');
@@ -171,7 +178,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user && !isPublic) {
       router.replace('/auth/login');
     } else if (user && inAuthGroup) {
-      AsyncStorage.getItem(ONBOARDING_DONE_KEY).then((done) => {
+      AsyncStorage.getItem(ONBOARDING_DONE_KEY).then(done => {
         if (done === 'true') {
           router.replace('/(tabs)');
         } else {
@@ -201,7 +208,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUp = useCallback(async (input: CreateCompanyInput) => {
-    const { contactPassword, contactEmail, contactName, size, industry } = input;
+    const { contactPassword, contactEmail, contactName, size, industry } =
+      input;
     try {
       const { data, error } = await apolloClient.mutate({
         mutation: CreateCompanyDocument,
@@ -255,7 +263,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateUser = useCallback(async (patch: Partial<User>) => {
-    setUser((prev) => {
+    setUser(prev => {
       if (!prev) return null;
       const updated = { ...prev, ...patch };
       AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(updated));

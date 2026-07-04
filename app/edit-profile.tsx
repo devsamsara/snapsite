@@ -84,7 +84,7 @@ export default function EditProfileScreen() {
     // Paso 1: obtener presigned URL del backend
     const { data: urlData } = await apolloClient.query({
       query: GetUploadUrlDocument,
-      variables: { projectId: '', fileName, mimeType },
+      variables: { fileName, mimeType },
       fetchPolicy: 'no-cache',
     });
     if (!urlData?.getUploadUrl?.uploadUrl) throw new Error('No upload URL');
@@ -183,7 +183,7 @@ export default function EditProfileScreen() {
     if (!user?.id) return;
 
     try {
-      const { data: response, errors } = await apolloClient.mutate({
+      const { data: response, error: errors } = await apolloClient.mutate({
         mutation: UpdateUserDocument,
         variables: {
           updateUserId: user.id,
@@ -197,7 +197,7 @@ export default function EditProfileScreen() {
         },
       });
 
-      if (errors?.length) throw new Error(errors[0].message);
+      if (errors) throw new Error(errors.message);
 
       if (response?.updateUser) {
         updateUser(response.updateUser as User);

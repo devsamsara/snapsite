@@ -519,7 +519,7 @@ export type QueryGetProjectsArgs = {
 export type QueryGetUploadUrlArgs = {
   fileName: Scalars['String']['input'];
   mimeType: Scalars['String']['input'];
-  projectId: Scalars['ID']['input'];
+  projectId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 
@@ -779,7 +779,7 @@ export type TogglePinNoteMutation = { __typename?: 'Mutation', togglePinNote: { 
 export type GetMyProjectsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMyProjectsQuery = { __typename?: 'Query', getMyProjects: Array<{ __typename?: 'Project', createdAt: string, description: string, id: string, location: string, name: string, progress: number, startDate: string, thumbnail?: string | null, status: ProjectStatus, photos: Array<{ __typename?: 'Photo', id: string, createdAt: string, url: string }> }> };
+export type GetMyProjectsQuery = { __typename?: 'Query', getMyProjects: Array<{ __typename?: 'Project', createdAt: string, description: string, id: string, location: string, name: string, progress: number, startDate: string, thumbnail?: string | null, status: ProjectStatus, members: Array<{ __typename?: 'User', id: string }>, photos: Array<{ __typename?: 'Photo', id: string, createdAt: string, url: string }> }> };
 
 export type FindProjectQueryVariables = Exact<{
   findProjectId: Scalars['ID']['input'];
@@ -813,7 +813,7 @@ export type DeletePhotoMutationVariables = Exact<{
 export type DeletePhotoMutation = { __typename?: 'Mutation', deletePhoto: boolean };
 
 export type GetUploadUrlQueryVariables = Exact<{
-  projectId: Scalars['ID']['input'];
+  projectId?: InputMaybe<Scalars['ID']['input']>;
   fileName: Scalars['String']['input'];
   mimeType: Scalars['String']['input'];
 }>;
@@ -843,6 +843,14 @@ export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type MeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, email: string, name: string, lastName?: string | null, nickname?: string | null, avatarUrl?: string | null, role: UserRole, status: UserStatus, company?: { __typename?: 'Company', id: string, name: string } | null } };
+
+export type UpdateUserPictureMutationVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  picture: Scalars['String']['input'];
+}>;
+
+
+export type UpdateUserPictureMutation = { __typename?: 'Mutation', updateUserPicture: { __typename?: 'User', id: string, avatarUrl?: string | null } };
 
 export type DeleteUserMutationVariables = Exact<{
   id: Scalars['ID']['input'];
