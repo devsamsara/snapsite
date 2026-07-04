@@ -32,7 +32,7 @@ import {
 } from '@/gql/graphql';
 import { useRelativeDate } from '@/hooks/use-relative-date';
 import moment from 'moment';
-import { uploadPhoto } from '@/lib/upload-service'; // ajusta el path si tu service está en otra carpeta
+import { uploadPhoto } from '@/lib/upload-service';
 import { usePhotoPicker } from '@/hooks/use-photo-picker';
 
 const { width: W } = Dimensions.get('window');
@@ -81,11 +81,7 @@ export default function ProjectDetailScreen() {
   const { id, source } = useLocalSearchParams<{ id: string; source?: string }>();
   // Volver: pop nativo si hay historial, replace al listado si no lo hay
   const handleBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(tabs)/projects');
-    }
+    router.replace('/(tabs)/projects');
   };
   const [removeNote] = useMutation(DeleteNoteDocument);
   const [togglePinNote] = useMutation(TogglePinNoteDocument);
@@ -123,8 +119,6 @@ export default function ProjectDetailScreen() {
     Haptics.selectionAsync();
     setActiveTab(tab);
   };
-
-  // ─── Photo picker + upload (usado para cambiar el thumbnail del proyecto) ──
 
   const pickAndUploadPhoto = useCallback(
     async (source: 'camera' | 'library') => {
@@ -193,11 +187,9 @@ export default function ProjectDetailScreen() {
     [project, t]
   );
 
-  // ── Selector de foto unificado (usePhotoPicker) ────────────────────────────
   const { openCamera: _openCameraForPhoto, openGallery: _openGalleryForPhoto } =
     usePhotoPicker({ projectId: project?.id ?? '', source: 'project' });
 
-  // Header — action sheet para elegir cámara o galería
   const handleAddPhoto = () => {
     if (!project) return;
     Haptics.selectionAsync();
@@ -218,7 +210,6 @@ export default function ProjectDetailScreen() {
     );
   };
 
-  // Hero — nueva función: action sheet para cambiar el thumbnail del proyecto
   const handleChangeThumbnail = useCallback(() => {
     if (!project) return;
     Haptics.selectionAsync();
@@ -359,7 +350,6 @@ export default function ProjectDetailScreen() {
         ))}
       </ScrollView>
 
-      {/* Grid — skeleton mientras carga o mientras las imágenes no han terminado de renderizar */}
       {queryLoading && <GalleryPhotoSkeleton count={photos?.length || 6} />}
       <View
         style={[S.gridWrapper, { display: queryLoading ? 'none' : 'flex' }]}

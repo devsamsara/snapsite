@@ -24,6 +24,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@apollo/client/react';
 import {
   CreateNoteDocument,
+  CurrentCompanyDocument,
   FindProjectDocument,
   GetMyProjectsDocument,
 } from '@/gql/graphql';
@@ -57,7 +58,11 @@ export default function AddNoteModal() {
           pinned: false,
         },
       },
-      refetchQueries: [FindProjectDocument, GetMyProjectsDocument],
+      refetchQueries: [
+        FindProjectDocument,
+        GetMyProjectsDocument,
+        CurrentCompanyDocument,
+      ],
     });
     router.back();
   };

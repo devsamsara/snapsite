@@ -11,11 +11,10 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ScreenContainer } from '@/components/screen-container';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { SearchInput } from '@/components/ui/search-input';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle, useCardStyleSm } from '@/hooks/use-card-style';
 import { FabOptions } from '@/components/fab-options';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -51,7 +50,7 @@ export default function HomeScreen() {
 
   const enterOpacity = useSharedValue(0);
   const enterScale = useSharedValue(1.06);
-  const relativeDate = useRelativeDate()
+  const relativeDate = useRelativeDate();
 
   useEffect(() => {
     enterOpacity.value = withTiming(1, {
@@ -73,10 +72,11 @@ export default function HomeScreen() {
 
   const handleProfileTap = () => router.push('/settings');
   const handleProjectTap = (projectId: string) =>
-    router.push({ pathname: `/project/${projectId}`, params: { source: 'home' } });
-  const handleImageTap = (_imageId: string) => {
-
-  };
+    router.push({
+      pathname: `/project/${projectId}` as any,
+      params: { source: 'home' },
+    });
+  const handleImageTap = (_imageId: string) => {};
   const handleLocationTap = (item: RecentLocation) => {
     router.push({
       pathname: '/location-map',
@@ -136,7 +136,9 @@ export default function HomeScreen() {
             >
               {item.name}
             </Text>
-            <Text className="text-sm text-muted mt-1">{item.location}</Text>
+            <Text className="text-sm text-muted mt-1">
+              {item.location.toString().substring(0, 30)}
+            </Text>
           </View>
           <View
             style={[
@@ -232,7 +234,6 @@ export default function HomeScreen() {
   );
 
   const renderImageCard = ({ item }: { item: RecentImage }) => {
-
     return (
       <TouchableOpacity
         onPress={() => handleImageTap(item.id)}
@@ -390,7 +391,7 @@ export default function HomeScreen() {
             </View>
 
             {/* Search Bar */}
-          {/*  <SearchInput
+            {/*  <SearchInput
               placeholder={t('home.searchPlaceholder')}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -429,16 +430,49 @@ export default function HomeScreen() {
                           {(() => {
                             const k = (item.nameKey ?? '').toLowerCase();
                             const cfg: { icon: any; color: string } =
-                              k.includes('active')    ? { icon: 'bolt.fill',                    color: '#007AFF' } :
-                              k.includes('ongoing')   ? { icon: 'arrow.2.circlepath',           color: '#34C759' } :
-                              k.includes('paused')    ? { icon: 'pause.circle.fill',            color: '#FF9500' } :
-                              k.includes('completed') ? { icon: 'checkmark.seal.fill',          color: '#30D158' } :
-                              k.includes('archived')  ? { icon: 'archivebox.fill',              color: '#8E8E93' } :
-                              k.includes('cancel')    ? { icon: 'xmark.circle.fill',            color: '#FF3B30' } :
-                                                        { icon: 'folder.fill',                  color: colors.primary };
+                              k.includes('active')
+                                ? { icon: 'bolt.fill', color: '#007AFF' }
+                                : k.includes('ongoing')
+                                  ? {
+                                      icon: 'arrow.2.circlepath',
+                                      color: '#34C759',
+                                    }
+                                  : k.includes('paused')
+                                    ? {
+                                        icon: 'pause.circle.fill',
+                                        color: '#FF9500',
+                                      }
+                                    : k.includes('completed')
+                                      ? {
+                                          icon: 'checkmark.seal.fill',
+                                          color: '#30D158',
+                                        }
+                                      : k.includes('archived')
+                                        ? {
+                                            icon: 'archivebox.fill',
+                                            color: '#8E8E93',
+                                          }
+                                        : k.includes('cancel')
+                                          ? {
+                                              icon: 'xmark.circle.fill',
+                                              color: '#FF3B30',
+                                            }
+                                          : {
+                                              icon: 'folder.fill',
+                                              color: colors.primary,
+                                            };
                             return (
-                              <View style={[S.statusIconBg, { backgroundColor: cfg.color + '22' }]}>
-                                <IconSymbol name={cfg.icon} size={16} color={cfg.color} />
+                              <View
+                                style={[
+                                  S.statusIconBg,
+                                  { backgroundColor: cfg.color + '22' },
+                                ]}
+                              >
+                                <IconSymbol
+                                  name={cfg.icon}
+                                  size={16}
+                                  color={cfg.color}
+                                />
                               </View>
                             );
                           })()}
