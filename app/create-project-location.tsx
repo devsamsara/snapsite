@@ -7,10 +7,9 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
-  Alert,
   Platform
 } from 'react-native';
-import MapView, { Marker, Circle } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -19,133 +18,154 @@ import { useColors } from '@/hooks/use-colors';
 import { BlurView } from 'expo-blur';
 import { AppAlert } from '@/components/ui/app-alert';
 import { reverseGeocode } from '@/utils/geo.utils';
+import { useQuery } from '@apollo/client';
+import { GetMyProjectsDocument } from '@/gql/graphql';
 
 const { width, height } = Dimensions.get('window');
 
-// Coordenadas base solicitadas
-const BASE_LAT = 37.25807244460694;
-const BASE_LNG = -6.943597178738148;
+/** Devuelve las iniciales (máx 2 letras) del nombre de un proyecto */
+function getInitials(name: string): string {
+  const words = name.trim().split(/\s+/);
+  if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
 
-// Mock data for nearby projects around the requested coordinates
-const NEARBY_PROJECTS = [
-  { id: '1', title: 'Reforma Huelva Centro', latitude: BASE_LAT + 0.001, longitude: BASE_LNG + 0.001, image: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=100&h=100&fit=crop' },
-  { id: '2', title: 'Instalación Solar El Conquero', latitude: BASE_LAT - 0.0015, longitude: BASE_LNG + 0.0005, image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=100&h=100&fit=crop' },
-  { id: '3', title: 'Mantenimiento Fachada', latitude: BASE_LAT + 0.0005, longitude: BASE_LNG - 0.002, image: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=100&h=100&fit=crop' },
-  { id: '4', title: 'Obra Nueva Av. Andalucía', latitude: BASE_LAT - 0.002, longitude: BASE_LNG - 0.001, image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=100&h=100&fit=crop' },
-];
+/** Marcador de proyecto: thumbnail o iniciales */
+function ProjectMarker({ name, thumbnail, isNearby, primaryColor, successColor }: {
+  name: string;
+  thumbnail?: string | null;
+  isNearby: boolean;
+  primaryColor: string;
+  successColor: string;
+}) {
+  const borderColor = isNearby ? successColor : primaryColor;
+  return (
+    <View style={mk.container}>
+      <View style={[mk.bubble, { borderColor }]}>
+        {thumbnail ? (
+          <Image source={{ uri: thumbnail }} style={mk.image} />
+        ) : (
+          <View style={[mk.initials, { backgroundColor: primaryColor + '22' }]}>
+            <Text style={[mk.initialsText, { color: primaryColor }]}>
+              {getInitials(name)}
+            </Text>
+          </View>
+        )}
+      </View>
+      <View style={[mk.arrow, { borderTopColor: borderColor }]} />
+    </View>
+  );
+}
+
+const mk = StyleSheet.create({
+  container: { alignItems: 'center' },
+  bubble: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: '#FFF', borderWidth: 2, padding: 2, overflow: 'hidden',
+  },
+  image: { width: '100%', height: '100%', borderRadius: 20 },
+  initials: { width: '100%', height: '100%', borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  initialsText: { fontSize: 14, fontWeight: '800' },
+  arrow: {
+    width: 0, height: 0, backgroundColor: 'transparent', borderStyle: 'solid',
+    borderLeftWidth: 6, borderRightWidth: 6, borderTopWidth: 8,
+    borderLeftColor: 'transparent', borderRightColor: 'transparent', marginTop: -1,
+  },
+});
 
 export default function CreateProjectLocationScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
   const mapRef = useRef<MapView>(null);
-  
-  const [location, setLocation] = useState<Location.LocationObject | null>(null);
+
   const [nearbyProject, setNearbyProject] = useState<any>(null);
-  const [region, setRegion] = useState({
-    latitude: BASE_LAT,
-    longitude: BASE_LNG,
-    latitudeDelta: 0.005,
-    longitudeDelta: 0.005,
-  });
-  const [selectedLocation, setSelectedLocation] = useState({
-    latitude: BASE_LAT,
-    longitude: BASE_LNG,
-  });
+  const [region, setRegion] = useState({ latitude: 0, longitude: 0, latitudeDelta: 0.005, longitudeDelta: 0.005 });
+  const [selectedLocation, setSelectedLocation] = useState({ latitude: 0, longitude: 0 });
   const [address, setAddress] = useState<string>('');
   const [city, setCity] = useState<string>('');
   const [postalCode, setPostalCode] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
-  // Función Haversine para calcular distancia en km
+  // Proyectos reales del usuario
+  const { data: projectsData } = useQuery(GetMyProjectsDocument, { fetchPolicy: 'cache-and-network' });
+  const projectsWithCoords = (projectsData?.getMyProjects ?? []).filter(
+    (p) => p.latitude != null && p.longitude != null
+  );
+
+  // Haversine distance in km
   const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   };
 
-  const checkNearbyProject = (lat: number, lng: number) => {
-    let found = null;
-    NEARBY_PROJECTS.forEach(proj => {
-        const distance = getDistance(lat, lng, proj.latitude, proj.longitude);
-        if (distance < 0.05) { // 50 metros
-            found = proj;
-        }
-    });
+  const checkNearbyProject = (lat: number, lng: number, projects = projectsWithCoords) => {
+    let found: any = null;
+    for (const proj of projects) {
+      if (getDistance(lat, lng, proj.latitude!, proj.longitude!) < 0.05) {
+        found = proj;
+        break;
+      }
+    }
     setNearbyProject(found);
+  };
+
+  const checkAddr = (addr: any) => {
+    if (addr) {
+      const fullAddress = `${addr.street || ''} ${addr.streetNumber || ''}, ${addr.postalCode || ''}`;
+      setAddress(fullAddress.trim() || t('createProject.unknownLocation'));
+      setCity(addr.city || addr.subregion || '');
+      setPostalCode(addr.postalCode || '');
+    }
   };
 
   useEffect(() => {
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         AppAlert.alert(t('createProject.permissionDenied'), t('createProject.permissionMessage'));
         setLoading(false);
         return;
       }
 
-      // Monitorizar ubicación en tiempo real (Geofencing)
       await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.High, distanceInterval: 5 },
-        (loc) => {
-          setLocation(loc);
-          checkNearbyProject(loc.coords.latitude, loc.coords.longitude);
-        }
+        (loc) => checkNearbyProject(loc.coords.latitude, loc.coords.longitude)
       );
 
-      let currentLocation = await Location.getCurrentPositionAsync({});
-      const newRegion = {
-        latitude: currentLocation.coords.latitude,
-        longitude: currentLocation.coords.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      };
-
-      setRegion(newRegion);
-      setSelectedLocation({
-        latitude: currentLocation.coords.latitude,
-        longitude: currentLocation.coords.longitude,
-      });
+      const currentLocation = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = currentLocation.coords;
+      setRegion({ latitude, longitude, latitudeDelta: 0.005, longitudeDelta: 0.005 });
+      setSelectedLocation({ latitude, longitude });
       setLoading(false);
-      const addr = await reverseGeocode(currentLocation.coords.latitude, currentLocation.coords.longitude);
-      checkAddr(addr)
-
+      const addr = await reverseGeocode(latitude, longitude);
+      checkAddr(addr);
+      checkNearbyProject(latitude, longitude);
     })();
   }, []);
 
-const checkAddr = (addr: any) => {
-  if (addr) {
-    const fullAddress = `${addr.street || ''} ${addr.streetNumber || ''}, ${addr.postalCode || ''}`;
-    setAddress(fullAddress.trim() || t('createProject.unknownLocation'));
-    setCity(addr.city || addr.subregion || '');
-    setPostalCode(addr.postalCode || '');
-  }
-}
+  // Re-check when projects load from API
+  useEffect(() => {
+    if (selectedLocation.latitude !== 0 && projectsWithCoords.length > 0) {
+      checkNearbyProject(selectedLocation.latitude, selectedLocation.longitude, projectsWithCoords);
+    }
+  }, [projectsData]);
 
   const onRegionChangeComplete = async (newRegion: any) => {
-    setSelectedLocation({
-      latitude: newRegion.latitude,
-      longitude: newRegion.longitude,
-    });
+    setSelectedLocation({ latitude: newRegion.latitude, longitude: newRegion.longitude });
     const addr = await reverseGeocode(newRegion.latitude, newRegion.longitude);
-    checkAddr(addr)
-    // También chequear proyectos cercanos al mover el picker manual
+    checkAddr(addr);
     checkNearbyProject(newRegion.latitude, newRegion.longitude);
   };
 
   const handleConfirmLocation = () => {
     router.push({
       pathname: '/create-project-details',
-      params: {
-        latitude: selectedLocation.latitude,
-        longitude: selectedLocation.longitude,
-        address: address,
-        city: city,
-        postalCode: postalCode,
-      }
+      params: { latitude: selectedLocation.latitude, longitude: selectedLocation.longitude, address, city, postalCode },
     });
   };
 
@@ -168,18 +188,19 @@ const checkAddr = (addr: any) => {
         showsUserLocation
         showsMyLocationButton={false}
       >
-        {NEARBY_PROJECTS.map((project) => (
+        {projectsWithCoords.map((project) => (
           <Marker
             key={project.id}
-            coordinate={{ latitude: project.latitude, longitude: project.longitude }}
-            title={project.title}
+            coordinate={{ latitude: project.latitude!, longitude: project.longitude! }}
+            title={project.name}
           >
-            <View style={styles.markerContainer}>
-              <View style={[styles.markerBubble, { borderColor: nearbyProject?.id === project.id ? colors.success : colors.primary, borderWidth: 2 }]}>
-                <Image source={{ uri: project.image }} style={styles.markerImage} />
-              </View>
-              <View style={[styles.markerArrow, { borderTopColor: nearbyProject?.id === project.id ? colors.success : colors.primary }]} />
-            </View>
+            <ProjectMarker
+              name={project.name}
+              thumbnail={project.thumbnail}
+              isNearby={nearbyProject?.id === project.id}
+              primaryColor={colors.primary}
+              successColor={colors.success}
+            />
           </Marker>
         ))}
       </MapView>
@@ -202,16 +223,17 @@ const checkAddr = (addr: any) => {
         </BlurView>
       </View>
 
-      {/* Bottom Info Card (CompanyCam Style) */}
+      {/* Bottom Info Card */}
       <View style={styles.bottomCardContainer}>
         <BlurView intensity={95} tint="dark" style={styles.infoCard}>
           <View style={styles.statusRow}>
             <View style={[styles.statusIndicator, { backgroundColor: nearbyProject ? colors.success : colors.muted }]} />
             <Text style={styles.statusLabel}>
-              {nearbyProject ? t('createProject.nearProject', { name: nearbyProject.title }) : t('createProject.searchingNearby')}
+              {nearbyProject
+                ? t('createProject.nearProject', { name: nearbyProject.name })
+                : t('createProject.searchingNearby')}
             </Text>
           </View>
-
           <View style={styles.addressRow}>
             <View style={[styles.iconCircle, { backgroundColor: colors.primary + '30' }]}>
               <IconSymbol name="location.fill" size={20} color={colors.primary} />
@@ -221,15 +243,10 @@ const checkAddr = (addr: any) => {
               <Text style={styles.addressValue} numberOfLines={1}>{address}</Text>
             </View>
           </View>
-
           <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.secondaryButton]}
-              onPress={handleConfirmLocation}
-            >
+            <TouchableOpacity style={[styles.actionButton, styles.secondaryButton]} onPress={handleConfirmLocation}>
               <Text style={styles.secondaryButtonText}>{t('createProject.newProject')}</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: colors.primary }, !nearbyProject && styles.btnDisabled]}
               onPress={() => {
@@ -248,13 +265,13 @@ const checkAddr = (addr: any) => {
       </View>
 
       {/* My Location Button */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.myLocationButton}
         onPress={async () => {
-          let currentLocation = await Location.getCurrentPositionAsync({});
+          const loc = await Location.getCurrentPositionAsync({});
           mapRef.current?.animateToRegion({
-            latitude: currentLocation.coords.latitude,
-            longitude: currentLocation.coords.longitude,
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude,
             latitudeDelta: 0.005,
             longitudeDelta: 0.005,
           });
@@ -271,150 +288,39 @@ const checkAddr = (addr: any) => {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { justifyContent: 'center', alignItems: 'center' },
-  map: { width: width, height: height },
-  header: {
-    position: 'absolute',
-    top: 5,
-    width: '100%',
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
-  },
+  map: { width, height },
+  header: { position: 'absolute', top: 5, width: '100%', paddingTop: Platform.OS === 'ios' ? 50 : 20 },
   headerBlur: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginHorizontal: 16,
-    borderRadius: 20,
-    overflow: 'hidden',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12, marginHorizontal: 16, borderRadius: 20, overflow: 'hidden',
   },
   headerTitle: { color: '#FFF', fontSize: 17, fontWeight: '700' },
   backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   centerMarkerContainer: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginTop: -40,
-    marginLeft: -20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: 'absolute', top: '50%', left: '50%',
+    marginTop: -40, marginLeft: -20, alignItems: 'center', justifyContent: 'center',
   },
-  pickerMarker: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  markerContainer: { alignItems: 'center', justifyContent: 'center' },
-  markerBubble: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFF',
-    borderWidth: 2,
-    padding: 2,
-    overflow: 'hidden',
-  },
-  markerImage: { width: '100%', height: '100%', borderRadius: 20 },
-  markerArrow: {
-    width: 0,
-    height: 0,
-    backgroundColor: 'transparent',
-    borderStyle: 'solid',
-    borderLeftWidth: 6,
-    borderRightWidth: 6,
-    borderTopWidth: 8,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    marginTop: -1,
-  },
-  bottomCardContainer: {
-    position: 'absolute',
-    bottom: 30,
-    width: '100%',
-    paddingHorizontal: 16,
-  },
-  infoCard: {
-    borderRadius: 28,
-    padding: 20,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
+  pickerMarker: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4 },
+  bottomCardContainer: { position: 'absolute', bottom: 30, width: '100%', paddingHorizontal: 16 },
+  infoCard: { borderRadius: 28, padding: 20, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
+    flexDirection: 'row', alignItems: 'center', marginBottom: 16,
+    backgroundColor: 'rgba(255,255,255,0.05)', paddingVertical: 8, paddingHorizontal: 12,
+    borderRadius: 12, alignSelf: 'flex-start',
   },
-  statusIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  statusLabel: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  addressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  statusIndicator: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
+  statusLabel: { color: '#FFF', fontSize: 13, fontWeight: '700' },
+  addressRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
+  iconCircle: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
   addressTextContainer: { flex: 1, marginLeft: 12 },
-  addressLabel: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 11,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
+  addressLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
   addressValue: { color: '#FFF', fontSize: 15, fontWeight: '600', marginTop: 2 },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionButton: {
-    flex: 1,
-    height: 54,
-    borderRadius: 16,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  secondaryButton: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
+  buttonRow: { flexDirection: 'row', gap: 12 },
+  actionButton: { flex: 1, height: 54, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
+  secondaryButton: { backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
   secondaryButtonText: { color: '#FFF', fontSize: 14, fontWeight: '800' },
   confirmButtonText: { color: '#FFF', fontSize: 14, fontWeight: '800' },
   btnDisabled: { opacity: 0.5 },
-  myLocationButton: {
-    position: 'absolute',
-    bottom: 260,
-    right: 20,
-    borderRadius: 25,
-    overflow: 'hidden',
-  },
-  myLocationBlur: {
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  myLocationButton: { position: 'absolute', bottom: 260, right: 20, borderRadius: 25, overflow: 'hidden' },
+  myLocationBlur: { width: 50, height: 50, justifyContent: 'center', alignItems: 'center' },
 });

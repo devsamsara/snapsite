@@ -4,6 +4,8 @@ query GetMyProjects {
         description
         id
         location
+        latitude
+        longitude
         name
         progress
         startDate
