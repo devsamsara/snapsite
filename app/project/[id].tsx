@@ -77,7 +77,19 @@ export default function ProjectDetailScreen() {
   const colors = useColors();
   const cardElevation = useCardStyle();
   const cardSmElevation = useCardStyleSm();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, source } = useLocalSearchParams<{ id: string; source?: string }>();
+  // Navegar al origen correcto al pulsar Volver
+  const handleBack = () => {
+    if (source === 'home') {
+      router.replace('/(tabs)');
+    } else if (source === 'projects') {
+      router.replace('/(tabs)/projects');
+    } else if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/projects');
+    }
+  };
   const [removeNote] = useMutation(DeleteNoteDocument);
   const [togglePinNote] = useMutation(TogglePinNoteDocument);
   const { data, loading: queryLoading } = useQuery(FindProjectDocument, {
@@ -743,7 +755,7 @@ export default function ProjectDetailScreen() {
               },
             ]}
           >
-            <TouchableOpacity onPress={() => router.back()} style={S.backBtn}>
+            <TouchableOpacity onPress={handleBack} style={S.backBtn}>
               <MaterialIcons
                 name="arrow-back"
                 size={22}

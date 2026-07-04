@@ -48,7 +48,8 @@ export default function AddPhotosPromptScreen() {
   // ── Ir directamente a los detalles del proyecto ──────────────────────────────
   const handleViewDetails = () => {
     if (!projectId) return;
-    router.replace(`/project/${projectId}`);
+    // Pasar source=home para que el botón Volver en project/[id] vaya al inicio
+    router.replace({ pathname: `/project/${projectId}`, params: { source: 'home' } });
   };
 
   return (

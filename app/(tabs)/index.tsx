@@ -73,7 +73,7 @@ export default function HomeScreen() {
 
   const handleProfileTap = () => router.push('/settings');
   const handleProjectTap = (projectId: string) =>
-    router.push(`/project/${projectId}`);
+    router.push({ pathname: `/project/${projectId}`, params: { source: 'home' } });
   const handleImageTap = (_imageId: string) => {
 
   };

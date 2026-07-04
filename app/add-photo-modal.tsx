@@ -48,7 +48,8 @@ export default function AddPhotoModal() {
   const insets = useSafeAreaInsets();
   const { projectId, mode } = useLocalSearchParams<{ projectId?: string; mode?: string }>();
 
-  const [view, setView] = useState<ModalView>('options');
+  // Si viene con mode=camera, arrancar directamente en la cámara sin pasar por 'options'
+  const [view, setView] = useState<ModalView>(mode === 'camera' ? 'camera' : 'options');
 
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [flash, setFlash] = useState<FlashMode>('off');
@@ -177,21 +178,14 @@ export default function AddPhotoModal() {
     }
   };
 
-  // Si viene con mode=camera o mode=gallery, ejecutar directamente.
-  // Esperamos a que permission no sea null (ya cargado) para evitar
-  // que handleCameraOption llame a requestPermission innecesariamente.
-  const autoTriggered = React.useRef(false);
+  // Si viene con mode=gallery, abrir el picker directamente al montar
+  const galleryTriggered = React.useRef(false);
   useEffect(() => {
-    if (!mode) return;
-    if (permission === null) return; // aún cargando
-    if (autoTriggered.current) return;
-    autoTriggered.current = true;
-    if (mode === 'camera') {
-      handleCameraOption();
-    } else if (mode === 'gallery') {
-      handleGalleryOption();
-    }
-  }, [mode, permission]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (mode !== 'gallery') return;
+    if (galleryTriggered.current) return;
+    galleryTriggered.current = true;
+    handleGalleryOption();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleFacing = () => {
     setFacing(c => (c === 'back' ? 'front' : 'back'));
