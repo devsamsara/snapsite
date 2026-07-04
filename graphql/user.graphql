@@ -97,3 +97,15 @@ mutation UpdateUser($updateUserId: ID!, $input: UpdateUserInput!) {
         updatedAt
     }
 }
+
+mutation RegisterPushToken($userId: ID!, $token: String!, $platform: String!) {
+    registerPushToken(userId: $userId, token: $token, platform: $platform) {
+        id
+    }
+}
+
+mutation UpdateNotificationPreferences($userId: ID!, $enabled: Boolean!) {
+    updateNotificationPreferences(userId: $userId, enabled: $enabled) {
+        id
+    }
+}

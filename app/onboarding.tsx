@@ -15,6 +15,7 @@ import {
   Dimensions,
   StyleSheet,
   StatusBar,
+  Platform,
 } from "react-native";
 import Animated, {
   useSharedValue,
@@ -38,6 +39,13 @@ import { useColors } from "@/hooks/use-colors";
 import { PaginationDots } from "@/components/onboarding/pagination-dots";
 import { OnboardingSlide, type SlideData } from "@/components/onboarding/onboarding-slide";
 import { ONBOARDING_DONE_KEY } from "@/lib/auth-context";
+import {
+  requestPushPermission,
+  NOTIFICATIONS_ASKED_KEY,
+} from "@/hooks/use-notifications";
+import { apolloClient } from "@/lib/graphql-client";
+import { RegisterPushTokenDocument } from "@/gql/graphql";
+import { useAuth } from "@/lib/auth-context";
 
 const { width: W } = Dimensions.get("window");
 
@@ -48,6 +56,7 @@ export default function OnboardingScreen() {
   const colors   = useColors();
   const router   = useRouter();
   const insets   = useSafeAreaInsets();
+  const { user } = useAuth();
 
   const SLIDES: SlideData[] = [
     {
@@ -138,8 +147,28 @@ export default function OnboardingScreen() {
     try {
       await AsyncStorage.setItem(ONBOARDING_DONE_KEY, "true");
     } catch { /* ignore */ }
+
+    // Solicitar permiso de notificaciones solo si no se ha preguntado antes
+    try {
+      const alreadyAsked = await AsyncStorage.getItem(NOTIFICATIONS_ASKED_KEY);
+      if (!alreadyAsked) {
+        const token = await requestPushPermission();
+        // Si el usuario concedió el permiso y tenemos su ID, registramos el token en el backend
+        if (token && user?.id) {
+          await apolloClient.mutate({
+            mutation: RegisterPushTokenDocument,
+            variables: {
+              userId: user.id,
+              token,
+              platform: Platform.OS,
+            },
+          }).catch(() => { /* el backend puede no tener la mutación aún */ });
+        }
+      }
+    } catch { /* no bloquear la navegación si falla */ }
+
     router.replace("/(tabs)");
-  }, [router]);
+  }, [router, user?.id]);
 
   const triggerExitTransition = useCallback(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

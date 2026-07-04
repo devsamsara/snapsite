@@ -4,6 +4,7 @@
  */
 import {
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -23,15 +24,20 @@ import { useThemeContext } from '@/lib/theme-provider';
 import {
   scheduleTestNotification,
   useNotifications,
+  requestPushPermission,
+  getPermissionStatus,
+  setNotificationsDisabledByUser,
+  isNotificationsDisabledByUser,
 } from '@/hooks/use-notifications';
 import { useCardStyle } from '@/hooks/use-card-style';
 import { useAuth } from '@/lib/auth-context';
-import * as Notifications from 'expo-notifications';
 import { AppAlert } from '@/components/ui/app-alert';
 import {
   DeleteCompanyDocument,
   DeleteUserDocument,
   GetMyProjectsDocument,
+  RegisterPushTokenDocument,
+  UpdateNotificationPreferencesDocument,
   UserRole,
 } from '@/gql/graphql';
 import { apolloClient } from '@/lib/graphql-client';
@@ -70,7 +76,7 @@ export default function SettingsScreen() {
   const colorScheme = useColorScheme();
   const { setColorScheme, cardStyle, setCardStyle } = useThemeContext();
   const cardElevation = useCardStyle();
-  const { expoPushToken } = useNotifications();
+  const { permissionStatus } = useNotifications();
   const { signOut, user, isLoading: authLoading } = useAuth();
   const nav = useNavLock();
 
@@ -78,7 +84,8 @@ export default function SettingsScreen() {
   const userName = user?.name ?? user?.nickname ?? null;
   const companyName = user?.company?.name ?? null;
 
-  const [pushNotifications, setPushNotifications] = useState(true);
+  // El toggle refleja: permiso del sistema concedido Y no desactivado manualmente por el usuario
+  const [pushNotifications, setPushNotifications] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(colorScheme === 'dark');
   const [currentLang, setCurrentLang] = useState<'es' | 'en'>(
@@ -88,6 +95,20 @@ export default function SettingsScreen() {
   const { data:userProjects, loading } = useQuery(GetMyProjectsDocument, {
     skip: authLoading,
   });
+
+  // Sincronizar el toggle con el estado real del sistema al montar y cuando cambia el permiso
+  useEffect(() => {
+    let cancelled = false;
+    async function syncPushToggle() {
+      const status = await getPermissionStatus();
+      const disabledByUser = await isNotificationsDisabledByUser();
+      if (!cancelled) {
+        setPushNotifications(status === 'granted' && !disabledByUser);
+      }
+    }
+    syncPushToggle();
+    return () => { cancelled = true; };
+  }, [permissionStatus]); // se re-ejecuta cuando AppState activo actualiza permissionStatus
 
   useEffect(() => {
     setDarkMode(colorScheme === 'dark');
@@ -106,29 +127,53 @@ export default function SettingsScreen() {
 
   const handlePushNotificationsToggle = async (value: boolean) => {
     if (value) {
-      const { status: existingStatus } =
-        await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-      if (finalStatus !== 'granted') {
+      // Intentar obtener/solicitar el permiso
+      const token = await requestPushPermission();
+      if (!token) {
+        // El usuario denegó el permiso — el toggle vuelve a false
         AppAlert.alert(
           t('settings.notifications.permissionRequired'),
           t('settings.notifications.permissionMessage'),
           [{ text: t('common.ok') }]
         );
+        setPushNotifications(false);
         return;
       }
+      // Permiso concedido: quitar la bandera de desactivado y registrar el token
+      await setNotificationsDisabledByUser(false);
       setPushNotifications(true);
+
+      // Notificar al backend: token activo para este dispositivo
+      if (user?.id) {
+        apolloClient.mutate({
+          mutation: RegisterPushTokenDocument,
+          variables: { userId: user.id, token, platform: Platform.OS },
+        }).catch(() => { /* backend puede no tener la mutación aún */ });
+
+        apolloClient.mutate({
+          mutation: UpdateNotificationPreferencesDocument,
+          variables: { userId: user.id, enabled: true },
+        }).catch(() => {});
+      }
+
       AppAlert.alert(
         t('settings.notifications.enabledTitle'),
         t('settings.notifications.enabledMessage'),
         [{ text: t('common.ok'), onPress: () => scheduleTestNotification() }]
       );
     } else {
+      // El usuario desactiva manualmente — persistir la preferencia
+      await setNotificationsDisabledByUser(true);
       setPushNotifications(false);
+
+      // Notificar al backend: no enviar notificaciones a este dispositivo
+      if (user?.id) {
+        apolloClient.mutate({
+          mutation: UpdateNotificationPreferencesDocument,
+          variables: { userId: user.id, enabled: false },
+        }).catch(() => {});
+      }
+
       AppAlert.alert(
         t('settings.notifications.disabledTitle'),
         t('settings.notifications.disabledMessage'),
