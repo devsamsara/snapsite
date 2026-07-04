@@ -673,10 +673,10 @@ export default function ImageEditorScreen() {
   // ── Render: EDITOR ────────────────────────────────────────────────────────────
   return (
     <GestureHandlerRootView style={S.root}>
-      <SafeAreaView style={S.root} edges={["top", "bottom"]}>
+      <SafeAreaView style={S.root} edges={["bottom"]}>
 
         {/* ── Custom header ── */}
-        <View style={S.editorHeader}>
+        <View style={[S.editorHeader, { paddingTop: insets.top, height: 52 + insets.top }]}>
           <TouchableOpacity
             onPress={handleCancel}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
