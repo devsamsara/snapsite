@@ -2,56 +2,68 @@
  * add-photos-prompt.tsx
  *
  * Pantalla post-creación de proyecto.
- * Ofrece dos opciones:
- *   - Tomar Foto → add-photo-modal (con projectId, abre cámara)
- *   - Seleccionar de Galería → add-photo-modal (con projectId, abre galería)
- *   - Ver Detalles → project/[id]
+ * Usa usePhotoPicker directamente — sin pasar por add-photo-modal.
  *
- * El projectId se pasa siempre desde create-project-details.tsx.
+ * Flujo:
+ *   Tomar Foto     → cámara nativa → image-editor (con projectId)
+ *   Galería        → picker nativo → image-editor (con projectId)
+ *   Ver Detalles   → router.replace limpio a project/[id] (borra historial)
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle } from '@/hooks/use-card-style';
+import { usePhotoPicker } from '@/hooks/use-photo-picker';
 
 export default function AddPhotosPromptScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
   const cardElevation = useCardStyle();
+  const [busy, setBusy] = useState(false);
+
   const { projectId, projectName } = useLocalSearchParams<{
     projectId: string;
     projectName: string;
   }>();
 
-  // ── Abrir cámara directamente ────────────────────────────────────────────────
-  const handleCamera = () => {
-    router.push({
-      pathname: '/add-photo-modal',
-      params: { projectId: projectId ?? '', mode: 'camera' },
-    });
+  const { openCamera, openGallery } = usePhotoPicker({
+    projectId: projectId ?? '',
+  });
+
+  const handleCamera = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await openCamera();
+    } finally {
+      setBusy(false);
+    }
   };
 
-  // ── Abrir galería directamente ───────────────────────────────────────────────
-  const handleGallery = () => {
-    router.push({
-      pathname: '/add-photo-modal',
-      params: { projectId: projectId ?? '', mode: 'gallery' },
-    });
+  const handleGallery = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await openGallery();
+    } finally {
+      setBusy(false);
+    }
   };
 
-  // ── Ir directamente a los detalles del proyecto ──────────────────────────────
+  // Navegar a los detalles del proyecto limpiando el historial de navegación.
+  // router.replace elimina add-photos-prompt del stack y navega directamente.
   const handleViewDetails = () => {
     if (!projectId) return;
-    // Limpiar todo el stack de modales y navegar al proyecto
-    // dismissAll cierra todos los modales presentados encima del stack principal
-    try { router.dismissAll(); } catch (_) {}
-    router.push({ pathname: `/project/${projectId}`, params: { source: 'home' } });
+    router.replace({
+      pathname: `/project/${projectId}` as any,
+      params: { source: 'home' },
+    });
   };
 
   return (
@@ -80,20 +92,32 @@ export default function AddPhotosPromptScreen() {
 
           {/* Tomar Foto */}
           <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+            style={[styles.primaryButton, { backgroundColor: colors.primary, opacity: busy ? 0.6 : 1 }]}
             onPress={handleCamera}
+            disabled={busy}
             activeOpacity={0.85}
           >
-            <IconSymbol name="camera.fill" size={20} color="#FFF" />
-            <Text style={styles.primaryButtonText}>
-              {t('addPhotosPrompt.takePhoto')}
-            </Text>
+            {busy ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <>
+                <IconSymbol name="camera.fill" size={20} color="#FFF" />
+                <Text style={styles.primaryButtonText}>
+                  {t('addPhotosPrompt.takePhoto')}
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
 
           {/* Seleccionar de la Galería */}
           <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.border, backgroundColor: colors.surface }, cardElevation]}
+            style={[
+              styles.secondaryButton,
+              { borderColor: colors.border, backgroundColor: colors.surface, opacity: busy ? 0.6 : 1 },
+              cardElevation,
+            ]}
             onPress={handleGallery}
+            disabled={busy}
             activeOpacity={0.8}
           >
             <IconSymbol name="photo.on.rectangle" size={20} color={colors.primary} />
@@ -106,6 +130,7 @@ export default function AddPhotosPromptScreen() {
           <TouchableOpacity
             style={styles.ghostButton}
             onPress={handleViewDetails}
+            disabled={busy}
             activeOpacity={0.7}
           >
             <Text style={[styles.ghostButtonText, { color: colors.muted }]}>

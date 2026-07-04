@@ -33,6 +33,7 @@ import {
 import { useRelativeDate } from '@/hooks/use-relative-date';
 import moment from 'moment';
 import { uploadPhoto } from '@/lib/upload-service'; // ajusta el path si tu service está en otra carpeta
+import { usePhotoPicker } from '@/hooks/use-photo-picker';
 
 const { width: W } = Dimensions.get('window');
 
@@ -78,17 +79,9 @@ export default function ProjectDetailScreen() {
   const cardElevation = useCardStyle();
   const cardSmElevation = useCardStyleSm();
   const { id, source } = useLocalSearchParams<{ id: string; source?: string }>();
-  // Navegar al origen correcto al pulsar Volver
+  // Volver siempre al listado de proyectos limpiando el historial
   const handleBack = () => {
-    if (source === 'home') {
-      router.replace('/(tabs)');
-    } else if (source === 'projects') {
-      router.replace('/(tabs)/projects');
-    } else if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(tabs)/projects');
-    }
+    router.replace('/(tabs)/projects');
   };
   const [removeNote] = useMutation(DeleteNoteDocument);
   const [togglePinNote] = useMutation(TogglePinNoteDocument);
@@ -196,13 +189,29 @@ export default function ProjectDetailScreen() {
     [project, t]
   );
 
-  // Header — vuelve a su función original: abrir el modal de añadir foto a la galería
+  // ── Selector de foto unificado (usePhotoPicker) ────────────────────────────
+  const { openCamera: _openCameraForPhoto, openGallery: _openGalleryForPhoto } =
+    usePhotoPicker({ projectId: project?.id ?? '' });
+
+  // Header — action sheet para elegir cámara o galería
   const handleAddPhoto = () => {
-    if (project)
-      router.push({
-        pathname: '/add-photo-modal',
-        params: { projectId: project.id },
-      });
+    if (!project) return;
+    Haptics.selectionAsync();
+    AppAlert.alert(
+      t('project.addPhotoTitle'),
+      t('project.addPhotoMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('addPhotosPrompt.takePhoto'),
+          onPress: () => _openCameraForPhoto(),
+        },
+        {
+          text: t('addPhotosPrompt.selectFromGallery'),
+          onPress: () => _openGalleryForPhoto(),
+        },
+      ]
+    );
   };
 
   // Hero — nueva función: action sheet para cambiar el thumbnail del proyecto
