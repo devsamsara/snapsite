@@ -251,7 +251,7 @@ export default function CreateProjectLocationScreen() {
               style={[styles.actionButton, { backgroundColor: colors.primary }, !nearbyProject && styles.btnDisabled]}
               onPress={() => {
                 if (nearbyProject) {
-                  router.push('/camera-capture');
+                  router.push({ pathname: '/camera-capture', params: { projectId: nearbyProject.id } });
                 } else {
                   AppAlert.alert(t('common.error'), t('createProject.noNearbyProject'));
                 }
