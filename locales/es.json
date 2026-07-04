@@ -859,5 +859,11 @@
     "helpCenter": "Centro de ayuda",
     "liveChat": "Chat en vivo",
     "liveChatSub": "Disponible de 9h a 18h"
+  },
+  "projectPicker": {
+    "title": "Seleccionar proyecto",
+    "search": "Buscar proyecto...",
+    "noResults": "Sin resultados",
+    "empty": "No tienes proyectos activos"
   }
 }

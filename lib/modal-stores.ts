@@ -73,3 +73,10 @@ export const annotationTextStore    = createModalStore<AnnotationTextResult>();
 export const annotationMeasureStore = createModalStore<AnnotationMeasureResult>();
 export const addNoteStore           = createModalStore<AddNoteResult>();
 export const inviteMemberStore      = createModalStore<InviteMemberResult>();
+
+export interface ProjectPickerResult {
+  projectId: string;
+  projectName: string;
+}
+
+export const projectPickerStore = createModalStore<ProjectPickerResult>();

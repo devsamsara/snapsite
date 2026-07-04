@@ -859,5 +859,11 @@
     "helpCenter": "Help Center",
     "liveChat": "Live Chat",
     "liveChatSub": "Available 9am to 6pm"
+  },
+  "projectPicker": {
+    "title": "Select project",
+    "search": "Search project...",
+    "noResults": "No results",
+    "empty": "You have no active projects"
   }
 }

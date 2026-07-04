@@ -15,7 +15,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams, Stack, useFocusEffect } from "expo-router";
-import { annotationTextStore, annotationMeasureStore } from "@/lib/modal-stores";
+import { annotationTextStore, annotationMeasureStore, projectPickerStore } from "@/lib/modal-stores";
 import { SafeAreaView , useSafeAreaInsets } from "react-native-safe-area-context";
 
 // ─── react-native-svg (reemplaza @shopify/react-native-skia) ──────────────────
@@ -483,11 +483,25 @@ export default function ImageEditorScreen() {
 
       const safeUri = await ensureFileUri(uri);
 
-      if (projectId) {
+      // If no projectId, open the project picker first
+      let resolvedProjectId = projectId;
+      if (!resolvedProjectId) {
+        setProc(false);
+        router.push('/modals/project-picker');
+        const result = await projectPickerStore.open();
+        if (!result) {
+          // User cancelled the picker — stop here, keep the editor open
+          return;
+        }
+        resolvedProjectId = result.projectId;
+        setProc(true);
+      }
+
+      if (resolvedProjectId) {
         try {
           await uploadPhoto({
             localUri: safeUri,
-            projectId,
+            projectId: resolvedProjectId,
             photoId,
             caption: `Picture_${Date.now()}.jpg`,
             tags: [],

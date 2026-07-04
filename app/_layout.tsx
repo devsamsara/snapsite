@@ -292,6 +292,15 @@ export default function RootLayout() {
                     contentStyle: { backgroundColor: sheetBg },
                   }}
                 />
+                <Stack.Screen
+                  name="modals/project-picker"
+                  options={{
+                    headerShown: false,
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                    contentStyle: { backgroundColor: sheetBg },
+                  }}
+                />
               </Stack>
               <StatusBar style="auto" />
             </AuthProvider>
