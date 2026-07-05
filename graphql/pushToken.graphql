@@ -1,0 +1,21 @@
+
+mutation RegisterPushToken($token: String!, $platform: String!) {
+    registerPushToken(token: $token, platform: $platform) {
+        enabled
+        token
+    }
+}
+
+mutation TogglePushToken($token: String!, $enabled: Boolean!) {
+    togglePushToken(token: $token, enabled: $enabled) {
+        code
+        enabled
+        message
+        success
+        token
+    }
+}
+
+query IsPushTokenEnabled($token: String!) {
+    isPushTokenEnabled(token: $token)
+}

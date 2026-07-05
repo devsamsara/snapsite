@@ -511,6 +511,7 @@ export type Query = {
   getUploadUrl: UploadUrlPayload;
   getUsers: PaginatedUsers;
   inviteMember: Scalars['Boolean']['output'];
+  isPushTokenEnabled: Scalars['Boolean']['output'];
   me: User;
 };
 
@@ -580,6 +581,11 @@ export type QueryGetUsersArgs = {
 
 export type QueryInviteMemberArgs = {
   input: InviteMemberInput;
+};
+
+
+export type QueryIsPushTokenEnabledArgs = {
+  token: Scalars['String']['input'];
 };
 
 export type RecentImage = {
@@ -904,6 +910,29 @@ export type ArchiveProjectMutationVariables = Exact<{
 
 export type ArchiveProjectMutation = { __typename?: 'Mutation', updateProject: { __typename?: 'Project', id: string, status: ProjectStatus } };
 
+export type RegisterPushTokenMutationVariables = Exact<{
+  token: Scalars['String']['input'];
+  platform: Scalars['String']['input'];
+}>;
+
+
+export type RegisterPushTokenMutation = { __typename?: 'Mutation', registerPushToken: { __typename?: 'PushTokenResponse', enabled: boolean, token: string } };
+
+export type TogglePushTokenMutationVariables = Exact<{
+  token: Scalars['String']['input'];
+  enabled: Scalars['Boolean']['input'];
+}>;
+
+
+export type TogglePushTokenMutation = { __typename?: 'Mutation', togglePushToken: { __typename?: 'PushTokenResponse', code: number, enabled: boolean, message: string, success: boolean, token: string } };
+
+export type IsPushTokenEnabledQueryVariables = Exact<{
+  token: Scalars['String']['input'];
+}>;
+
+
+export type IsPushTokenEnabledQuery = { __typename?: 'Query', isPushTokenEnabled: boolean };
+
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -938,19 +967,3 @@ export type UpdateUserMutationVariables = Exact<{
 
 
 export type UpdateUserMutation = { __typename?: 'Mutation', updateUser: { __typename?: 'User', avatarUrl?: string | null, createdAt: string, id: string, email: string, lastName?: string | null, name: string, nickname?: string | null, phone?: string | null, role: UserRole, status: UserStatus, updatedAt: string, company?: { __typename?: 'Company', id: string, name: string, users: Array<{ __typename?: 'User', id: string, name: string }> } | null, projects?: Array<{ __typename?: 'Project', createdAt: string, description: string, endDate?: string | null, id: string, latitude?: number | null, location: string, longitude?: number | null, name: string, progress: number, startDate: string, status: ProjectStatus, thumbnail?: string | null, members: Array<{ __typename?: 'User', id: string, email: string, name: string, lastName?: string | null }>, notes: Array<{ __typename?: 'Note', author: { __typename?: 'User', company?: { __typename?: 'Company', id: string, name: string } | null } }>, photos: Array<{ __typename?: 'Photo', id: string, url: string, createdAt: string }>, timeline?: Array<{ __typename?: 'TimelineEvent', id: string, description: string, createdAt: string, photoUrl?: string | null, title: string, type: TimelineEventType, updatedAt: string, project: { __typename?: 'Project', id: string, description: string } }> | null } | null> | null } };
-
-export type RegisterPushTokenMutationVariables = Exact<{
-  token: Scalars['String']['input'];
-  platform: Scalars['String']['input'];
-}>;
-
-
-export type RegisterPushTokenMutation = { __typename?: 'Mutation', registerPushToken: { __typename?: 'PushTokenResponse', enabled: boolean, token: string } };
-
-export type TogglePushTokenMutationVariables = Exact<{
-  token: Scalars['String']['input'];
-  enabled: Scalars['Boolean']['input'];
-}>;
-
-
-export type TogglePushTokenMutation = { __typename?: 'Mutation', togglePushToken: { __typename?: 'PushTokenResponse', code: number, enabled: boolean, message: string, success: boolean, token: string } };
