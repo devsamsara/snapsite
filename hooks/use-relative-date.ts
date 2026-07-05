@@ -5,7 +5,9 @@ export const useRelativeDate = () => {
   const { t } = useTranslation();
 
   // Envolvemos la función retornada en useCallback
-  const getRelativeDate = useCallback(
+  // 't' es la única dependencia externa
+
+  return useCallback(
     (timestamp: number): string => {
       const fecha = new Date(timestamp);
       const hoy = new Date();
@@ -20,6 +22,7 @@ export const useRelativeDate = () => {
         ).getTime();
       const dias = Math.round(diffMs / msPerDay);
 
+      console.log(timestamp, dias)
       if (dias === 0) return t('common.today');
       if (dias === 1) return t('common.yesterday');
       if (dias === 2) return t('common.twoDaysAgo');
@@ -28,7 +31,5 @@ export const useRelativeDate = () => {
       return t('common.weeksAgo', { count: Math.floor(dias / 7) });
     },
     [t]
-  ); // 't' es la única dependencia externa
-
-  return getRelativeDate;
-};
+  );
+};;

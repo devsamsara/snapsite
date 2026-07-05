@@ -173,9 +173,13 @@ export type Mutation = {
   login: AuthPayload;
   refreshToken: AuthPayload;
   register: AuthPayload;
+  registerPushToken: PushTokenResponse;
   removeProjectMember: Project;
+  removePushToken: PushTokenResponse;
   resetPassword: AuthPayload;
+  sendNotification: PushTokenResponse;
   togglePinNote: Note;
+  togglePushToken: PushTokenResponse;
   updateCompany: Company;
   updateNote: Note;
   updatePhoto: Photo;
@@ -286,9 +290,20 @@ export type MutationRegisterArgs = {
 };
 
 
+export type MutationRegisterPushTokenArgs = {
+  platform: Scalars['String']['input'];
+  token: Scalars['String']['input'];
+};
+
+
 export type MutationRemoveProjectMemberArgs = {
   projectId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationRemovePushTokenArgs = {
+  token: Scalars['String']['input'];
 };
 
 
@@ -297,8 +312,19 @@ export type MutationResetPasswordArgs = {
 };
 
 
+export type MutationSendNotificationArgs = {
+  notification: NotificationInput;
+};
+
+
 export type MutationTogglePinNoteArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationTogglePushTokenArgs = {
+  enabled: Scalars['Boolean']['input'];
+  token: Scalars['String']['input'];
 };
 
 
@@ -360,6 +386,12 @@ export type Note = {
   pinned: Scalars['Boolean']['output'];
   project: Project;
   updatedAt: Scalars['String']['output'];
+};
+
+export type NotificationInput = {
+  body: Scalars['String']['input'];
+  forAll: Scalars['Boolean']['input'];
+  title: Scalars['String']['input'];
 };
 
 export type PaginatedCompanies = {
@@ -441,6 +473,24 @@ export type ProjectStatusData = {
   color: Scalars['String']['output'];
   count: Scalars['Int']['output'];
   nameKey: Scalars['String']['output'];
+};
+
+export type PushToken = {
+  __typename?: 'PushToken';
+  createdAt: Scalars['String']['output'];
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  platform?: Maybe<Scalars['String']['output']>;
+  token: Scalars['String']['output'];
+};
+
+export type PushTokenResponse = {
+  __typename?: 'PushTokenResponse';
+  code: Scalars['Int']['output'];
+  enabled: Scalars['Boolean']['output'];
+  message: Scalars['String']['output'];
+  success: Scalars['Boolean']['output'];
+  token: Scalars['String']['output'];
 };
 
 export type Query = {
@@ -888,3 +938,11 @@ export type UpdateUserMutationVariables = Exact<{
 
 
 export type UpdateUserMutation = { __typename?: 'Mutation', updateUser: { __typename?: 'User', avatarUrl?: string | null, createdAt: string, id: string, email: string, lastName?: string | null, name: string, nickname?: string | null, phone?: string | null, role: UserRole, status: UserStatus, updatedAt: string, company?: { __typename?: 'Company', id: string, name: string, users: Array<{ __typename?: 'User', id: string, name: string }> } | null, projects?: Array<{ __typename?: 'Project', createdAt: string, description: string, endDate?: string | null, id: string, latitude?: number | null, location: string, longitude?: number | null, name: string, progress: number, startDate: string, status: ProjectStatus, thumbnail?: string | null, members: Array<{ __typename?: 'User', id: string, email: string, name: string, lastName?: string | null }>, notes: Array<{ __typename?: 'Note', author: { __typename?: 'User', company?: { __typename?: 'Company', id: string, name: string } | null } }>, photos: Array<{ __typename?: 'Photo', id: string, url: string, createdAt: string }>, timeline?: Array<{ __typename?: 'TimelineEvent', id: string, description: string, createdAt: string, photoUrl?: string | null, title: string, type: TimelineEventType, updatedAt: string, project: { __typename?: 'Project', id: string, description: string } }> | null } | null> | null } };
+
+export type RegisterPushTokenMutationVariables = Exact<{
+  token: Scalars['String']['input'];
+  platform: Scalars['String']['input'];
+}>;
+
+
+export type RegisterPushTokenMutation = { __typename?: 'Mutation', registerPushToken: { __typename?: 'PushTokenResponse', enabled: boolean, token: string } };

@@ -175,9 +175,13 @@ export type Mutation = {
   login: AuthPayload;
   refreshToken: AuthPayload;
   register: AuthPayload;
+  registerPushToken: PushTokenResponse;
   removeProjectMember: Project;
+  removePushToken: PushTokenResponse;
   resetPassword: AuthPayload;
+  sendNotification: PushTokenResponse;
   togglePinNote: Note;
+  togglePushToken: PushTokenResponse;
   updateCompany: Company;
   updateNote: Note;
   updatePhoto: Photo;
@@ -288,9 +292,20 @@ export type MutationRegisterArgs = {
 };
 
 
+export type MutationRegisterPushTokenArgs = {
+  platform: Scalars['String']['input'];
+  token: Scalars['String']['input'];
+};
+
+
 export type MutationRemoveProjectMemberArgs = {
   projectId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type MutationRemovePushTokenArgs = {
+  token: Scalars['String']['input'];
 };
 
 
@@ -299,8 +314,19 @@ export type MutationResetPasswordArgs = {
 };
 
 
+export type MutationSendNotificationArgs = {
+  notification: NotificationInput;
+};
+
+
 export type MutationTogglePinNoteArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationTogglePushTokenArgs = {
+  enabled: Scalars['Boolean']['input'];
+  token: Scalars['String']['input'];
 };
 
 
@@ -362,6 +388,12 @@ export type Note = {
   pinned: Scalars['Boolean']['output'];
   project: Project;
   updatedAt: Scalars['String']['output'];
+};
+
+export type NotificationInput = {
+  body: Scalars['String']['input'];
+  forAll: Scalars['Boolean']['input'];
+  title: Scalars['String']['input'];
 };
 
 export type PaginatedCompanies = {
@@ -443,6 +475,24 @@ export type ProjectStatusData = {
   color: Scalars['String']['output'];
   count: Scalars['Int']['output'];
   nameKey: Scalars['String']['output'];
+};
+
+export type PushToken = {
+  __typename?: 'PushToken';
+  createdAt: Scalars['String']['output'];
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  platform?: Maybe<Scalars['String']['output']>;
+  token: Scalars['String']['output'];
+};
+
+export type PushTokenResponse = {
+  __typename?: 'PushTokenResponse';
+  code: Scalars['Int']['output'];
+  enabled: Scalars['Boolean']['output'];
+  message: Scalars['String']['output'];
+  success: Scalars['Boolean']['output'];
+  token: Scalars['String']['output'];
 };
 
 export type Query = {
@@ -891,6 +941,14 @@ export type UpdateUserMutationVariables = Exact<{
 
 export type UpdateUserMutation = { __typename?: 'Mutation', updateUser: { __typename?: 'User', avatarUrl?: string | null, createdAt: string, id: string, email: string, lastName?: string | null, name: string, nickname?: string | null, phone?: string | null, role: UserRole, status: UserStatus, updatedAt: string, company?: { __typename?: 'Company', id: string, name: string, users: Array<{ __typename?: 'User', id: string, name: string }> } | null, projects?: Array<{ __typename?: 'Project', createdAt: string, description: string, endDate?: string | null, id: string, latitude?: number | null, location: string, longitude?: number | null, name: string, progress: number, startDate: string, status: ProjectStatus, thumbnail?: string | null, members: Array<{ __typename?: 'User', id: string, email: string, name: string, lastName?: string | null }>, notes: Array<{ __typename?: 'Note', author: { __typename?: 'User', company?: { __typename?: 'Company', id: string, name: string } | null } }>, photos: Array<{ __typename?: 'Photo', id: string, url: string, createdAt: string }>, timeline?: Array<{ __typename?: 'TimelineEvent', id: string, description: string, createdAt: string, photoUrl?: string | null, title: string, type: TimelineEventType, updatedAt: string, project: { __typename?: 'Project', id: string, description: string } }> | null } | null> | null } };
 
+export type RegisterPushTokenMutationVariables = Exact<{
+  token: Scalars['String']['input'];
+  platform: Scalars['String']['input'];
+}>;
+
+
+export type RegisterPushTokenMutation = { __typename?: 'Mutation', registerPushToken: { __typename?: 'PushTokenResponse', enabled: boolean, token: string } };
+
 
 export const ConfirmAccountDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ConfirmAccount"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"token"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"confirmAccount"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"token"},"value":{"kind":"Variable","name":{"kind":"Name","value":"token"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"refreshToken"}},{"kind":"Field","name":{"kind":"Name","value":"token"}}]}}]}}]} as unknown as DocumentNode<ConfirmAccountMutation, ConfirmAccountMutationVariables>;
 export const ForgotPasswordDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ForgotPassword"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ForgotPasswordInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"forgotPassword"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}]}]}}]} as unknown as DocumentNode<ForgotPasswordMutation, ForgotPasswordMutationVariables>;
@@ -919,117 +977,4 @@ export const UpdateUserPictureDocument = {"kind":"Document","definitions":[{"kin
 export const DeleteUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<DeleteUserMutation, DeleteUserMutationVariables>;
 export const DeleteCompanyDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteCompany"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteCompany"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<DeleteCompanyMutation, DeleteCompanyMutationVariables>;
 export const UpdateUserDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateUser"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"updateUserId"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateUserInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateUser"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"updateUserId"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"avatarUrl"}},{"kind":"Field","name":{"kind":"Name","value":"company"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"users"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"nickname"}},{"kind":"Field","name":{"kind":"Name","value":"phone"}},{"kind":"Field","name":{"kind":"Name","value":"projects"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"endDate"}},{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"latitude"}},{"kind":"Field","name":{"kind":"Name","value":"location"}},{"kind":"Field","name":{"kind":"Name","value":"longitude"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"members"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"email"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"lastName"}}]}},{"kind":"Field","name":{"kind":"Name","value":"notes"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"author"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"company"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"photos"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"progress"}},{"kind":"Field","name":{"kind":"Name","value":"startDate"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"thumbnail"}},{"kind":"Field","name":{"kind":"Name","value":"timeline"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"photoUrl"}},{"kind":"Field","name":{"kind":"Name","value":"project"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"description"}}]}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"role"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<UpdateUserMutation, UpdateUserMutationVariables>;
-// ─── Push Notifications ───────────────────────────────────────────────────────
-// Tipos y documentos generados manualmente hasta que el backend exponga estas
-// mutaciones en el schema y se pueda regenerar con codegen.
-//
-// Backend pendiente de implementar:
-//   Mutation.registerPushToken(userId: ID!, token: String!, platform: String!): User
-//   Mutation.updateNotificationPreferences(userId: ID!, enabled: Boolean!): User
-
-export type RegisterPushTokenMutationVariables = Exact<{
-  userId: Scalars['ID']['input'];
-  token: Scalars['String']['input'];
-  platform: Scalars['String']['input'];
-}>;
-
-export type RegisterPushTokenMutation = {
-  __typename?: 'Mutation';
-  registerPushToken: { __typename?: 'User'; id: string };
-};
-
-export type UpdateNotificationPreferencesMutationVariables = Exact<{
-  userId: Scalars['ID']['input'];
-  enabled: Scalars['Boolean']['input'];
-}>;
-
-export type UpdateNotificationPreferencesMutation = {
-  __typename?: 'Mutation';
-  updateNotificationPreferences: { __typename?: 'User'; id: string };
-};
-
-export const RegisterPushTokenDocument = {
-  kind: 'Document',
-  definitions: [
-    {
-      kind: 'OperationDefinition',
-      operation: 'mutation',
-      name: { kind: 'Name', value: 'RegisterPushToken' },
-      variableDefinitions: [
-        {
-          kind: 'VariableDefinition',
-          variable: { kind: 'Variable', name: { kind: 'Name', value: 'userId' } },
-          type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
-        },
-        {
-          kind: 'VariableDefinition',
-          variable: { kind: 'Variable', name: { kind: 'Name', value: 'token' } },
-          type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
-        },
-        {
-          kind: 'VariableDefinition',
-          variable: { kind: 'Variable', name: { kind: 'Name', value: 'platform' } },
-          type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'String' } } },
-        },
-      ],
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'registerPushToken' },
-            arguments: [
-              { kind: 'Argument', name: { kind: 'Name', value: 'userId' }, value: { kind: 'Variable', name: { kind: 'Name', value: 'userId' } } },
-              { kind: 'Argument', name: { kind: 'Name', value: 'token' }, value: { kind: 'Variable', name: { kind: 'Name', value: 'token' } } },
-              { kind: 'Argument', name: { kind: 'Name', value: 'platform' }, value: { kind: 'Variable', name: { kind: 'Name', value: 'platform' } } },
-            ],
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<RegisterPushTokenMutation, RegisterPushTokenMutationVariables>;
-
-export const UpdateNotificationPreferencesDocument = {
-  kind: 'Document',
-  definitions: [
-    {
-      kind: 'OperationDefinition',
-      operation: 'mutation',
-      name: { kind: 'Name', value: 'UpdateNotificationPreferences' },
-      variableDefinitions: [
-        {
-          kind: 'VariableDefinition',
-          variable: { kind: 'Variable', name: { kind: 'Name', value: 'userId' } },
-          type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } } },
-        },
-        {
-          kind: 'VariableDefinition',
-          variable: { kind: 'Variable', name: { kind: 'Name', value: 'enabled' } },
-          type: { kind: 'NonNullType', type: { kind: 'NamedType', name: { kind: 'Name', value: 'Boolean' } } },
-        },
-      ],
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'updateNotificationPreferences' },
-            arguments: [
-              { kind: 'Argument', name: { kind: 'Name', value: 'userId' }, value: { kind: 'Variable', name: { kind: 'Name', value: 'userId' } } },
-              { kind: 'Argument', name: { kind: 'Name', value: 'enabled' }, value: { kind: 'Variable', name: { kind: 'Name', value: 'enabled' } } },
-            ],
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [{ kind: 'Field', name: { kind: 'Name', value: 'id' } }],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<UpdateNotificationPreferencesMutation, UpdateNotificationPreferencesMutationVariables>;
+export const RegisterPushTokenDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"RegisterPushToken"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"token"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"platform"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"registerPushToken"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"token"},"value":{"kind":"Variable","name":{"kind":"Name","value":"token"}}},{"kind":"Argument","name":{"kind":"Name","value":"platform"},"value":{"kind":"Variable","name":{"kind":"Name","value":"platform"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"token"}}]}}]}}]} as unknown as DocumentNode<RegisterPushTokenMutation, RegisterPushTokenMutationVariables>;

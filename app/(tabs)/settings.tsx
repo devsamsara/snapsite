@@ -37,11 +37,10 @@ import {
   DeleteUserDocument,
   GetMyProjectsDocument,
   RegisterPushTokenDocument,
-  UpdateNotificationPreferencesDocument,
   UserRole,
 } from '@/gql/graphql';
 import { apolloClient } from '@/lib/graphql-client';
-import { useQuery } from '@apollo/client/react';
+import { useMutation, useQuery } from '@apollo/client/react';
 
 function initials(name?: string | null): string {
   if (!name) return '?';
@@ -88,6 +87,7 @@ export default function SettingsScreen() {
   const [pushNotifications, setPushNotifications] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(colorScheme === 'dark');
+  const [registerPushToken]= useMutation(RegisterPushTokenDocument)
   const [currentLang, setCurrentLang] = useState<'es' | 'en'>(
     i18n.language === 'en' ? 'en' : 'es'
   );
@@ -108,7 +108,7 @@ export default function SettingsScreen() {
     }
     syncPushToggle();
     return () => { cancelled = true; };
-  }, [permissionStatus]); // se re-ejecuta cuando AppState activo actualiza permissionStatus
+  }, [permissionStatus]);
 
   useEffect(() => {
     setDarkMode(colorScheme === 'dark');
@@ -145,15 +145,21 @@ export default function SettingsScreen() {
 
       // Notificar al backend: token activo para este dispositivo
       if (user?.id) {
-        apolloClient.mutate({
-          mutation: RegisterPushTokenDocument,
-          variables: { userId: user.id, token, platform: Platform.OS },
-        }).catch(() => { /* backend puede no tener la mutación aún */ });
+       const response = await registerPushToken({
+          variables: {
+            token,
+            platform: Platform.OS,
+          },
+        }).catch(() => {
 
-        apolloClient.mutate({
+        });
+
+
+
+        /*apolloClient.mutate({
           mutation: UpdateNotificationPreferencesDocument,
-          variables: { userId: user.id, enabled: true },
-        }).catch(() => {});
+          variables: { userId: user.id, enabled: enabled ?? false },
+        }).catch(() => {});*/
       }
 
       AppAlert.alert(
@@ -167,12 +173,12 @@ export default function SettingsScreen() {
       setPushNotifications(false);
 
       // Notificar al backend: no enviar notificaciones a este dispositivo
-      if (user?.id) {
+      /*if (user?.id) {
         apolloClient.mutate({
           mutation: UpdateNotificationPreferencesDocument,
           variables: { userId: user.id, enabled: false },
         }).catch(() => {});
-      }
+      }*/
 
       AppAlert.alert(
         t('settings.notifications.disabledTitle'),
