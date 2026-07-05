@@ -25,6 +25,7 @@ import {
   scheduleTestNotification,
   useNotifications,
   requestPushPermission,
+  getExpoPushToken,
   getPermissionStatus,
   setNotificationsDisabledByUser,
   isNotificationsDisabledByUser,
@@ -37,6 +38,7 @@ import {
   DeleteUserDocument,
   GetMyProjectsDocument,
   RegisterPushTokenDocument,
+  TogglePushTokenDocument,
   UserRole,
 } from '@/gql/graphql';
 import { apolloClient } from '@/lib/graphql-client';
@@ -87,7 +89,8 @@ export default function SettingsScreen() {
   const [pushNotifications, setPushNotifications] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(colorScheme === 'dark');
-  const [registerPushToken]= useMutation(RegisterPushTokenDocument)
+  const [registerPushToken] = useMutation(RegisterPushTokenDocument);
+  const [togglePushToken] = useMutation(TogglePushTokenDocument);
   const [currentLang, setCurrentLang] = useState<'es' | 'en'>(
     i18n.language === 'en' ? 'en' : 'es'
   );
@@ -127,10 +130,10 @@ export default function SettingsScreen() {
 
   const handlePushNotificationsToggle = async (value: boolean) => {
     if (value) {
-      // Intentar obtener/solicitar el permiso
+      // Obtener el token (solicita permiso si no estaba concedido)
       const token = await requestPushPermission();
       if (!token) {
-        // El usuario denegó el permiso — el toggle vuelve a false
+        // El usuario denegó el permiso en el SO — el toggle vuelve a false
         AppAlert.alert(
           t('settings.notifications.permissionRequired'),
           t('settings.notifications.permissionMessage'),
@@ -139,25 +142,18 @@ export default function SettingsScreen() {
         setPushNotifications(false);
         return;
       }
-      // Permiso concedido: quitar la bandera de desactivado y registrar el token
+
+      // Quitar la bandera de desactivado por el usuario
       await setNotificationsDisabledByUser(false);
       setPushNotifications(true);
 
-      // Notificar al backend: token activo para este dispositivo
-      if (user?.id) {
-       const response = await registerPushToken({
-          variables: {
-            token,
-            platform: Platform.OS,
-          },
-        }).catch(() => {
-
-        });
-       
-        /*apolloClient.mutate({
-          mutation: UpdateNotificationPreferencesDocument,
-          variables: { userId: user.id, enabled: enabled ?? false },
-        }).catch(() => {});*/
+      // Registrar el token en el backend (upsert: si ya existe, lo reactiva)
+      // y luego activarlo explícitamente con togglePushToken
+      try {
+        await registerPushToken({ variables: { token, platform: Platform.OS } });
+        await togglePushToken({ variables: { token, enabled: true } });
+      } catch {
+        // No bloquear la UX si el backend falla
       }
 
       AppAlert.alert(
@@ -166,17 +162,17 @@ export default function SettingsScreen() {
         [{ text: t('common.ok'), onPress: () => scheduleTestNotification() }]
       );
     } else {
-      // El usuario desactiva manualmente — persistir la preferencia
+      // Obtener el token actual para poder desactivarlo en el backend
+      const token = await getExpoPushToken();
+
+      // Persistir la preferencia del usuario
       await setNotificationsDisabledByUser(true);
       setPushNotifications(false);
 
-      // Notificar al backend: no enviar notificaciones a este dispositivo
-      /*if (user?.id) {
-        apolloClient.mutate({
-          mutation: UpdateNotificationPreferencesDocument,
-          variables: { userId: user.id, enabled: false },
-        }).catch(() => {});
-      }*/
+      // Desactivar el token en el backend (el token sigue registrado, solo cambia enabled)
+      if (token) {
+        togglePushToken({ variables: { token, enabled: false } }).catch(() => {});
+      }
 
       AppAlert.alert(
         t('settings.notifications.disabledTitle'),

@@ -25,8 +25,15 @@ import {
   ForgotPasswordDocument,
   LoginDocument,
   MeDocument,
+  RegisterPushTokenDocument,
   User,
 } from '@/gql/graphql';
+import {
+  getExpoPushToken,
+  getPermissionStatus,
+  NOTIFICATIONS_ASKED_KEY,
+} from '@/hooks/use-notifications';
+import { Platform } from 'react-native';
 
 /** Key used to persist whether the user has already seen the onboarding. */
 export const ONBOARDING_DONE_KEY = '@snapsite_onboarding_done';
@@ -243,6 +250,23 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
       await setRefreshToken(refreshToken ?? null);
       await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
       setUser(userData as User);
+
+      // Registrar el pushToken si el permiso ya está concedido
+      // (el usuario puede haber dado el permiso en una sesión anterior)
+      try {
+        const permStatus = await getPermissionStatus();
+        if (permStatus === 'granted') {
+          const pushToken = await getExpoPushToken();
+          if (pushToken) {
+            // Marcar como ya preguntado y registrar en el backend
+            await AsyncStorage.setItem(NOTIFICATIONS_ASKED_KEY, 'true');
+            apolloClient.mutate({
+              mutation: RegisterPushTokenDocument,
+              variables: { token: pushToken, platform: Platform.OS },
+            }).catch(() => { /* no bloquear el login si falla */ });
+          }
+        }
+      } catch { /* no bloquear el login */ }
     } catch (error) {
       throw new Error(extractMessage(error));
     }
