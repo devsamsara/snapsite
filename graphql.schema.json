@@ -946,3 +946,11 @@ export type RegisterPushTokenMutationVariables = Exact<{
 
 
 export type RegisterPushTokenMutation = { __typename?: 'Mutation', registerPushToken: { __typename?: 'PushTokenResponse', enabled: boolean, token: string } };
+
+export type TogglePushTokenMutationVariables = Exact<{
+  token: Scalars['String']['input'];
+  enabled: Scalars['Boolean']['input'];
+}>;
+
+
+export type TogglePushTokenMutation = { __typename?: 'Mutation', togglePushToken: { __typename?: 'PushTokenResponse', code: number, enabled: boolean, message: string, success: boolean, token: string } };

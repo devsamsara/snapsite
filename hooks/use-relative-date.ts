@@ -22,7 +22,6 @@ export const useRelativeDate = () => {
         ).getTime();
       const dias = Math.round(diffMs / msPerDay);
 
-      console.log(timestamp, dias)
       if (dias === 0) return t('common.today');
       if (dias === 1) return t('common.yesterday');
       if (dias === 2) return t('common.twoDaysAgo');

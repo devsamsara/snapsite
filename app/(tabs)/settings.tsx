@@ -132,8 +132,8 @@ export default function SettingsScreen() {
     if (value) {
       // Obtener el token (solicita permiso si no estaba concedido)
       const token = await requestPushPermission();
+
       if (!token) {
-        // El usuario denegó el permiso en el SO — el toggle vuelve a false
         AppAlert.alert(
           t('settings.notifications.permissionRequired'),
           t('settings.notifications.permissionMessage'),
@@ -147,8 +147,6 @@ export default function SettingsScreen() {
       await setNotificationsDisabledByUser(false);
       setPushNotifications(true);
 
-      // Registrar el token en el backend (upsert: si ya existe, lo reactiva)
-      // y luego activarlo explícitamente con togglePushToken
       try {
         await registerPushToken({ variables: { token, platform: Platform.OS } });
         await togglePushToken({ variables: { token, enabled: true } });

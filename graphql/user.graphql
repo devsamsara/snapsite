@@ -105,8 +105,12 @@ mutation RegisterPushToken($token: String!, $platform: String!) {
     }
 }
 
-#mutation UpdateNotificationPreferences($userId: ID!, $enabled: Boolean!) {
-#    updateNotificationPreferences(userId: $userId, enabled: $enabled) {
-#        id
-#    }
-#}
+mutation TogglePushToken($token: String!, $enabled: Boolean!) {
+    togglePushToken(token: $token, enabled: $enabled) {
+        code
+        enabled
+        message
+        success
+        token
+    }
+}

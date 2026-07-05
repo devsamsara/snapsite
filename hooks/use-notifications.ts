@@ -34,7 +34,6 @@ export const NOTIFICATIONS_DISABLED_KEY = '@snapsite_notifications_disabled';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
     shouldShowBanner: false,
@@ -128,10 +127,10 @@ export async function getPermissionStatus(): Promise<PushPermissionStatus> {
  * @returns El token Expo Push si el permiso fue concedido, o `null` si fue denegado.
  */
 export async function requestPushPermission(): Promise<string | null> {
-  if (!Constants.isDevice) {
+  /*if (!Constants.isDevice) {
     if (__DEV__) console.warn('[Notifications] Push notifications require a physical device.');
     return null;
-  }
+  }*/
 
   // El canal de Android debe crearse antes de solicitar el permiso
   if (Platform.OS === 'android') {
@@ -169,7 +168,8 @@ export async function requestPushPermission(): Promise<string | null> {
  * @returns El token string, o `null` si no está disponible.
  */
 export async function getExpoPushToken(): Promise<string | null> {
-  if (!Constants.isDevice) return null;
+  // if (!Constants.isDevice) return null;
+
   try {
     const projectId: string | undefined = Constants.expoConfig?.extra?.eas?.projectId;
     const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
