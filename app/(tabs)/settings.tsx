@@ -153,9 +153,7 @@ export default function SettingsScreen() {
         }).catch(() => {
 
         });
-
-
-
+       
         /*apolloClient.mutate({
           mutation: UpdateNotificationPreferencesDocument,
           variables: { userId: user.id, enabled: enabled ?? false },
