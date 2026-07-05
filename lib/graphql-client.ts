@@ -155,14 +155,18 @@ const authLink = new ApolloLink((operation, forward) => {
 // ─── Helper: detectar si un error es de autenticación ─────────────────────────
 
 function isAuthenticationError(error: any): boolean {
-  // BUG CORREGIDO #1: El error link de Apollo 4 puede llegar como CombinedGraphQLErrors
-  // O como un error de red genérico. Hay que comprobar ambos casos.
+  // El backend usa ErrorUtils.unauthorized() que Apollo Server 4 puede convertir
+  // con extensions.code = 'UNAUTHORIZED' (del enum ErrorCode del backend) o
+  // 'UNAUTHENTICATED' (estándar Apollo). También detectamos por mensaje.
   if (CombinedGraphQLErrors.is(error)) {
     return error.errors.some(
       (err: any) =>
         err.extensions?.code === 'UNAUTHENTICATED' ||
+        err.extensions?.code === 'UNAUTHORIZED' ||
         err.message?.toLowerCase().includes('unauthorized') ||
         err.message?.toLowerCase().includes('unauthenticated') ||
+        err.message?.toLowerCase().includes('must be logged in') ||
+        err.message?.toLowerCase().includes('logged in') ||
         err.message?.toLowerCase().includes('token') ||
         err.message?.toLowerCase().includes('jwt')
     );
@@ -171,6 +175,7 @@ function isAuthenticationError(error: any): boolean {
   if (error?.statusCode === 401 || error?.status === 401) return true;
   if (error?.message?.toLowerCase().includes('unauthorized')) return true;
   if (error?.message?.toLowerCase().includes('unauthenticated')) return true;
+  if (error?.message?.toLowerCase().includes('must be logged in')) return true;
   return false;
 }
 

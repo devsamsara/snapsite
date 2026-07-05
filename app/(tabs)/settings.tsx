@@ -37,6 +37,7 @@ import {
   DeleteCompanyDocument,
   DeleteUserDocument,
   GetMyProjectsDocument,
+  IsPushTokenEnabledDocument,
   RegisterPushTokenDocument,
   TogglePushTokenDocument,
   UserRole,
@@ -99,14 +100,54 @@ export default function SettingsScreen() {
     skip: authLoading,
   });
 
-  // Sincronizar el toggle con el estado real del sistema al montar y cuando cambia el permiso
+  // Sincronizar el toggle con el estado real: primero SO, luego backend
+  // Lógica:
+  // 1. Si el SO tiene el permiso REVOCADO → toggle OFF (el backend no importa)
+  // 2. Si el SO tiene el permiso CONCEDIDO → consultar el backend:
+  //    - Si el token existe en el backend y enabled=true  → toggle ON
+  //    - Si el token existe en el backend y enabled=false → toggle OFF
+  //    - Si el token NO existe en el backend (token not found) → toggle OFF
+  //      (el usuario nunca completó el registro del token)
   useEffect(() => {
     let cancelled = false;
     async function syncPushToggle() {
       const status = await getPermissionStatus();
-      const disabledByUser = await isNotificationsDisabledByUser();
-      if (!cancelled) {
-        setPushNotifications(status === 'granted' && !disabledByUser);
+
+      if (status !== 'granted') {
+        // El SO no tiene permiso — toggle siempre OFF
+        if (!cancelled) setPushNotifications(false);
+        return;
+      }
+
+      // El SO tiene permiso — consultar el backend para saber el estado de negocio
+      try {
+        const pushToken = await getExpoPushToken();
+        if (!pushToken) {
+          if (!cancelled) setPushNotifications(false);
+          return;
+        }
+
+        const { data } = await apolloClient.query({
+          query: IsPushTokenEnabledDocument,
+          variables: { token: pushToken },
+          fetchPolicy: 'network-only',
+        });
+
+        if (!cancelled) {
+          setPushNotifications(data?.isPushTokenEnabled === true);
+        }
+      } catch (err: any) {
+        // Si el token no está registrado en el backend (notFound), toggle OFF
+        // Si hay error de red, mantener el estado anterior para no confundir al usuario
+        const isNotFound =
+          err?.graphQLErrors?.some((e: any) =>
+            e.message?.toLowerCase().includes('not found')
+          ) ||
+          err?.message?.toLowerCase().includes('not found');
+
+        if (!cancelled && isNotFound) {
+          setPushNotifications(false);
+        }
       }
     }
     syncPushToggle();
