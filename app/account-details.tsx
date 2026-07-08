@@ -211,6 +211,7 @@ export default function AccountDetailsScreen() {
           <TouchableOpacity
             style={[S.actionRow, { borderBottomColor: colors.border }]}
             activeOpacity={0.7}
+            onPress={() => router.push('/modals/change-password')}
           >
             <View style={S.actionLeft}>
               <IconSymbol name="lock.fill" size={20} color={colors.primary} />

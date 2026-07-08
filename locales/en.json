@@ -871,5 +871,22 @@
     "search": "Search project...",
     "noResults": "No results",
     "empty": "You have no active projects"
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "subtitle": "Enter your current and new password to update it",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "submit": "Update Password",
+    "successTitle": "Password Updated",
+    "successMessage": "Your password has been changed successfully",
+    "errorTitle": "Error",
+    "errorMessage": "Could not change password. Please check your data.",
+    "validation": {
+      "required": "This field is required",
+      "minLength": "Password must be at least 6 characters",
+      "mismatch": "Passwords do not match"
+    }
   }
 }

@@ -120,3 +120,7 @@ mutation RefreshToken($token: String!) {
         }
     }
 }
+
+mutation ChangePassword($input: ChangePasswordInput!) {
+  changePassword(input: $input)
+}

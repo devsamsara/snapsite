@@ -314,6 +314,15 @@ export default function RootLayout() {
                   contentStyle: { backgroundColor: sheetBg },
                 }}
               />
+              <Stack.Screen
+                name="modals/change-password"
+                options={{
+                  headerShown: false,
+                  presentation: 'modal',
+                  animation: 'slide_from_bottom',
+                  contentStyle: { backgroundColor: sheetBg },
+                }}
+              />
             </Stack>
             <StatusBar style="auto" />
           </AuthProvider>

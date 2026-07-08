@@ -872,5 +872,22 @@
     "search": "Buscar proyecto...",
     "noResults": "Sin resultados",
     "empty": "No tienes proyectos activos"
+  },
+  "changePassword": {
+    "title": "Cambiar Contraseña",
+    "subtitle": "Ingresa tu contraseña actual y la nueva para actualizarla",
+    "currentPassword": "Contraseña Actual",
+    "newPassword": "Nueva Contraseña",
+    "confirmPassword": "Confirmar Nueva Contraseña",
+    "submit": "Actualizar Contraseña",
+    "successTitle": "Contraseña Actualizada",
+    "successMessage": "Tu contraseña ha sido cambiada correctamente",
+    "errorTitle": "Error",
+    "errorMessage": "No se pudo cambiar la contraseña. Verifica tus datos.",
+    "validation": {
+      "required": "Este campo es obligatorio",
+      "minLength": "La contraseña debe tener al menos 6 caracteres",
+      "mismatch": "Las contraseñas no coinciden"
+    }
   }
 }
