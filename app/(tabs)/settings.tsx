@@ -798,6 +798,44 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* ── ZONA PELIGROSA (solo Admin) ────────────────────────────────── */}
+          {user?.role === UserRole.Admin && (
+            <>
+              <Sl label={t('settings.sections.sectionDanger') ?? 'Zona peligrosa'} />
+              <View style={[S.card, cardElevation]}>
+                <TouchableOpacity
+                  onPress={handleDeleteCompany}
+                  style={S.row}
+                  activeOpacity={0.7}
+                >
+                  <View style={S.rowLeft}>
+                    <IconSymbol
+                      name="building.2.crop.circle.badge.minus"
+                      size={20}
+                      color={colors.error}
+                    />
+                    <View style={{ marginLeft: 16, flex: 1 }}>
+                      <Text style={[S.rowLabel, { color: colors.error }]}>
+                        {t('profile.deleteCompanyButton')}
+                      </Text>
+                      <Text
+                        style={[S.rowSublabel, { color: colors.muted, marginTop: 2 }]}
+                        numberOfLines={2}
+                      >
+                        {t('profile.deleteCompanyHint')}
+                      </Text>
+                    </View>
+                  </View>
+                  <IconSymbol
+                    name="chevron.right"
+                    size={16}
+                    color={colors.error}
+                  />
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
           {/* ── SESIÓN ─────────────────────────────────────────────────────── */}
           <Sl label={t('settings.sections.session') ?? 'Sesión'} />
           <View style={[S.card, cardElevation]}>
