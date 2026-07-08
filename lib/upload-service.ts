@@ -127,7 +127,6 @@ export const uploadPhoto = async ({
 }: UploadPhotoOptions): Promise<string> => {
   // ── Paso 0: normalizar la URI a file:// garantizado ──────────────────────────
   const safeUri = await ensureFileUri(localUri);
-  console.log('[uploadPhoto] safeUri:', safeUri);
 
   const { fileName, mimeType } = getFileInfo(safeUri);
 
@@ -139,8 +138,6 @@ export const uploadPhoto = async ({
   });
 
   const { uploadUrl, fileUrl } = data!.getUploadUrl;
-  console.log('[uploadPhoto] uploadUrl:', uploadUrl);
-  console.log('[uploadPhoto] fileUrl:', fileUrl);
 
   // ── Paso 2: leer el archivo local como blob y subir a S3 ──────────────────────
   // fetch() con file:// funciona en React Native (Hermes + expo-modules)
@@ -151,7 +148,6 @@ export const uploadPhoto = async ({
     );
   }
   const blob = await localResponse.blob();
-  console.log('[uploadPhoto] blob size:', blob.size, 'type:', blob.type);
 
   // ── Paso 3: PUT directo a S3 ──────────────────────────────────────────────────
   const s3Response = await fetch(uploadUrl, {
@@ -166,9 +162,6 @@ export const uploadPhoto = async ({
     const xml = await s3Response.text().catch(() => '');
     throw new Error(`S3 upload error ${s3Response.status}: ${xml}`);
   }
-
-  console.log('[uploadPhoto] S3 upload OK →', fileUrl);
-
   // ── Paso 4: registrar la foto en BD ──────────────────────────────────────────
   if (photoId) {
     // Edición — actualizar el registro existente con la nueva URL

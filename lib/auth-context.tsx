@@ -146,7 +146,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
         if (token) {
           // 3. Validar/refrescar datos del usuario en background
           try {
-            const { data, errors } = await apolloClient.query({
+            const { data, error } = await apolloClient.query({
               query: MeDocument,
               fetchPolicy: 'network-only',
             });
@@ -158,11 +158,11 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
                 AUTH_USER_KEY,
                 JSON.stringify(freshUser)
               );
-            } else if (errors?.length) {
+            } else if (Array.isArray(error) && error?.length) {
               // BUG CORREGIDO #9: El código anterior usaba error.graphQLErrors
               // pero con errorPolicy:'all', Apollo 4 devuelve los errores en el
               // campo `errors` del resultado, no en una excepción.
-              const isAuthError = errors.some(
+              const isAuthError = error.some(
                 (ge: any) =>
                   ge.extensions?.code === 'UNAUTHENTICATED' ||
                   ge.message?.toLowerCase().includes('unauthorized') ||
@@ -171,7 +171,9 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
               if (isAuthError) {
                 // El error link ya intentó el refresh. Si llegamos aquí,
                 // el refresh también falló → hacer signOut.
-                console.warn('[Auth] Me query failed with auth error after refresh attempt — signing out');
+                console.warn(
+                  '[Auth] Me query failed with auth error after refresh attempt — signing out'
+                );
                 await clearTokens();
                 await AsyncStorage.removeItem(AUTH_USER_KEY);
                 setUser(null);
@@ -224,9 +226,9 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     } else if (user && inAuthGroup) {
       AsyncStorage.getItem(ONBOARDING_DONE_KEY).then(done => {
         if (done === 'true') {
-          router.replace('/(tabs)');
+          router.push('/(tabs)');
         } else {
-          router.replace('/onboarding');
+          router.push('/onboarding');
         }
       });
     }
@@ -234,15 +236,15 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
-      const { data, errors } = await apolloClient.mutate({
+      const { data, error} = await apolloClient.mutate({
         mutation: LoginDocument,
         variables: { input: { email: email.trim().toLowerCase(), password } },
       });
 
       // BUG CORREGIDO #11: El código anterior comprobaba `error` (singular) pero
       // Apollo 4 con errorPolicy:'all' devuelve los errores en `errors` (plural).
-      if (errors?.length || !data) {
-        throw new Error(errors?.[0]?.message ?? 'Login failed');
+      if (Array.isArray(error) && error?.length || !data) {
+        throw new Error('Login failed');
       }
 
       const { token, refreshToken, user: userData } = data.login;
@@ -276,7 +278,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     const { contactPassword, contactEmail, contactName, size, industry } =
       input;
     try {
-      const { data, errors } = await apolloClient.mutate({
+      const { data, error } = await apolloClient.mutate({
         mutation: CreateCompanyDocument,
         variables: {
           input: {
@@ -290,17 +292,15 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
         },
       });
 
-      if (errors?.length || !data) {
-        throw new Error(errors?.[0]?.message ?? 'An unexpected error occurred.');
+      if(data) {
+        await AsyncStorage.removeItem(ONBOARDING_DONE_KEY);
+        await signIn(contactEmail.trim().toLowerCase(), contactPassword);
+
+      }
+      if (error || !data) {
+        throw new Error(`Registration failed ${error?.message}`);
       }
 
-      const { user: userData, token, refreshToken } = data.createCompany;
-      await setAuthToken(token);
-      await setRefreshToken(refreshToken ?? null);
-      await AsyncStorage.removeItem(ONBOARDING_DONE_KEY);
-      await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
-      setUser(userData as User);
-      router.replace('/onboarding');
     } catch (error) {
       throw new Error(extractMessage(error));
     }

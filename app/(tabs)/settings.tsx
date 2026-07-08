@@ -195,12 +195,6 @@ export default function SettingsScreen() {
       } catch {
         // No bloquear la UX si el backend falla
       }
-
-      AppAlert.alert(
-        t('settings.notifications.enabledTitle'),
-        t('settings.notifications.enabledMessage'),
-        [{ text: t('common.ok'), onPress: () => scheduleTestNotification() }]
-      );
     } else {
       // Obtener el token actual para poder desactivarlo en el backend
       const token = await getExpoPushToken();

@@ -98,8 +98,6 @@ export default function RegisterScreen() {
     const s1 = step1.getValues();
     setLoading(true);
     try {
-      console.log('Registering with:', { ...s1, ...data });
-
       const companyData: CreateCompanyInput = {
         name: s1.companyName,
         industry: s1.industry,

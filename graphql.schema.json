@@ -77,7 +77,6 @@ export type CreateCompanyResponse = DefaultResponse & {
   code: Scalars['String']['output'];
   company: Company;
   message: Scalars['String']['output'];
-  refreshToken: Scalars['String']['output'];
   success: Scalars['Boolean']['output'];
   token: Scalars['String']['output'];
   user: User;
