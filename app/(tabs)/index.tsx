@@ -297,6 +297,7 @@ export default function HomeScreen() {
   );
 
   if (authLoading || loading) {
+    console.log(authLoading)
     return <HomeSkeleton />;
   }
 

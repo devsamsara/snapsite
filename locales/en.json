@@ -20,7 +20,7 @@
     "error": "Error",
     "success": "Success",
     "version": "SnapSite v1.0.0",
-    "copyright": "© 2024 FieldCam. All rights reserved.",
+    "copyright": "© 2024 Snapsite. All rights reserved.",
     "today": "Today",
     "yesterday": "Yesterday",
     "twoDaysAgo": "Two days ago",
@@ -542,7 +542,7 @@
     "language": "Language",
     "languageDesc": "Español / English",
     "logout": "Log Out",
-    "footer": "© 2024 FieldCam. All rights reserved.",
+    "footer": "© 2024 Snapsite. All rights reserved.",
     "logoutConfirmTitle": "Sign out",
     "logoutConfirmMessage": "Are you sure you want to sign out?"
   },

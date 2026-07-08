@@ -77,6 +77,7 @@ export type CreateCompanyResponse = DefaultResponse & {
   code: Scalars['String']['output'];
   company: Company;
   message: Scalars['String']['output'];
+  refreshToken: Scalars['String']['output'];
   success: Scalars['Boolean']['output'];
   token: Scalars['String']['output'];
   user: User;
@@ -163,6 +164,7 @@ export type Mutation = {
   createNote: Note;
   createProject: Project;
   createTimelineEvent: TimelineEvent;
+  deactivateUser: User;
   deleteCompany: Scalars['Boolean']['output'];
   deleteNote: Scalars['Boolean']['output'];
   deletePhoto: Scalars['Boolean']['output'];
@@ -171,6 +173,7 @@ export type Mutation = {
   deleteUser: Scalars['Boolean']['output'];
   forgotPassword: Scalars['Boolean']['output'];
   login: AuthPayload;
+  permanentlyDeleteUser: Scalars['Boolean']['output'];
   refreshToken: AuthPayload;
   register: AuthPayload;
   registerPushToken: PushTokenResponse;
@@ -240,6 +243,11 @@ export type MutationCreateTimelineEventArgs = {
 };
 
 
+export type MutationDeactivateUserArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationDeleteCompanyArgs = {
   id: Scalars['ID']['input'];
 };
@@ -277,6 +285,11 @@ export type MutationForgotPasswordArgs = {
 
 export type MutationLoginArgs = {
   input: LoginInput;
+};
+
+
+export type MutationPermanentlyDeleteUserArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -967,3 +980,17 @@ export type UpdateUserMutationVariables = Exact<{
 
 
 export type UpdateUserMutation = { __typename?: 'Mutation', updateUser: { __typename?: 'User', avatarUrl?: string | null, createdAt: string, id: string, email: string, lastName?: string | null, name: string, nickname?: string | null, phone?: string | null, role: UserRole, status: UserStatus, updatedAt: string, company?: { __typename?: 'Company', id: string, name: string, users: Array<{ __typename?: 'User', id: string, name: string }> } | null, projects?: Array<{ __typename?: 'Project', createdAt: string, description: string, endDate?: string | null, id: string, latitude?: number | null, location: string, longitude?: number | null, name: string, progress: number, startDate: string, status: ProjectStatus, thumbnail?: string | null, members: Array<{ __typename?: 'User', id: string, email: string, name: string, lastName?: string | null }>, notes: Array<{ __typename?: 'Note', author: { __typename?: 'User', company?: { __typename?: 'Company', id: string, name: string } | null } }>, photos: Array<{ __typename?: 'Photo', id: string, url: string, createdAt: string }>, timeline?: Array<{ __typename?: 'TimelineEvent', id: string, description: string, createdAt: string, photoUrl?: string | null, title: string, type: TimelineEventType, updatedAt: string, project: { __typename?: 'Project', id: string, description: string } }> | null } | null> | null } };
+
+export type DeactivateUserMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeactivateUserMutation = { __typename?: 'Mutation', deactivateUser: { __typename?: 'User', id: string, name: string, status: UserStatus } };
+
+export type PermanentlyDeleteUserMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type PermanentlyDeleteUserMutation = { __typename?: 'Mutation', permanentlyDeleteUser: boolean };

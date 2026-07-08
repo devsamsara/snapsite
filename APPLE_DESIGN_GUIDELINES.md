@@ -1,13 +1,13 @@
-# Apple Design Guidelines - FieldCam Implementation
+# Apple Design Guidelines - SnapSite Implementation
 
-Este documento describe cómo se han aplicado los principios de diseño de Apple (Human Interface Guidelines) a la aplicación FieldCam.
+Este documento describe cómo se han aplicado los principios de diseño de Apple (Human Interface Guidelines) a la aplicación Snapsite.
 
 ## Espaciado y Layout
 
 ### Espaciado entre Iconos y Texto
 Según las **Human Interface Guidelines de Apple**, el espaciado entre iconos y texto debe ser consistente y proporcionar suficiente respiro visual.
 
-**Implementación en FieldCam:**
+**Implementación en Snapsite:**
 - **16px (marginLeft: 16)**: Para elementos de lista principales y navegación
   - Menús de configuración
   - Opciones de perfil

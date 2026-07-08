@@ -29,7 +29,7 @@ export default function AccountDetailsScreen() {
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
 
-  const isOwner = user?.role === UserRole.Root;
+  const isOwner = user?.role === UserRole.Admin || user?.role === UserRole.Root;
   const isMember =
     user?.role === UserRole.Admin || user?.role === UserRole.User;
 
@@ -310,7 +310,7 @@ export default function AccountDetailsScreen() {
             >
               <View style={S.actionLeft}>
                 <IconSymbol
-                  name="building.2.crop.circle.badge.minus"
+                  name="x.circle.fill"
                   size={20}
                   color={colors.error}
                 />

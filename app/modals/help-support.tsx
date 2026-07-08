@@ -42,20 +42,20 @@ export default function HelpSupportModal() {
     {
       icon: 'envelope.fill' as const,
       label: t('helpSupport.emailSupport'),
-      sub: 'support@fieldcam.app',
-      onPress: () => Linking.openURL('mailto:support@fieldcam.app'),
+      sub: 'support@snapsite.app',
+      onPress: () => Linking.openURL('mailto:support@snapiste.app'),
     },
     {
       icon: 'globe' as const,
       label: t('helpSupport.helpCenter'),
       sub: 'fieldcam.app/help',
-      onPress: () => Linking.openURL('https://fieldcam.app/help'),
+      onPress: () => Linking.openURL('https://snapsite.app/help'),
     },
     /*{
       icon: 'bubble.left.fill' as const,
       label: t('helpSupport.liveChat'),
       sub: t('helpSupport.liveChatSub'),
-      onPress: () => Linking.openURL('https://fieldcam.app/chat'),
+      onPress: () => Linking.openURL('https://snapsite.app/chat'),
     },*/
   ];
 

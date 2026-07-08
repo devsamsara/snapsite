@@ -111,10 +111,10 @@ export function useNotifications(): NotificationHookResult {
  * Seguro de llamar en cualquier momento.
  */
 export async function getPermissionStatus(): Promise<PushPermissionStatus> {
-  if (!Constants.isDevice) return 'unavailable';
+
   try {
     const { status } = await Notifications.getPermissionsAsync();
-    return status as PushPermissionStatus;
+    return status;
   } catch {
     return 'unavailable';
   }
@@ -146,7 +146,13 @@ export async function requestPushPermission(): Promise<string | null> {
   let finalStatus = existingStatus;
 
   if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
+    const { status } = await Notifications.requestPermissionsAsync({
+      ios: {
+        allowAlert: true,
+        allowBadge: true,
+        allowSound: true,
+      },
+    });
     finalStatus = status;
   }
 

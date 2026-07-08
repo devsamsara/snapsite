@@ -82,7 +82,7 @@ export default function SettingsScreen() {
   const { signOut, user, isLoading: authLoading } = useAuth();
   const nav = useNavLock();
 
-  const isOwner = user?.role === UserRole.Root;
+  const isOwner = user?.role === UserRole.Admin || user?.role === UserRole.Root;
   const userName = user?.name ?? user?.nickname ?? null;
   const companyName = user?.company?.name ?? null;
 
@@ -99,6 +99,7 @@ export default function SettingsScreen() {
   const { data:userProjects, loading } = useQuery(GetMyProjectsDocument, {
     skip: authLoading,
   });
+
 
   // Sincronizar el toggle con el estado real: primero SO, luego backend
   // Lógica:
@@ -799,7 +800,7 @@ export default function SettingsScreen() {
           </View>
 
           {/* ── ZONA PELIGROSA (solo Admin) ────────────────────────────────── */}
-          {user?.role === UserRole.Admin && (
+          {isOwner && (
             <>
               <Sl label={t('settings.sections.sectionDanger') ?? 'Zona peligrosa'} />
               <View style={[S.card, cardElevation]}>
@@ -810,7 +811,7 @@ export default function SettingsScreen() {
                 >
                   <View style={S.rowLeft}>
                     <IconSymbol
-                      name="building.2.crop.circle.badge.minus"
+                      name="x.circle.fill"
                       size={20}
                       color={colors.error}
                     />
@@ -819,18 +820,13 @@ export default function SettingsScreen() {
                         {t('profile.deleteCompanyButton')}
                       </Text>
                       <Text
-                        style={[S.rowSublabel, { color: colors.muted, marginTop: 2 }]}
+                        style={[S.rowSublabel, { color: colors.error, marginTop: 2 }]}
                         numberOfLines={2}
                       >
                         {t('profile.deleteCompanyHint')}
                       </Text>
                     </View>
                   </View>
-                  <IconSymbol
-                    name="chevron.right"
-                    size={16}
-                    color={colors.error}
-                  />
                 </TouchableOpacity>
               </View>
             </>

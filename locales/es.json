@@ -20,7 +20,7 @@
     "error": "Error",
     "success": "Éxito",
     "version": "SnapSite v1.0.0",
-    "copyright": "© 2024 FieldCam. Todos los derechos reservados.",
+    "copyright": "© 2024 Snapsite. Todos los derechos reservados.",
     "today": "Hoy",
     "yesterday": "Ayer",
     "twoDaysAgo": "Antier",
@@ -499,7 +499,8 @@
       "general": "General",
       "account": "Cuenta",
       "company": "Empresa",
-      "session": "Sesión"
+      "session": "Sesión",
+      "sectionDanger": "Zona peligrosa"
     },
     "profile": {
       "editProfile": "Editar Perfil",
@@ -542,7 +543,7 @@
     "language": "Idioma",
     "languageDesc": "Español / English",
     "logout": "Cerrar sesión",
-    "footer": "© 2024 FieldCam. Todos los derechos reservados.",
+    "footer": "© 2024 Snapsite. Todos los derechos reservados.",
     "logoutConfirmTitle": "Cerrar sesión",
     "logoutConfirmMessage": "¿Estás seguro de que quieres cerrar sesión?"
   },

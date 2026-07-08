@@ -1,8 +1,8 @@
-# Configuración de Push Notifications - FieldCam
+# Configuración de Push Notifications - Snapsite
 
 ## Resumen
 
-Se ha implementado un sistema completo de notificaciones push en FieldCam utilizando `expo-notifications`. El sistema incluye:
+Se ha implementado un sistema completo de notificaciones push en Snapsite utilizando `expo-notifications`. El sistema incluye:
 
 - Solicitud de permisos de notificaciones
 - Registro de tokens push
@@ -150,7 +150,7 @@ await Notifications.setNotificationChannelAsync('default', {
 **Características:**
 - **Importancia**: Máxima (aparece como heads-up)
 - **Vibración**: Patrón de 3 vibraciones de 250ms
-- **Color LED**: Azul primario de FieldCam (#2563EB)
+- **Color LED**: Azul primario de Snapsite (#2563EB)
 
 ## Notificación de Prueba
 
@@ -158,8 +158,8 @@ Al activar las notificaciones push, se envía una notificación de prueba:
 
 ```typescript
 {
-  title: "FieldCam Notification 📸",
-  body: 'This is a test notification from FieldCam!',
+  title: "Snapsite Notification",
+  body: 'This is a test notification from Snapsite!',
   data: { data: 'goes here' },
   trigger: { seconds: 2 },
 }

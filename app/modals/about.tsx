@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
   Linking,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -38,7 +39,7 @@ export default function AboutModal() {
     {
       icon: 'globe' as const,
       label: t('about.website'),
-      onPress: () => Linking.openURL('https://fieldcam.app'),
+      onPress: () => Linking.openURL('https://snapiste.app'),
     },
   ];
 
@@ -59,15 +60,26 @@ export default function AboutModal() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[S.content, { paddingBottom: insets.bottom + 32 }]}
+        contentContainerStyle={[
+          S.content,
+          { paddingBottom: insets.bottom + 32 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* App logo & version */}
         <View style={S.logoSection}>
           <View style={[S.logoContainer, { backgroundColor: colors.primary }]}>
-            <IconSymbol name="camera.fill" size={40} color="#FFFFFF" />
+            {/*<IconSymbol name="camera.fill" size={40} color="#FFFFFF" />*/}
+            <Image
+              resizeMode="contain"
+              source={require('@/assets/images/icon.png')}
+              borderRadius={12}
+              style={{ width: 120, height: 120, borderRadius: 8 }}
+            />
           </View>
-          <Text style={[S.appName, { color: colors.foreground }]}>FieldCam</Text>
+          <Text style={[S.appName, { color: colors.foreground }]}>
+            Snapsite
+          </Text>
           <Text style={[S.version, { color: colors.muted }]}>
             {t('about.version', { version: APP_VERSION, build: BUILD_NUMBER })}
           </Text>
