@@ -294,8 +294,9 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
         throw new Error(errors?.[0]?.message ?? 'An unexpected error occurred.');
       }
 
-      const { user: userData, token } = data.createCompany;
+      const { user: userData, token, refreshToken } = data.createCompany;
       await setAuthToken(token);
+      await setRefreshToken(refreshToken ?? null);
       await AsyncStorage.removeItem(ONBOARDING_DONE_KEY);
       await AsyncStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData));
       setUser(userData as User);
