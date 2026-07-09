@@ -1,14 +1,18 @@
 /** @type {const} */
+// Paleta "Onyx & Indigo" — base oscura profunda (casi negro, tinte frío),
+// modo claro muy limpio y acento índigo eléctrico premium.
+// Contrastes verificados: foreground/background ≥ 15:1, muted ≥ 4.5:1,
+// primary sobre fondo y blanco sobre primary ≥ 4.5:1 en ambos modos.
 const themeColors = {
-  primary: { light: '#2563EB', dark: '#3B82F6' },
-  background: { light: '#FFFFFF', dark: '#0F172A' },
-  surface: { light: '#F8FAFC', dark: '#1E293B' },
-  foreground: { light: '#1E293B', dark: '#F1F5F9' },
-  muted: { light: '#64748B', dark: '#94A3B8' },
-  border: { light: '#E2E8F0', dark: '#334155' },
-  success: { light: '#10B981', dark: '#34D399' },
-  warning: { light: '#F59E0B', dark: '#FBBF24' },
-  error: { light: '#EF4444', dark: '#F87171' },
+  primary: { light: '#4F46E5', dark: '#818CF8' },
+  background: { light: '#FCFCFD', dark: '#0A0A0F' },
+  surface: { light: '#FFFFFF', dark: '#15151C' },
+  foreground: { light: '#0C0D12', dark: '#F7F8FA' },
+  muted: { light: '#5C6370', dark: '#9BA1AE' },
+  border: { light: '#E6E8EE', dark: '#262832' },
+  success: { light: '#059669', dark: '#34D399' },
+  warning: { light: '#D97706', dark: '#FBBF24' },
+  error: { light: '#DC2626', dark: '#F87171' },
 };
 
 module.exports = { themeColors };

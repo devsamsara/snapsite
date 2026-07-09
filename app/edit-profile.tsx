@@ -21,6 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { ScreenContainer } from "@/components/screen-container";
 import { AppInput } from "@/components/ui/app-input";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { ScreenHeader } from "@/components/ui/screen-header";
 import { useColors } from "@/hooks/use-colors";
 import { useCardStyle } from "@/hooks/use-card-style";
 import { useAuth } from "@/lib/auth-context";
@@ -216,48 +217,41 @@ export default function EditProfileScreen() {
       <View style={{ flex: 1, backgroundColor: colors.background }}>
 
         {/* ── Header ── */}
-        <View style={[S.header, { borderBottomColor: colors.border }]}>
-          <View style={S.headerLeft}>
+        <ScreenHeader
+          title={t('editProfile.title')}
+          onBack={() => router.back()}
+          withSafeArea={false}
+          right={
             <TouchableOpacity
-              onPress={() => router.back()}
-              style={[S.backBtn, { backgroundColor: colors.surface }]}
+              onPress={handleSubmit(onSave)}
+              disabled={!isValid || !isDirty || isSubmitting}
+              style={[
+                S.saveBtn,
+                {
+                  backgroundColor: (!isValid || !isDirty || isSubmitting)
+                    ? (isSubmitting ? colors.primary : colors.border)
+                    : colors.primary
+                },
+                (!isValid || !isDirty) && !isSubmitting && { opacity: 0.5 }
+              ]}
             >
-              <IconSymbol name="chevron.left" size={20} color={colors.foreground} />
+              {isSubmitting ? (
+                <View style={S.loadingContainer}>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                </View>
+              ) : (
+                <Text
+                  style={[
+                    S.saveBtnTxt,
+                    { color: (!isValid || !isDirty) ? colors.muted : "#FFFFFF" }
+                  ]}
+                >
+                  {t('common.save')}
+                </Text>
+              )}
             </TouchableOpacity>
-            <Text style={[S.headerTitle, { color: colors.foreground }]}>
-              {t('editProfile.title')}
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            onPress={handleSubmit(onSave)}
-            disabled={!isValid || !isDirty || isSubmitting}
-            style={[
-              S.saveBtn,
-              {
-                backgroundColor: (!isValid || !isDirty || isSubmitting)
-                  ? (isSubmitting ? colors.primary : colors.border)
-                  : colors.primary
-              },
-              (!isValid || !isDirty) && !isSubmitting && { opacity: 0.5 }
-            ]}
-          >
-            {isSubmitting ? (
-              <View style={S.loadingContainer}>
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              </View>
-            ) : (
-              <Text
-                style={[
-                  S.saveBtnTxt,
-                  { color: (!isValid || !isDirty) ? colors.muted : "#FFFFFF" }
-                ]}
-              >
-                {t('common.save')}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
+          }
+        />
 
         {/* ── Content ── */}
         <ScrollView
@@ -382,17 +376,6 @@ export default function EditProfileScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const S = StyleSheet.create({
-  header: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  headerLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-  backBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    alignItems: "center", justifyContent: "center",
-  },
-  headerTitle: { fontSize: 22, fontWeight: "700" },
   saveBtn: {
     paddingHorizontal: 16,
     paddingVertical: 8,

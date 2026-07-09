@@ -491,7 +491,7 @@ export default function SettingsScreen() {
                   <Text style={[S.rowLabel, { color: colors.foreground }]}>
                     {companyName ?? '—'}
                   </Text>
-                  <Text style={S.rowSublabel}>
+                  <Text style={[S.rowSublabel, { color: colors.muted }]}>
                     {isOwner ? t('roles.root') : t('roles.admin')}
                   </Text>
                 </View>
@@ -541,7 +541,7 @@ export default function SettingsScreen() {
                   <Text style={[S.rowLabel, { color: colors.foreground }]}>
                     {t('settings.appearance.darkMode')}
                   </Text>
-                  <Text style={S.rowSublabel}>
+                  <Text style={[S.rowSublabel, { color: colors.muted }]}>
                     {t('settings.appearance.darkModeDesc')}
                   </Text>
                 </View>
@@ -618,7 +618,7 @@ export default function SettingsScreen() {
                   <Text style={[S.rowLabel, { color: colors.foreground }]}>
                     {t('settings.notifications.push')}
                   </Text>
-                  <Text style={S.rowSublabel}>
+                  <Text style={[S.rowSublabel, { color: colors.muted }]}>
                     {t('settings.notifications.pushDesc')}
                   </Text>
                 </View>
@@ -641,7 +641,7 @@ export default function SettingsScreen() {
                   <Text style={[S.rowLabel, { color: colors.foreground }]}>
                     {t('settings.notifications.email')}
                   </Text>
-                  <Text style={S.rowSublabel}>
+                  <Text style={[S.rowSublabel, { color: colors.muted }]}>
                     {t('settings.notifications.emailDesc')}
                   </Text>
                 </View>
@@ -673,7 +673,7 @@ export default function SettingsScreen() {
                   <Text style={[S.rowLabel, { color: colors.foreground }]}>
                     {t('accountDetails.title')}
                   </Text>
-                  <Text style={S.rowSublabel}>
+                  <Text style={[S.rowSublabel, { color: colors.muted }]}>
                     {t('accountDetails.subtitle')}
                   </Text>
                 </View>
@@ -731,7 +731,7 @@ export default function SettingsScreen() {
                   <Text style={[S.rowLabel, { color: colors.foreground }]}>
                     {t('settings.language')}
                   </Text>
-                  <Text style={S.rowSublabel}>
+                  <Text style={[S.rowSublabel, { color: colors.muted }]}>
                     {t('settings.languageDesc')}
                   </Text>
                 </View>
@@ -783,7 +783,7 @@ export default function SettingsScreen() {
                 </Text>
               </View>
               <View style={S.rowRight}>
-                <Text style={S.rowSublabel}>v1.0.0</Text>
+                <Text style={[S.rowSublabel, { color: colors.muted }]}>v1.0.0</Text>
                 <IconSymbol
                   name="chevron.right"
                   size={16}
@@ -866,17 +866,17 @@ export default function SettingsScreen() {
 
 const S = StyleSheet.create({
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: 20,
+    paddingTop: 20,
     paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  headerTitle: { fontSize: 30, fontWeight: '700', letterSpacing: -0.5 },
+  headerTitle: { fontSize: 30, fontWeight: '800', letterSpacing: -0.5 },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 40,
+    paddingBottom: 120,
     gap: 4,
   },
   sectionLabel: {
@@ -887,7 +887,7 @@ const S = StyleSheet.create({
     marginBottom: 6,
     paddingHorizontal: 4,
   },
-  card: { borderRadius: 16, overflow: 'hidden', marginBottom: 4 },
+  card: { borderRadius: 18, overflow: 'hidden', marginBottom: 4 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -898,11 +898,11 @@ const S = StyleSheet.create({
   rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   rowTextBlock: { flex: 1, marginLeft: 16 },
   rowLabel: { fontSize: 15, fontWeight: '600' },
-  rowSublabel: { fontSize: 12, color: '#8E8E93', marginTop: 1 },
+  rowSublabel: { fontSize: 12, marginTop: 1 },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   // Profile card
   profileCard: {
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 16,
     alignItems: 'center',
     marginBottom: 4,

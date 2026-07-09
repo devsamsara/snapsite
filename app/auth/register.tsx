@@ -17,7 +17,6 @@ import {
   TouchableOpacity,
   Pressable,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -36,6 +35,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
 import { CreateCompanyInput } from '@/gql/graphql';
 import { AppAlert } from '@/components/ui/app-alert';
+import { spacing } from '@/constants/spacing';
+import { type } from '@/constants/typography';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -143,9 +144,11 @@ export default function RegisterScreen() {
           onPress={handleBack}
           style={({ pressed }) => [
             S.backButton,
-            { backgroundColor: colors.surface, borderRadius: 10 },
+            { backgroundColor: colors.surface, borderColor: colors.border },
             pressed && { opacity: 0.7 },
           ]}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back', 'Atrás')}
         >
           <IconSymbol name="chevron.left" size={22} color={colors.foreground} />
         </Pressable>
@@ -338,27 +341,27 @@ const S = StyleSheet.create({
 
   // Header fijo (estilo referencia)
   headerContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 8,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
   },
   backButton: {
     width: 44,
     height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   header: {
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 4,
+    ...type.title1,
+    marginBottom: spacing.xs,
   },
   subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
+    ...type.subhead,
   },
 
   // Step indicator (estilo referencia)
@@ -391,8 +394,8 @@ const S = StyleSheet.create({
   },
   slideContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 8,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
   },
   formContainer: {
     flex: 1,

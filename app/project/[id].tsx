@@ -1066,7 +1066,7 @@ const S = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
   },
@@ -1096,7 +1096,7 @@ const S = StyleSheet.create({
   },
 
   // Hero
-  heroWrapper: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
+  heroWrapper: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
   heroCard: { borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
   heroImgWrapper: { position: 'relative' },
   heroImg: { width: '100%', height: 140 },
@@ -1160,7 +1160,7 @@ const S = StyleSheet.create({
 
   // Gallery
   galleryScroll: { paddingBottom: 32 },
-  tagScroll: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
+  tagScroll: { paddingHorizontal: 20, paddingVertical: 12, gap: 8 },
   tag: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -1169,7 +1169,7 @@ const S = StyleSheet.create({
   },
   tagText: { fontSize: 12, fontWeight: '600' },
   photoCountRow: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1185,7 +1185,7 @@ const S = StyleSheet.create({
     borderRadius: 20,
   },
   addPhotoBtnText: { fontSize: 13, fontWeight: '700' },
-  gridWrapper: { paddingHorizontal: 16 },
+  gridWrapper: { paddingHorizontal: 20 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   gridItem: { borderRadius: 16, overflow: 'hidden' },
   gridItemImg: { width: '100%', height: 150 },
@@ -1244,7 +1244,7 @@ const S = StyleSheet.create({
   emptyBtnText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
 
   // Timeline
-  timelineScroll: { paddingHorizontal: 16, paddingBottom: 32, paddingTop: 8 },
+  timelineScroll: { paddingHorizontal: 20, paddingBottom: 32, paddingTop: 8 },
   timelineRow: { flexDirection: 'row', gap: 12 },
   timelineIconCol: { alignItems: 'center', width: 36 },
   timelineIconBg: {
@@ -1269,7 +1269,7 @@ const S = StyleSheet.create({
   },
 
   // Team
-  teamScroll: { paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 },
+  teamScroll: { paddingHorizontal: 20, paddingBottom: 100, paddingTop: 8 },
   statsRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   statCard: { borderRadius: 16, padding: 14, alignItems: 'center' },
   statValue: { fontSize: 22, fontWeight: '800', marginTop: 6 },
@@ -1298,7 +1298,7 @@ const S = StyleSheet.create({
   },
 
   // Notes
-  notesScroll: { paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 },
+  notesScroll: { paddingHorizontal: 20, paddingBottom: 100, paddingTop: 8 },
   noteCard: { marginBottom: 12 },
   pinnedRow: {
     flexDirection: 'row',

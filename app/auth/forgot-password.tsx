@@ -2,43 +2,36 @@
  * app/auth/forgot-password.tsx
  *
  * Pantalla de recuperación de contraseña.
- * Adapta colores (dark/light) y estilo de card (flat/elevated).
+ * Estructura unificada de formularios: FormScreen + HeroHeader + card + CTA fija.
  */
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { StyleSheet } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle } from '@/hooks/use-card-style';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AppInput } from '@/components/ui/app-input';
 import { Button } from '@/components/ui/button';
+import { HeroHeader } from '@/components/ui/hero-header';
+import { FormScreen } from '@/components/ui/form-screen';
+import { spacing } from '@/constants/spacing';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/lib/auth-context';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as z from 'zod';
 import { AppAlert } from '@/components/ui/app-alert';
 
 type FormValues = { email: string };
 
 export default function ForgotPasswordScreen() {
-  const { t }                   = useTranslation();
-  const [loading, setLoading]   = useState(false);
-  const [sent, setSent]         = useState(false);
-  const { forgotPassword }      = useAuth();
-  const colors                  = useColors();
-  const cardElevation           = useCardStyle();
-  const router                  = useRouter();
-  const insets                  = useSafeAreaInsets();
+  const { t }                 = useTranslation();
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent]       = useState(false);
+  const { forgotPassword }    = useAuth();
+  const colors                = useColors();
+  const cardElevation         = useCardStyle();
+  const router                = useRouter();
 
   const schema = z.object({
     email: z.string().email(t('validation.emailInvalid')),
@@ -65,92 +58,71 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[S.container, { backgroundColor: colors.background }]}
-    >
-      <View style={[S.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 }]}>
-
-        {/* Back */}
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={[S.backBtn, { backgroundColor: colors.surface }]}
-        >
-          <IconSymbol name="chevron.left" size={20} color={colors.foreground} />
-        </TouchableOpacity>
-
-        {/* Icono + título */}
-        <View style={S.header}>
-          <View
-            style={[
-              S.iconCircle,
-              { backgroundColor: sent ? colors.success + '18' : colors.primary + '18' },
-            ]}
-          >
-            <IconSymbol
-              name={sent ? "checkmark.circle.fill" : "lock.rotation"}
-              size={44}
-              color={sent ? colors.success : colors.primary}
-            />
-          </View>
-          <Text style={[S.title, { color: colors.foreground }]}>
-            {sent ? t('auth.forgotPassword.titleSent') : t('auth.forgotPassword.title')}
-          </Text>
-          <Text style={[S.subtitle, { color: colors.muted }]}>
-            {sent
+    <FormScreen
+      title={t('auth.forgotPassword.title')}
+      onBack={() => router.back()}
+      hero={
+        <HeroHeader
+          key={sent ? 'sent' : 'form'}
+          icon={sent ? 'checkmark.circle.fill' : 'lock.rotation'}
+          tint={sent ? colors.success : colors.primary}
+          title={sent ? t('auth.forgotPassword.titleSent') : undefined}
+          subtitle={
+            sent
               ? t('auth.forgotPassword.subtitleSent', { email: getValues('email') })
-              : t('auth.forgotPassword.subtitle')}
-          </Text>
-        </View>
-
-        {/* Formulario / Confirmación */}
-        {!sent ? (
-          <View style={[S.card, cardElevation]}>
-            <AppInput
-              label={t('auth.forgotPassword.email')}
-              name="email"
-              control={control}
-              placeholder={t('auth.forgotPassword.emailPlaceholder')}
-              icon="envelope.fill"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <Button
-              title={t('auth.forgotPassword.submit')}
-              onPress={handleSubmit(onSubmit)}
-              isLoading={loading}
-              size="lg"
-            />
-          </View>
+              : t('auth.forgotPassword.subtitle')
+          }
+        />
+      }
+      footer={
+        sent ? (
+          <Button
+            title={t('auth.forgotPassword.backToLogin')}
+            onPress={() => router.push('/auth/login')}
+            size="lg"
+          />
         ) : (
-          <View style={[S.card, cardElevation]}>
-            <Button
-              title={t('auth.forgotPassword.backToLogin')}
-              onPress={() => router.push('/auth/login')}
-              size="lg"
-            />
-            <Button
-              title={t('auth.forgotPassword.resend')}
-              onPress={handleSubmit(onSubmit)}
-              variant="ghost"
-              size="md"
-              style={S.resendBtn}
-            />
-          </View>
-        )}
-      </View>
-    </KeyboardAvoidingView>
+          <Button
+            title={t('auth.forgotPassword.submit')}
+            onPress={handleSubmit(onSubmit)}
+            isLoading={loading}
+            size="lg"
+          />
+        )
+      }
+    >
+      {!sent ? (
+        <Animated.View
+          entering={FadeInDown.duration(450).delay(80).springify().damping(18)}
+          style={[S.card, cardElevation]}
+        >
+          <AppInput
+            label={t('auth.forgotPassword.email')}
+            name="email"
+            control={control}
+            placeholder={t('auth.forgotPassword.emailPlaceholder')}
+            icon="envelope.fill"
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        </Animated.View>
+      ) : (
+        <Animated.View
+          entering={FadeInDown.duration(450).delay(80).springify().damping(18)}
+        >
+          <Button
+            title={t('auth.forgotPassword.resend')}
+            onPress={handleSubmit(onSubmit)}
+            isLoading={loading}
+            variant="ghost"
+            size="md"
+          />
+        </Animated.View>
+      )}
+    </FormScreen>
   );
 }
 
 const S = StyleSheet.create({
-  container: { flex: 1 },
-  content:   { flex: 1, paddingHorizontal: 16 },
-  backBtn:   { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
-  header:    { alignItems: 'center', marginBottom: 24 },
-  iconCircle: { width: 80, height: 80, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  title:     { fontSize: 24, fontWeight: '800', marginBottom: 8, textAlign: 'center' },
-  subtitle:  { fontSize: 15, textAlign: 'center', lineHeight: 22 },
-  card:      { borderRadius: 16, padding: 16, gap: 12 },
-  resendBtn: { marginTop: 4 },
+  card: { borderRadius: 18, padding: spacing.cardPad, gap: spacing.md },
 });

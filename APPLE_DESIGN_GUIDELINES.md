@@ -57,25 +57,30 @@ Utilizamos las fuentes nativas del sistema para cada plataforma:
 ### Modo Claro y Oscuro
 La aplicación soporta completamente el modo oscuro siguiendo las especificaciones de Apple:
 
+Paleta "Onyx & Indigo" (2026-07): base oscura profunda, modo claro muy limpio,
+acento índigo eléctrico. Fuente de verdad: `theme.config.js`.
+
 **Modo Claro:**
-- Background: `#FFFFFF`
-- Surface: `#F8FAFC`
-- Foreground: `#1E293B`
-- Muted: `#64748B`
-- Border: `#E2E8F0`
+- Background: `#FCFCFD`
+- Surface: `#FFFFFF`
+- Foreground: `#0C0D12`
+- Muted: `#5C6370`
+- Border: `#E6E8EE`
 
 **Modo Oscuro:**
-- Background: `#0F172A`
-- Surface: `#1E293B`
-- Foreground: `#F1F5F9`
-- Muted: `#94A3B8`
-- Border: `#334155`
+- Background: `#0A0A0F`
+- Surface: `#15151C`
+- Foreground: `#F7F8FA`
+- Muted: `#9BA1AE`
+- Border: `#262832`
 
 ### Colores de Acento
-- **Primary**: `#2563EB` (light) / `#3B82F6` (dark)
-- **Success**: `#10B981` (light) / `#34D399` (dark)
-- **Warning**: `#F59E0B` (light) / `#FBBF24` (dark)
-- **Error**: `#EF4444` (light) / `#F87171` (dark)
+- **Primary**: `#4F46E5` (light) / `#818CF8` (dark)
+- **Success**: `#059669` (light) / `#34D399` (dark)
+- **Warning**: `#D97706` (light) / `#FBBF24` (dark)
+- **Error**: `#DC2626` (light) / `#F87171` (dark)
+
+Tokens glassmorphism (`glass`, `glassBorder`, `scrim`) en `lib/_core/theme.ts`.
 
 ### Implementación del Modo Oscuro
 ```typescript

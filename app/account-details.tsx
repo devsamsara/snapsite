@@ -10,7 +10,9 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { useColors } from '@/hooks/use-colors';
+import { spacing } from '@/constants/spacing';
 import { useCardStyle } from '@/hooks/use-card-style';
 import { useAuth } from '@/lib/auth-context';
 import { AppAlert } from '@/components/ui/app-alert';
@@ -153,18 +155,10 @@ export default function AccountDetailsScreen() {
   return (
     <View style={[S.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[S.header, { borderBottomColor: colors.border, paddingTop: insets.top + 12 }]}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={[S.backBtn, { backgroundColor: colors.surface }]}
-        >
-          <IconSymbol name="chevron.left" size={20} color={colors.foreground} />
-        </TouchableOpacity>
-        <Text style={[S.headerTitle, { color: colors.foreground }]}>
-          {t('accountDetails.title')}
-        </Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader
+        title={t('accountDetails.title')}
+        onBack={() => router.back()}
+      />
 
       <ScrollView
         contentContainerStyle={[
@@ -337,23 +331,7 @@ export default function AccountDetailsScreen() {
 
 const S = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: { fontSize: 18, fontWeight: '700' },
-  content: { paddingHorizontal: 16, paddingTop: 24 },
+  content: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl },
   sectionLabel: {
     fontSize: 11,
     fontWeight: '700',
@@ -361,7 +339,7 @@ const S = StyleSheet.create({
     letterSpacing: 0.6,
     marginBottom: 8,
   },
-  card: { borderRadius: 16, padding: 16, marginBottom: 16 },
+  card: { borderRadius: 18, padding: 16, marginBottom: 16 },
   listCard: { padding: 0, overflow: 'hidden' },
   infoRow: {
     flexDirection: 'row',

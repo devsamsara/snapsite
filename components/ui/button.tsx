@@ -146,7 +146,11 @@ export function Button({
       return (
         <ActivityIndicator
           size="small"
-          color={(variant === "primary" || variant === "danger" || isLoading) ? "#FFFFFF" : colors.primary}
+          color={
+            variant === "primary" || variant === "danger"
+              ? "#FFFFFF"
+              : colors.primary
+          }
         />
       );
     }
@@ -202,7 +206,7 @@ export function Button({
           borderRadius:     sz.borderRadius,
           paddingHorizontal: sz.paddingH,
           backgroundColor:  bgColor(),
-          borderWidth:      variant === "secondary" ? 1.5 : 0,
+          borderWidth:      variant === "secondary" ? 1 : 0,
           borderColor,
           width:            fullWidth ? "100%" : undefined,
           alignSelf:        fullWidth ? "stretch" : "flex-start",
@@ -236,6 +240,7 @@ const S = StyleSheet.create({
   text: {
     fontWeight: "600",
     textAlign:  "center",
+    letterSpacing: 0.2,
   },
   linkText: {
     fontWeight: "500",
@@ -243,6 +248,8 @@ const S = StyleSheet.create({
   },
   iconLeft:  { marginRight: 6 },
   iconRight: { marginLeft:  6 },
-  pressed:   { opacity: 0.72 },
+  // Feedback de presión: leve escala + opacidad. transform no altera el
+  // layout circundante, así que no hay jitter.
+  pressed:   { opacity: 0.85, transform: [{ scale: 0.98 }] },
   disabled:  { opacity: 0.5 },
 });

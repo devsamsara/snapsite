@@ -16,11 +16,12 @@
 import { Platform } from "react-native";
 import { useThemeContext } from "@/lib/theme-provider";
 import { useColors } from "@/hooks/use-colors";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export function useCardStyle() {
   const { cardStyle } = useThemeContext();
   const colors = useColors();
-  const isDark = colors.background === "#0F172A"; // dark scheme
+  const isDark = useColorScheme() === "dark";
 
   if (cardStyle === "flat") {
     // Diseño plano: solo borde, sin sombra
@@ -33,8 +34,8 @@ export function useCardStyle() {
 
   // Diseño elevado: sombra + borde sutil del mismo tono que la sombra
   // El borde delimita el card sin ser obvio (mismo color que la sombra, bajo alpha)
-  const shadowColor = isDark ? "#000000" : "#1E293B";
-  const borderColor = isDark ? "rgba(0,0,0,0.32)" : "rgba(30,41,59,0.11)";
+  const shadowColor = isDark ? "#000000" : "#0C0D12";
+  const borderColor = isDark ? "rgba(0,0,0,0.32)" : "rgba(12,13,18,0.10)";
 
   if (Platform.OS === "ios") {
     return {
@@ -63,7 +64,7 @@ export function useCardStyle() {
 export function useCardStyleSm() {
   const { cardStyle } = useThemeContext();
   const colors = useColors();
-  const isDark = colors.background === "#0F172A";
+  const isDark = useColorScheme() === "dark";
 
   if (cardStyle === "flat") {
     return {
@@ -73,8 +74,8 @@ export function useCardStyleSm() {
     };
   }
 
-  const shadowColorSm = isDark ? "#000000" : "#1E293B";
-  const borderColorSm = isDark ? "rgba(0,0,0,0.28)" : "rgba(30,41,59,0.09)";
+  const shadowColorSm = isDark ? "#000000" : "#0C0D12";
+  const borderColorSm = isDark ? "rgba(0,0,0,0.28)" : "rgba(12,13,18,0.08)";
 
   if (Platform.OS === "ios") {
     return {

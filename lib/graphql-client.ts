@@ -13,6 +13,24 @@ import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import { RefreshTokenDocument, type RefreshTokenMutation } from "@/gql/graphql";
 
+// Apollo 4 exige declarar los defaultOptions para que los resultados
+// tipados (MutateResult, QueryResult) reflejen el errorPolicy real.
+declare module '@apollo/client' {
+  namespace ApolloClient {
+    namespace DeclareDefaultOptions {
+      interface WatchQuery {
+        errorPolicy: 'all';
+      }
+      interface Query {
+        errorPolicy: 'all';
+      }
+      interface Mutate {
+        errorPolicy: 'all';
+      }
+    }
+  }
+}
+
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 const GRAPHQL_URL: string =
@@ -232,13 +250,10 @@ const errorLink = new ErrorLink(({ error, operation, forward }) => {
       });
 
     doRefresh()
-      .then(async ({ data, errors }) => {
-        // BUG CORREGIDO #4: El código anterior comprobaba `error` (del mutate) pero
-        // Apollo 4 con errorPolicy:'all' devuelve los errores en `errors`, no en `error`.
-        if (errors?.length || !data?.refreshToken?.token) {
-          throw new Error(
-            errors?.[0]?.message ?? 'Refresh failed: no token in response'
-          );
+      .then(async ({ data, error }) => {
+        // Apollo 4 con errorPolicy:'all' combina los errores GraphQL en `error`.
+        if (error || !data?.refreshToken?.token) {
+          throw error ?? new Error('Refresh failed: no token in response');
         }
 
         const payload = data.refreshToken;

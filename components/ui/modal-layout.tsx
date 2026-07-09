@@ -79,7 +79,13 @@ export function ModalHeader({
   return (
     // zIndex + backgroundColor garantizan que el header siempre quede
     // encima del ScrollView del ModalBody cuando el usuario hace scroll.
-    <View style={[S.header, { backgroundColor: colors.background }, style]}>
+    <View
+      style={[
+        S.header,
+        { backgroundColor: colors.background, borderBottomColor: colors.border },
+        style,
+      ]}
+    >
       {/* Drag pill — siempre visible, indica que el modal es deslizable */}
 
 
@@ -100,7 +106,10 @@ export function ModalHeader({
           <TouchableOpacity
             onPress={onClose}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={[S.closeBtn, { backgroundColor: colors.surface }]}
+            style={[
+              S.closeBtn,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
           >
             <MaterialIcons name="close" size={18} color={colors.muted} />
           </TouchableOpacity>
@@ -229,8 +238,8 @@ const S = StyleSheet.create({
     // zIndex asegura que el header quede siempre encima del ScrollView
     zIndex: 10,
     // Borde inferior sutil para separar visualmente el header del body
+    // (el color se inyecta en runtime con colors.border)
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'transparent', // se sobreescribe con colors.border en runtime si se desea
   },
   pill: {
     width: 36,
@@ -263,6 +272,7 @@ const S = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 2,

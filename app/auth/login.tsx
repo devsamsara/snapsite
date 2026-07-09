@@ -13,7 +13,6 @@
  */
 import React, { useState } from 'react';
 import {
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -23,6 +22,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
@@ -35,6 +35,8 @@ import { useColors } from '@/hooks/use-colors';
 import { AppInput } from '@/components/ui/app-input';
 import { Button } from '@/components/ui/button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { HeroHeader } from '@/components/ui/hero-header';
+import { spacing } from '@/constants/spacing';
 
 type FormValues = { email: string; password: string };
 
@@ -85,22 +87,17 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Header: logo + título + subtítulo ── */}
-        <View style={S.header}>
-          <View style={[S.logoContainer, { backgroundColor: colors.surface, borderRadius: 24 }]}>
-            <Image
-              source={require('@/assets/images/icon.png')}
-              style={S.logoImage}
-              resizeMode="contain"
-            />
-          </View>
-          <Text style={[S.title, { color: colors.foreground }]}>SnapSite</Text>
-          <Text style={[S.subtitle, { color: colors.muted }]}>
-            {t('auth.login.subtitle')}
-          </Text>
-        </View>
+        <HeroHeader
+          image={require('@/assets/images/icon.png')}
+          title="SnapSite"
+          subtitle={t('auth.login.subtitle')}
+        />
 
         {/* ── Form ── */}
-        <View style={S.form}>
+        <Animated.View
+          entering={FadeInDown.duration(450).delay(80).springify().damping(18)}
+          style={S.form}
+        >
 
           {/* Error banner */}
           {!!errorMsg && (
@@ -189,10 +186,13 @@ export default function LoginScreen() {
               {t('auth.login.continueWithGoogle') || 'Continuar con Google'}
             </Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
         {/* ── Footer ── */}
-        <View style={S.footer}>
+        <Animated.View
+          entering={FadeInDown.duration(450).delay(160).springify().damping(18)}
+          style={S.footer}
+        >
           <Text style={[S.footerText, { color: colors.muted }]}>
             {t('auth.login.noAccount')}
           </Text>
@@ -201,7 +201,7 @@ export default function LoginScreen() {
               {t('auth.login.register')}
             </Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -209,40 +209,11 @@ export default function LoginScreen() {
 
 const S = StyleSheet.create({
   root:   { flex: 1 },
-  scroll: { paddingHorizontal: 24, flexGrow: 1, justifyContent: 'center' },
-
-  // Header
-  header: {
-    alignItems: 'center',
-    marginBottom: 36,
-  },
-  logoContainer: {
-    width: 100,
-    height: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  logoImage: {
-    width: 100,
-    height: 100,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 6,
-    letterSpacing: 0.2,
-  },
-  subtitle: {
-    fontSize: 15,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
+  scroll: { paddingHorizontal: spacing.lg, flexGrow: 1, justifyContent: 'center' },
 
   // Form
   form: {
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   errorBanner: {
     flexDirection: 'row',

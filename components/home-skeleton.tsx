@@ -22,6 +22,7 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { useColors } from '@/hooks/use-colors';
 import { ScreenContainer } from '@/components/screen-container';
@@ -33,7 +34,7 @@ interface ShimmerBoxProps {
   height: number;
   borderRadius?: number;
   style?: object;
-  shimmerValue: Animated.SharedValue<number>;
+  shimmerValue: SharedValue<number>;
 }
 
 function ShimmerBox({

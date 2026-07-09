@@ -138,7 +138,7 @@ export default function ProfileScreen() {
     <ScreenContainer className="p-0">
       <ScrollView className="flex-1 bg-background" contentContainerStyle={S.scrollContent}>
         {/* Header */}
-        <View className="px-4 pt-4 pb-4 border-b border-border">
+        <View className="px-5 pt-5 pb-4 border-b border-border">
           <Text className="text-3xl font-bold text-foreground mb-4">{t('profile.title')}</Text>
 
           {/* Profile Card */}
@@ -175,7 +175,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Menu Items */}
-        <View className="px-4 py-4 gap-3">
+        <View className="px-5 py-4 gap-3">
           {menuItems.map((item, index) => (
             <TouchableOpacity
               key={index}
@@ -273,7 +273,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Version Info */}
-        <View className="px-4 py-4 items-center">
+        <View className="px-5 py-4 items-center">
           <Text className="text-xs text-muted">{t('profile.version')}</Text>
         </View>
       </ScrollView>

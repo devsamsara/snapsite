@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useColors } from '@/hooks/use-colors';
+import { FormScreen } from '@/components/ui/form-screen';
+import { HeroHeader } from '@/components/ui/hero-header';
+import { Button } from '@/components/ui/button';
 import { AppInput } from '@/components/ui/app-input';
 import { AppAlert } from '@/components/ui/app-alert';
 import { useMutation } from '@apollo/client/react';
@@ -23,7 +24,6 @@ type ProjectFormValues = {
 export default function CreateProjectDetailsScreen() {
   const { t }  = useTranslation();
   const router = useRouter();
-  const colors = useColors();
   const params = useLocalSearchParams<{
     latitude: string;
     longitude: string;
@@ -104,35 +104,24 @@ export default function CreateProjectDetailsScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: colors.background }]}
+    <FormScreen
+      title={t('createProject.detailsTitle')}
+      onBack={() => router.back()}
+      hero={
+        <HeroHeader
+          icon="pencil.and.outline"
+          subtitle={t('createProject.almostReadySubtitle')}
+        />
+      }
+      footer={
+        <Button
+          title={t('createProject.createButton')}
+          onPress={handleSubmit(onSubmit)}
+          isLoading={isLoading}
+          size="lg"
+        />
+      }
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <IconSymbol name="chevron.left" size={24} color={colors.foreground} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.foreground }]}>
-            {t('createProject.detailsTitle')}
-          </Text>
-          <View style={{ width: 40 }} />
-        </View>
-
-        <View style={styles.content}>
-          <View style={styles.infoSection}>
-            <View style={[styles.iconCircle, { backgroundColor: colors.primary + '20' }]}>
-              <IconSymbol name="pencil.and.outline" size={32} color={colors.primary} />
-            </View>
-            <Text style={[styles.title, { color: colors.foreground }]}>
-              {t('createProject.almostReady')}
-            </Text>
-            <Text style={[styles.subtitle, { color: colors.muted }]}>
-              {t('createProject.almostReadySubtitle')}
-            </Text>
-          </View>
-
           <View style={styles.form}>
             <AppInput
               label={t('createProject.projectName')}
@@ -179,52 +168,12 @@ export default function CreateProjectDetailsScreen() {
               icon="text.bubble.fill"
             />
 
-            <TouchableOpacity
-              style={[styles.saveButton, { backgroundColor: colors.primary }]}
-              onPress={handleSubmit(onSubmit)}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.saveButtonText}>{t('createProject.createButton')}</Text>
-              )}
-            </TouchableOpacity>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scrollContent: { paddingBottom: 40 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  backButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '700' },
-  content: { paddingHorizontal: 16 },
-  infoSection: { alignItems: 'center', marginBottom: 24 },
-  iconCircle: {
-    width: 72, height: 72, borderRadius: 36,
-    justifyContent: 'center', alignItems: 'center', marginBottom: 12,
-  },
-  title:    { fontSize: 26, fontWeight: '800', marginBottom: 8 },
-  subtitle: { fontSize: 15, textAlign: 'center', lineHeight: 22 },
   form:     { width: '100%' },
   row:      { flexDirection: 'row' },
-  saveButton: {
-    height: 54, borderRadius: 14,
-    justifyContent: 'center', alignItems: 'center', marginTop: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1, shadowRadius: 8, elevation: 4,
-  },
-  saveButtonText: { color: '#FFF', fontSize: 17, fontWeight: '700' },
 });

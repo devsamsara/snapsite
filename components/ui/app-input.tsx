@@ -61,8 +61,9 @@ export function AppInput<T extends FieldValues>({
                     styles.inputWrapper,
                     {
                         backgroundColor: colors.surface,
-                        borderColor: displayError ? '#FF3B30' : isFocused ? colors.primary : colors.border,
-                        borderWidth: isFocused || displayError ? 2 : 1
+                        // Ancho constante: el estado de foco/error solo cambia el
+                        // color, nunca el layout (evita el salto de 1px).
+                        borderColor: displayError ? colors.error : isFocused ? colors.primary : colors.border,
                     },
                     style
                 ]}
@@ -106,7 +107,7 @@ export function AppInput<T extends FieldValues>({
             </View>
 
             {displayError && (
-                <Text style={styles.errorText}>{displayError}</Text>
+                <Text style={[styles.errorText, {color: colors.error}]}>{displayError}</Text>
             )}
             {showLength && <Text style={[styles.counter, {color: colors.muted}]}>{(value ?? '').length}/{maxLength}</Text>}
         </View>
@@ -119,8 +120,9 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     label: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '600',
+        letterSpacing: 0.2,
         marginBottom: 8,
         marginLeft: 4,
     },
@@ -129,7 +131,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         height: 56,
         borderRadius: 16,
-        paddingHorizontal: 12,
+        paddingHorizontal: 14,
+        borderWidth: 1.5,
     },
     iconContainer: {
         marginRight: 10,
@@ -144,7 +147,6 @@ const styles = StyleSheet.create({
         padding: 8,
     },
     errorText: {
-        color: '#FF3B30',
         fontSize: 12,
         marginTop: 4,
         marginLeft: 4,

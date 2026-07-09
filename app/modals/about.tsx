@@ -12,8 +12,10 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { ScreenHeader } from '@/components/ui/screen-header';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle } from '@/hooks/use-card-style';
+import { spacing } from '@/constants/spacing';
 
 const APP_VERSION = '1.0.0';
 const BUILD_NUMBER = '100';
@@ -46,18 +48,11 @@ export default function AboutModal() {
   return (
     <View style={[S.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[S.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={[S.backBtn, { backgroundColor: colors.surface }]}
-        >
-          <IconSymbol name="chevron.left" size={20} color={colors.foreground} />
-        </TouchableOpacity>
-        <Text style={[S.headerTitle, { color: colors.foreground }]}>
-          {t('about.title')}
-        </Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader
+        title={t('about.title')}
+        onBack={() => router.back()}
+        withSafeArea={false}
+      />
 
       <ScrollView
         contentContainerStyle={[
@@ -130,21 +125,7 @@ export default function AboutModal() {
 
 const S = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  backBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  headerTitle: { fontSize: 18, fontWeight: '700' },
-  content: { paddingHorizontal: 16, paddingTop: 24 },
+  content: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl },
   logoSection: { alignItems: 'center', marginBottom: 28 },
   logoContainer: {
     width: 88, height: 88, borderRadius: 22,
@@ -152,7 +133,7 @@ const S = StyleSheet.create({
   },
   appName: { fontSize: 26, fontWeight: '800', marginBottom: 4 },
   version: { fontSize: 14 },
-  card: { borderRadius: 16, padding: 16, marginBottom: 16 },
+  card: { borderRadius: 18, padding: 16, marginBottom: 16 },
   listCard: { padding: 0, overflow: 'hidden' },
   description: { fontSize: 15, lineHeight: 22 },
   sectionLabel: {

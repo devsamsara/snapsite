@@ -11,6 +11,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import MapView, { Marker } from 'react-native-maps';
 import { useTranslation } from 'react-i18next';
 import { useColors } from '@/hooks/use-colors';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useCardStyle } from '@/hooks/use-card-style';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { BlurView } from 'expo-blur';
@@ -23,6 +24,7 @@ export default function LocationMapScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
+  const colorScheme = useColorScheme();
   const cardElevation = useCardStyle();
   const mapRef = useRef<MapView>(null);
 
@@ -96,7 +98,7 @@ export default function LocationMapScreen() {
       {/* Card inferior con datos de la ubicación */}
       <BlurView
         intensity={Platform.OS === 'ios' ? 60 : 80}
-        tint={colors.background === '#0F172A' ? 'dark' : 'light'}
+        tint={colorScheme === 'dark' ? 'dark' : 'light'}
         style={S.cardBlur}
       >
         <View style={[S.card, cardElevation]}>

@@ -68,7 +68,7 @@ export default function ProjectsScreen() {
       }
     return (
       <TouchableOpacity
-        onPress={() => router.push({ pathname: `/project/${item.id}`, params: { source: 'projects' } })}
+        onPress={() => router.push({ pathname: `/project/${item.id}`as any, params: { source: 'projects' } })}
         style={S.cardWrapper}
       >
         <View style={[S.card, cardElevation]}>

@@ -799,6 +799,13 @@ export type RefreshTokenMutationVariables = Exact<{
 
 export type RefreshTokenMutation = { __typename?: 'Mutation', refreshToken: { __typename?: 'AuthPayload', refreshToken: string, token: string, user: { __typename?: 'User', id: string, email: string, name: string, lastName?: string | null, nickname?: string | null, avatarUrl?: string | null, role: UserRole, status: UserStatus, company?: { __typename?: 'Company', id: string, name: string } | null } } };
 
+export type ChangePasswordMutationVariables = Exact<{
+  input: ChangePasswordInput;
+}>;
+
+
+export type ChangePasswordMutation = { __typename?: 'Mutation', changePassword: boolean };
+
 export type CurrentCompanyQueryVariables = Exact<{ [key: string]: never; }>;
 
 

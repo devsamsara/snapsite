@@ -3,12 +3,12 @@
  *
  * Stack.Screen modal (fullScreenModal, fade).
  *
- * Layout (de arriba a abajo, sin solapamientos):
+ * Layout:
  *
  *   ┌─────────────────────────────────┐  ← insets.top (Dynamic Island / notch)
- *   │  HEADER (44pt, fondo oscuro)    │
- *   ├─────────────────────────────────┤
- *   │  FOTO  (flex:1, contain)        │
+ *   │  HEADER (cristal, superpuesto)  │  ← GlassView dark, absolute
+ *   │  FOTO  (flex:1, contain,        │
+ *   │         se extiende bajo header)│
  *   ├─────────────────────────────────┤
  *   │  METADATOS (ScrollView, ~35%)   │
  *   ├─────────────────────────────────┤
@@ -18,8 +18,9 @@
  * Buenas prácticas aplicadas:
  * - useSafeAreaInsets() directo (no SafeAreaView) para control preciso
  *   del paddingTop del header — funciona correctamente en fullScreenModal
- * - Header en flujo normal (no position:absolute) → nunca tapado por la foto
- * - Foto con flex:1 entre header y metadatos → ocupa exactamente el espacio
+ * - Header de cristal superpuesto (patrón lightbox): el blur muestrea la
+ *   foto; con resizeMode:contain el título permanece legible
+ * - Foto con flex:1 hasta los metadatos → ocupa exactamente el espacio
  *   disponible sin desbordarse
  * - ModalFooter con safe area bottom automática
  */
@@ -39,6 +40,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Button } from '@/components/ui/button';
+import { GlassView } from '@/components/ui/glass-view';
 import { useColors } from '@/hooks/use-colors';
 import { AppAlert } from '@/components/ui/app-alert';
 import { useMutation } from '@apollo/client/react';
@@ -146,12 +148,17 @@ export default function PhotoLightboxModal() {
     <View style={S.root}>
       {/*
         ── HEADER ──
-        paddingTop = insets.top garantiza que el contenido del header
-        empiece justo debajo del Dynamic Island / notch, sin hardcoding.
-        El header está en el flujo normal (no absolute) → la foto
-        empieza siempre debajo de él.
+        Barra de cristal (GlassView dark) superpuesta a la foto: el blur
+        muestrea la imagen real que queda debajo. paddingTop = insets.top
+        mantiene el contenido bajo el Dynamic Island / notch.
+        (La foto usa resizeMode:contain, así que la zona superior suele ser
+        fondo negro y el título permanece legible.)
       */}
-      <View style={[S.header, { paddingTop: insets.top }]}>
+      <GlassView
+        appearance="dark"
+        intensity={60}
+        style={[S.header, { paddingTop: insets.top }]}
+      >
         <View style={S.headerInner}>
           <TouchableOpacity
             onPress={() => router.back()}
@@ -174,12 +181,12 @@ export default function PhotoLightboxModal() {
               disabled={deleting}
             >
               {deleting ? (
-                <ActivityIndicator size="small" color="#FF3B30" />
+                <ActivityIndicator size="small" color={colors.error} />
               ) : (
                 <MaterialIcons
                   name="delete-outline"
                   size={22}
-                  color="#FF3B30"
+                  color={colors.error}
                 />
               )}
             </TouchableOpacity>
@@ -187,12 +194,12 @@ export default function PhotoLightboxModal() {
             <View style={S.closeBtn} pointerEvents="none" />
           )}
         </View>
-      </View>
+      </GlassView>
 
       {/*
         ── FOTO ──
-        flex:1 hace que la foto ocupe todo el espacio disponible entre
-        el header y la sección de metadatos, sin desbordarse.
+        flex:1 hace que la foto ocupe todo el espacio disponible hasta la
+        sección de metadatos; se extiende bajo el header de cristal.
       */}
       <View style={S.photoArea}>
         <Image
@@ -292,10 +299,16 @@ const S = StyleSheet.create({
     backgroundColor: '#000',
   },
 
-  // Header — en flujo normal, nunca tapado
+  // Header — cristal superpuesto a la foto (GlassView aporta blur + velo)
   header: {
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    zIndex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerInner: {
     height: 44,

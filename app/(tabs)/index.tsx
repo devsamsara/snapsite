@@ -73,8 +73,8 @@ export default function HomeScreen() {
   const handleProfileTap = () => router.push('/settings');
   const handleProjectTap = (projectId: string) =>
     router.push({
-      pathname: `/project/${projectId}` as any,
-      params: { source: 'home' },
+      pathname: '/project/[id]',
+      params: { id: projectId, source: 'home' },
     });
   const handleImageTap = (_imageId: string) => {};
   const handleLocationTap = (item: RecentLocation) => {
@@ -324,28 +324,22 @@ export default function HomeScreen() {
                     onPress={handleAvatarsTap}
                     style={S.avatarsTouchable}
                   >
-                    {new Array(
-                      data.getDashboardData.currentCompany.users.length
-                    )
-                      .fill(0)
+                    {data.getDashboardData.currentCompany.users
                       .slice(0, 5)
-                      .map((_, i) => (
+                      .map((member, i) => (
                         <View
-                          key={data.getDashboardData.currentCompany.users[i].id}
+                          key={member.id}
                           style={[
                             S.headerAvatar,
                             {
                               backgroundColor: colors.primary,
-                              marginLeft: i < 5 ? -8 : 0,
+                              marginLeft: i > 0 ? -8 : 0,
                               borderColor: colors.background,
                             },
                           ]}
                         >
                           <Text style={S.headerAvatarText}>
-                            {data.getDashboardData.currentCompany.users
-                              .at(i)
-                              ?.name.at(0)
-                              ?.toUpperCase()}
+                            {member.name.at(0)?.toUpperCase()}
                           </Text>
                         </View>
                       ))}
@@ -365,7 +359,9 @@ export default function HomeScreen() {
                             { color: colors.muted },
                           ]}
                         >
-                          +5
+                          +
+                          {data.getDashboardData.currentCompany.users.length -
+                            5}
                         </Text>
                       </View>
                     )}
@@ -431,31 +427,31 @@ export default function HomeScreen() {
                             const k = (item.nameKey ?? '').toLowerCase();
                             const cfg: { icon: any; color: string } =
                               k.includes('active')
-                                ? { icon: 'bolt.fill', color: '#007AFF' }
+                                ? { icon: 'bolt.fill', color: colors.primary }
                                 : k.includes('ongoing')
                                   ? {
                                       icon: 'arrow.2.circlepath',
-                                      color: '#34C759',
+                                      color: colors.success,
                                     }
                                   : k.includes('paused')
                                     ? {
                                         icon: 'pause.circle.fill',
-                                        color: '#FF9500',
+                                        color: colors.warning,
                                       }
                                     : k.includes('completed')
                                       ? {
                                           icon: 'checkmark.seal.fill',
-                                          color: '#30D158',
+                                          color: colors.success,
                                         }
                                       : k.includes('archived')
                                         ? {
                                             icon: 'archivebox.fill',
-                                            color: '#8E8E93',
+                                            color: colors.muted,
                                           }
                                         : k.includes('cancel')
                                           ? {
                                               icon: 'xmark.circle.fill',
-                                              color: '#FF3B30',
+                                              color: colors.error,
                                             }
                                           : {
                                               icon: 'folder.fill',
@@ -598,16 +594,27 @@ const S = StyleSheet.create({
     paddingHorizontal: 24,
   },
 
-  // Header
-  header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16 },
+  // Header — jerarquía tipográfica marcada: eyebrow uppercase + nombre grande
+  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 16,
   },
-  workspaceLabel: { fontSize: 13, marginBottom: 6 },
-  workspaceName: { fontSize: 24, fontWeight: '700', marginBottom: 12 },
+  workspaceLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  workspaceName: {
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginBottom: 14,
+  },
   teamRow: { flexDirection: 'row', alignItems: 'center' },
   avatarsTouchable: { flexDirection: 'row', marginRight: 12 },
   headerAvatar: {
@@ -650,23 +657,23 @@ const S = StyleSheet.create({
   // Scroll
   scrollContent: { paddingBottom: 120 },
 
-  // Sections
-  section: { marginTop: 24 },
-  sectionTitleWrapper: { paddingHorizontal: 16, marginBottom: 12 },
-  sectionTitle: { fontSize: 18, fontWeight: '600' },
+  // Sections — breathing room amplio y títulos con más peso
+  section: { marginTop: 28 },
+  sectionTitleWrapper: { paddingHorizontal: 20, marginBottom: 12 },
+  sectionTitle: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3 },
   sectionHeader: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   seeAllText: { fontSize: 14, fontWeight: '600' },
-  horizontalListContent: { paddingHorizontal: 16, paddingVertical: 14 },
+  horizontalListContent: { paddingHorizontal: 20, paddingVertical: 14 },
 
   // Status grid
   statusGrid: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
@@ -674,7 +681,7 @@ const S = StyleSheet.create({
   statusCard: {
     width: '48%',
     aspectRatio: 1.5,
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 16,
     justifyContent: 'space-between',
   },
@@ -685,17 +692,17 @@ const S = StyleSheet.create({
   },
   statusCardLabel: { fontSize: 16, fontWeight: '600' },
   statusIconBg: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statusCardCount: { fontSize: 24, fontWeight: '700' },
+  statusCardCount: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
 
   // Project card
   projectCardWrapper: { marginRight: 16, width: 300 },
-  projectCard: { borderRadius: 16, padding: 16 },
+  projectCard: { borderRadius: 18, padding: 16 },
   projectCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -752,7 +759,7 @@ const S = StyleSheet.create({
 
   // Location card
   locationCardWrapper: { marginRight: 16, width: 200 },
-  locationCard: { borderRadius: 16, padding: 16 },
+  locationCard: { borderRadius: 18, padding: 16 },
   locationCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -36,6 +36,30 @@ type RuntimePalette = SchemePaletteItem & {
   tabIconDefault: string;
   tabIconSelected: string;
   border: string;
+  /** Fondo translúcido para superficies glassmorphism (combinar con BlurView). */
+  glass: string;
+  /** Borde sutil para superficies glassmorphism. */
+  glassBorder: string;
+  /** Scrim para modales/sheets: aísla el contenido en primer plano. */
+  scrim: string;
+};
+
+// Tokens translúcidos por esquema para efectos de glassmorphism.
+// En dark se parte del tono de surface (#15151C); en light, de blanco puro.
+const GlassTokens: Record<
+  ColorScheme,
+  { glass: string; glassBorder: string; scrim: string }
+> = {
+  light: {
+    glass: "rgba(255,255,255,0.72)",
+    glassBorder: "rgba(12,13,18,0.08)",
+    scrim: "rgba(10,10,15,0.45)",
+  },
+  dark: {
+    glass: "rgba(21,21,28,0.64)",
+    glassBorder: "rgba(247,248,250,0.10)",
+    scrim: "rgba(0,0,0,0.60)",
+  },
 };
 
 function buildRuntimePalette(scheme: ColorScheme): RuntimePalette {
@@ -49,6 +73,7 @@ function buildRuntimePalette(scheme: ColorScheme): RuntimePalette {
     tabIconDefault: base.muted,
     tabIconSelected: base.primary,
     border: base.border,
+    ...GlassTokens[scheme],
   };
 }
 

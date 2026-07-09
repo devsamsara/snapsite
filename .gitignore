@@ -33,6 +33,7 @@ yarn-error.*
 # local env files
 .env
 .env*.local
+.env.development
 
 # typescript
 *.tsbuildinfo
@@ -44,7 +45,7 @@ app-example
 /android
 ios
 android
-
+graphify-out
 # IDE
 .vscode/
 .idea/

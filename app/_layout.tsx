@@ -19,6 +19,7 @@ import { apolloClient } from '@/lib/graphql-client';
 import { initI18n } from '@/lib/i18n';
 import { ApolloProvider } from '@apollo/client/react';
 import { AppAlertBridge, AppAlertProvider } from '@/components/ui/app-alert';
+import { Colors } from '@/constants/theme';
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -43,7 +44,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   // sheetBg opaco: evita ver la pantalla de atrás a través de los bordes
   // redondeados del formSheet en iOS cuando backgroundColor es transparent
-  const sheetBg = colorScheme === 'dark' ? '#0F172A' : '#F8FAFC';
+  const sheetBg = Colors[colorScheme === 'dark' ? 'dark' : 'light'].surface;
   // Ensure minimum 8px padding for top and bottom on mobile
   const providerInitialMetrics = useMemo(() => {
     const metrics = initialWindowMetrics ?? {

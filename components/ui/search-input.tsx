@@ -1,11 +1,21 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, TextInputProps } from 'react-native';
+import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  TextInputProps,
+  StyleProp,
+  ViewStyle,
+} from 'react-native';
 import { IconSymbol } from './icon-symbol';
 import { useColors } from '@/hooks/use-colors';
 
-interface SearchInputProps extends TextInputProps {
+interface SearchInputProps extends Omit<TextInputProps, 'style'> {
   onSearch?: (text: string) => void;
   onClear?: () => void;
+  /** Estilo del contenedor (View), no del TextInput interno. */
+  style?: StyleProp<ViewStyle>;
 }
 
 export function SearchInput({
@@ -27,11 +37,11 @@ export function SearchInput({
   return (
     <View 
       style={[
-        styles.container, 
-        { 
-          backgroundColor: colors.surface, 
+        styles.container,
+        {
+          backgroundColor: colors.surface,
+          // Ancho constante: el foco solo cambia el color del borde.
           borderColor: isFocused ? colors.primary : colors.border,
-          borderWidth: isFocused ? 2 : 1
         },
         style
       ]}
@@ -71,6 +81,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 12,
     width: '100%',
+    borderWidth: 1.5,
   },
   iconContainer: {
     marginRight: 10,

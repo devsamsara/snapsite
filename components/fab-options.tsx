@@ -9,6 +9,7 @@ import Animated, {
   Extrapolate
 } from 'react-native-reanimated';
 import { IconSymbol } from './ui/icon-symbol';
+import { GlassView } from './ui/glass-view';
 import { useColors } from '@/hooks/use-colors';
 import { useRouter } from 'expo-router';
 
@@ -66,7 +67,11 @@ export function FabOptions() {
 
         <View style={styles.fabWrapper}>
           <Animated.View style={[styles.optionContainer, option0Style]}>
-            <Text style={[styles.optionLabel, { color: '#FFF' }]}>Nuevo Proyecto</Text>
+            <GlassView style={styles.optionLabelGlass}>
+              <Text style={[styles.optionLabel, { color: colors.foreground }]}>
+                Nuevo Proyecto
+              </Text>
+            </GlassView>
             <TouchableOpacity
                 onPress={handleNewProject}
                 style={[styles.optionButton, { backgroundColor: colors.primary }]}
@@ -76,10 +81,14 @@ export function FabOptions() {
           </Animated.View>
 
           <Animated.View style={[styles.optionContainer, option1Style]}>
-            <Text style={[styles.optionLabel, { color: '#FFF' }]}>Tomar Foto</Text>
+            <GlassView style={styles.optionLabelGlass}>
+              <Text style={[styles.optionLabel, { color: colors.foreground }]}>
+                Tomar Foto
+              </Text>
+            </GlassView>
             <TouchableOpacity
                 onPress={() => { toggleMenu(); router.push('/camera-capture'); }}
-                style={[styles.optionButton, { backgroundColor: '#34C759' }]}
+                style={[styles.optionButton, { backgroundColor: colors.success }]}
             >
               <IconSymbol name="camera.fill" size={24} color="#FFF" />
             </TouchableOpacity>
@@ -142,12 +151,16 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
+  // Píldora de cristal para la etiqueta: legible sobre el backdrop sin
+  // recurrir a sombras de texto.
+  optionLabelGlass: {
+    borderRadius: 999,
+    marginRight: 12,
+  },
   optionLabel: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    marginRight: 16,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
 });

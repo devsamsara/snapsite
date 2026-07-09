@@ -36,6 +36,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 
 import { useColors } from "@/hooks/use-colors";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { PaginationDots } from "@/components/onboarding/pagination-dots";
 import { OnboardingSlide, type SlideData } from "@/components/onboarding/onboarding-slide";
 import { ONBOARDING_DONE_KEY } from "@/lib/auth-context";
@@ -54,6 +55,7 @@ const { width: W } = Dimensions.get("window");
 export default function OnboardingScreen() {
   const { t }    = useTranslation();
   const colors   = useColors();
+  const colorScheme = useColorScheme();
   const router   = useRouter();
   const insets   = useSafeAreaInsets();
   const { user } = useAuth();
@@ -158,7 +160,6 @@ export default function OnboardingScreen() {
           await apolloClient.mutate({
             mutation: RegisterPushTokenDocument,
             variables: {
-              userId: user.id,
               token,
               platform: Platform.OS,
             },
@@ -228,7 +229,7 @@ export default function OnboardingScreen() {
   return (
     <Animated.View style={[styles.root, { backgroundColor: colors.background }, exitStyle]}>
       <StatusBar
-        barStyle={colors.background === "#0F172A" ? "light-content" : "dark-content"}
+        barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
         translucent
         backgroundColor="transparent"
       />

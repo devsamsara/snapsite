@@ -23,11 +23,9 @@ mutation UpdateUserPicture($userId: ID!, $picture: String!) {
 mutation DeleteUser($id: ID!) {
     deleteUser(id: $id)
 }
-
 mutation DeleteCompany($id: ID!) {
     deleteCompany(id: $id)
 }
-
 mutation UpdateUser($updateUserId: ID!, $input: UpdateUserInput!) {
     updateUser(id: $updateUserId, input: $input) {
         avatarUrl
@@ -96,4 +94,14 @@ mutation UpdateUser($updateUserId: ID!, $input: UpdateUserInput!) {
         status
         updatedAt
     }
+}
+mutation DeactivateUser($id: ID!) {
+    deactivateUser(id: $id) {
+        id
+        name
+        status
+    }
+}
+mutation PermanentlyDeleteUser($id: ID!) {
+    permanentlyDeleteUser(id: $id)
 }
