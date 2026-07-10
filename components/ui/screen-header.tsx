@@ -21,12 +21,12 @@ import {
   StyleProp,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
   ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "./icon-symbol";
+import { PressableScale } from "./pressable-scale";
 import { useColors } from "@/hooks/use-colors";
 import { spacing } from "@/constants/spacing";
 import { type } from "@/constants/typography";
@@ -67,18 +67,20 @@ export function ScreenHeader({
       ]}
     >
       {onBack ? (
-        <TouchableOpacity
+        <PressableScale
           onPress={onBack}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={[
             S.backBtn,
             { backgroundColor: colors.surface, borderColor: colors.border },
           ]}
+          pressedScale={0.9}
+          haptic
           accessibilityRole="button"
           accessibilityLabel="Back"
         >
           <IconSymbol name="chevron.left" size={20} color={colors.foreground} />
-        </TouchableOpacity>
+        </PressableScale>
       ) : (
         <View style={S.sideSpacer} />
       )}

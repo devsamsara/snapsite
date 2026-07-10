@@ -1,7 +1,6 @@
 import {
   FlatList,
   Image,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -9,14 +8,21 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '@/components/screen-container';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { GlassView } from '@/components/ui/glass-view';
+import { HeroBackdrop } from '@/components/ui/hero-backdrop';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle, useCardStyleSm } from '@/hooks/use-card-style';
 import { FabOptions } from '@/components/fab-options';
 import { useEffect } from 'react';
 import Animated, {
   Easing,
+  Extrapolation,
+  interpolate,
+  useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -51,6 +57,43 @@ export default function HomeScreen() {
   const enterOpacity = useSharedValue(0);
   const enterScale = useSharedValue(1.06);
   const relativeDate = useRelativeDate();
+  const insets = useSafeAreaInsets();
+
+  // ── Scroll-driven header ────────────────────────────────────────────────────
+  // El hero (workspace + avatares) colapsa con parallax al hacer scroll y una
+  // barra compacta de cristal aparece en su lugar.
+  const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler((e) => {
+    scrollY.value = e.contentOffset.y;
+  });
+
+  const heroStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, 130], [1, 0], Extrapolation.CLAMP),
+    transform: [
+      {
+        translateY: interpolate(
+          scrollY.value,
+          [0, 160],
+          [0, -44],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
+  }));
+
+  const stickyBarStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [70, 120], [0, 1], Extrapolation.CLAMP),
+    transform: [
+      {
+        translateY: interpolate(
+          scrollY.value,
+          [70, 120],
+          [-10, 0],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
+  }));
 
   useEffect(() => {
     enterOpacity.value = withTiming(1, {
@@ -122,9 +165,10 @@ export default function HomeScreen() {
   };
 
   const renderProjectCard = ({ item }: { item: RecentProject }) => (
-    <TouchableOpacity
+    <PressableScale
       onPress={() => handleProjectTap(item.id)}
       style={S.projectCardWrapper}
+      haptic
     >
       <View style={[S.projectCard, cardElevation]}>
         {/* Project Header */}
@@ -230,14 +274,15 @@ export default function HomeScreen() {
           <Text className="text-xs text-muted">{item.createdAt}</Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </PressableScale>
   );
 
   const renderImageCard = ({ item }: { item: RecentImage }) => {
     return (
-      <TouchableOpacity
+      <PressableScale
         onPress={() => handleImageTap(item.id)}
         style={S.imageCardWrapper}
+        pressedScale={0.95}
       >
         <View style={S.imageCardInner}>
           <Image
@@ -257,14 +302,15 @@ export default function HomeScreen() {
             </Text>
           </View>
         </View>
-      </TouchableOpacity>
+      </PressableScale>
     );
   };
 
   const renderLocationCard = ({ item }: { item: RecentLocation }) => (
-    <TouchableOpacity
+    <PressableScale
       onPress={() => handleLocationTap(item)}
       style={S.locationCardWrapper}
+      haptic
     >
       <View style={[S.locationCard, cardElevation]}>
         <View style={S.locationCardHeader}>
@@ -293,7 +339,7 @@ export default function HomeScreen() {
           </Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </PressableScale>
   );
 
   if (authLoading || loading) {
@@ -306,75 +352,93 @@ export default function HomeScreen() {
 
   return (
     data && (
-      <ScreenContainer className="p-0">
+      <ScreenContainer edgeToEdge className="p-0">
         <Animated.View style={enterStyle} className="bg-background">
-          {/* Modern Header */}
-          <View style={S.header}>
-            <View style={S.headerTop}>
-              <View style={S.flex1}>
-                <Text style={[S.workspaceLabel, { color: colors.muted }]}>
-                  {t('home.workspace')}
-                </Text>
-                <Text style={[S.workspaceName, { color: colors.foreground }]}>
-                  {data.getDashboardData.currentCompany.name}
-                </Text>
-                {/* Team Avatars */}
-                <View style={S.teamRow}>
-                  <TouchableOpacity
-                    onPress={handleAvatarsTap}
-                    style={S.avatarsTouchable}
-                  >
-                    {data.getDashboardData.currentCompany.users
-                      .slice(0, 5)
-                      .map((member, i) => (
+          <HeroBackdrop height={230 + insets.top} />
+
+          <Animated.ScrollView
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            contentContainerStyle={S.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <Animated.View
+              style={[S.header, heroStyle, { paddingTop: insets.top + 20 }]}
+            >
+              <View style={S.headerTop}>
+                <View style={S.flex1}>
+                  <Text style={[S.workspaceLabel, { color: colors.muted }]}>
+                    {t('home.workspace')}
+                  </Text>
+                  <Text style={[S.workspaceName, { color: colors.foreground }]}>
+                    {data.getDashboardData.currentCompany.name
+                      .toString()
+                      .at(0)
+                      ?.toUpperCase()}
+                    {data.getDashboardData.currentCompany.name
+                      .toString()
+                      .substring(1)}
+                  </Text>
+                  {/* Team Avatars */}
+                  <View style={S.teamRow}>
+                    <TouchableOpacity
+                      onPress={handleAvatarsTap}
+                      style={S.avatarsTouchable}
+                    >
+                      {data.getDashboardData.currentCompany.users
+                        .slice(0, 5)
+                        .map((member, i) => (
+                          <View
+                            key={member.id}
+                            style={[
+                              S.headerAvatar,
+                              {
+                                backgroundColor: colors.primary,
+                                marginLeft: i > 0 ? -8 : 0,
+                                borderColor: colors.background,
+                              },
+                            ]}
+                          >
+                            <Text style={S.headerAvatarText}>
+                              {member.name.at(0)?.toUpperCase()}
+                            </Text>
+                          </View>
+                        ))}
+                      {data.getDashboardData.currentCompany.users.length >
+                        5 && (
                         <View
-                          key={member.id}
                           style={[
-                            S.headerAvatar,
+                            S.headerAvatarMore,
                             {
-                              backgroundColor: colors.primary,
-                              marginLeft: i > 0 ? -8 : 0,
+                              backgroundColor: colors.surface,
                               borderColor: colors.background,
                             },
                           ]}
                         >
-                          <Text style={S.headerAvatarText}>
-                            {member.name.at(0)?.toUpperCase()}
+                          <Text
+                            style={[
+                              S.headerAvatarMoreText,
+                              { color: colors.muted },
+                            ]}
+                          >
+                            +
+                            {data.getDashboardData.currentCompany.users.length -
+                              5}
                           </Text>
                         </View>
-                      ))}
-                    {data.getDashboardData.currentCompany.users.length > 5 && (
-                      <View
-                        style={[
-                          S.headerAvatarMore,
-                          {
-                            backgroundColor: colors.surface,
-                            borderColor: colors.background,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            S.headerAvatarMoreText,
-                            { color: colors.muted },
-                          ]}
-                        >
-                          +
-                          {data.getDashboardData.currentCompany.users.length -
-                            5}
-                        </Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleInviteTap}
-                    style={[S.inviteBtn, { backgroundColor: colors.primary }]}
-                  >
-                    <Text style={S.inviteBtnText}>{t('home.invite')}</Text>
-                  </TouchableOpacity>
+                      )}
+                    </TouchableOpacity>
+                    <PressableScale
+                      onPress={handleInviteTap}
+                      style={[S.inviteBtn, { backgroundColor: colors.primary }]}
+                      pressedScale={0.94}
+                      haptic
+                    >
+                      <Text style={S.inviteBtnText}>{t('home.invite')}</Text>
+                    </PressableScale>
+                  </View>
                 </View>
-              </View>
-              {/*<TouchableOpacity
+                {/*<TouchableOpacity
                 onPress={()=>handleProfileTap()}
                 style={[S.settingsBtn, { backgroundColor: colors.surface }]}
               >
@@ -384,21 +448,15 @@ export default function HomeScreen() {
                   color={colors.foreground}
                 />
               </TouchableOpacity>*/}
-            </View>
+              </View>
 
-            {/* Search Bar */}
-            {/*  <SearchInput
+              {/* Search Bar */}
+              {/*  <SearchInput
               placeholder={t('home.searchPlaceholder')}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />*/}
-          </View>
-
-          {/* Content */}
-          <ScrollView
-            contentContainerStyle={S.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
+            </Animated.View>
             {/* Project Status Section (Today) */}
             <View style={S.section}>
               <View style={S.sectionTitleWrapper}>
@@ -410,9 +468,10 @@ export default function HomeScreen() {
                 {data.getDashboardData.projectStatusData.map(
                   (item: Maybe<ProjectStatusData>, index: number) =>
                     item && (
-                      <TouchableOpacity
+                      <PressableScale
                         key={`${item.nameKey}_${index}`}
                         style={[S.statusCard, cardSmElevation]}
+                        pressedScale={0.96}
                       >
                         <View style={S.statusCardTop}>
                           <Text
@@ -481,7 +540,7 @@ export default function HomeScreen() {
                         >
                           {item.count}
                         </Text>
-                      </TouchableOpacity>
+                      </PressableScale>
                     )
                 )}
               </View>
@@ -570,7 +629,27 @@ export default function HomeScreen() {
                 />
               </View>
             )}
-          </ScrollView>
+          </Animated.ScrollView>
+
+          {/* Barra compacta de cristal: aparece cuando el hero colapsa.
+              paddingTop inline (insets.top + 6) por el mismo motivo que el hero. */}
+          <Animated.View
+            style={[
+              S.stickyBar,
+              stickyBarStyle,
+              { paddingTop: insets.top + 6 },
+            ]}
+            pointerEvents="none"
+          >
+            <GlassView style={S.stickyGlass} intensity={60}>
+              <Text
+                numberOfLines={1}
+                style={[S.stickyTitle, { color: colors.foreground }]}
+              >
+                {data.getDashboardData.currentCompany.name}
+              </Text>
+            </GlassView>
+          </Animated.View>
 
           <FabOptions />
         </Animated.View>
@@ -595,7 +674,7 @@ const S = StyleSheet.create({
   },
 
   // Header — jerarquía tipográfica marcada: eyebrow uppercase + nombre grande
-  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16 },
+  header: { paddingHorizontal: 20, paddingBottom: 16 },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -656,6 +735,24 @@ const S = StyleSheet.create({
 
   // Scroll
   scrollContent: { paddingBottom: 120 },
+
+  // Sticky glass bar (aparece al colapsar el hero)
+  stickyBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 12,
+    paddingTop: 6,
+  },
+  stickyGlass: {
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  stickyTitle: { fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
 
   // Sections — breathing room amplio y títulos con más peso
   section: { marginTop: 28 },

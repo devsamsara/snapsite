@@ -14,6 +14,7 @@
  *   - projectName: string
  *   - projectLocation: string (opcional)
  */
+import { PressableScale } from '@/components/ui/pressable-scale';
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -23,7 +24,6 @@ import {
   StyleSheet,
   Switch,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -291,7 +291,7 @@ export default function ProjectExportModal() {
                 {QUALITY_OPTIONS.map((q) => {
                   const active = opts.quality === q.key;
                   return (
-                    <TouchableOpacity
+                    <PressableScale
                       key={q.key}
                       onPress={() => setOpts((p) => ({ ...p, quality: q.key }))}
                       style={[
@@ -301,7 +301,6 @@ export default function ProjectExportModal() {
                           borderColor: active ? colors.primary : colors.border,
                         },
                       ]}
-                      activeOpacity={0.7}
                     >
                       <Text
                         style={[
@@ -311,7 +310,7 @@ export default function ProjectExportModal() {
                       >
                         {q.label}
                       </Text>
-                    </TouchableOpacity>
+                    </PressableScale>
                   );
                 })}
               </View>
@@ -321,14 +320,13 @@ export default function ProjectExportModal() {
       </ModalBody>
 
       <ModalFooter>
-        <TouchableOpacity
+        <PressableScale
           onPress={handleExport}
           disabled={isExporting}
           style={[
             S.exportBtn,
             { backgroundColor: isExporting ? colors.border : colors.primary },
           ]}
-          activeOpacity={0.8}
         >
           {isExporting ? (
             <ActivityIndicator color="#fff" size="small" />
@@ -338,7 +336,7 @@ export default function ProjectExportModal() {
           <Text style={[S.exportBtnText, { color: isExporting ? colors.muted : "#fff" }]}>
             {isExporting ? t("projectExport.exporting") : t("projectExport.export")}
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
       </ModalFooter>
     </ModalRoot>
   );

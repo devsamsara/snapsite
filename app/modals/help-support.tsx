@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import {
   Linking,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
   LayoutAnimation,
   Platform,
@@ -80,7 +80,7 @@ export default function HelpSupportModal() {
         </Text>
         <View style={[S.card, cardStyle, S.listCard]}>
           {contactItems.map((item, index) => (
-            <TouchableOpacity
+            <PressableScale
               key={item.label}
               style={[
                 S.row,
@@ -88,7 +88,6 @@ export default function HelpSupportModal() {
                 index === contactItems.length - 1 && S.rowLast,
               ]}
               onPress={item.onPress}
-              activeOpacity={0.7}
             >
               <View style={S.rowLeft}>
                 <View style={[S.iconBg, { backgroundColor: colors.primary + '18' }]}>
@@ -102,7 +101,7 @@ export default function HelpSupportModal() {
                 </View>
               </View>
               <IconSymbol name="arrow.up.right" size={14} color={colors.muted} />
-            </TouchableOpacity>
+            </PressableScale>
           ))}
         </View>
 
@@ -113,10 +112,9 @@ export default function HelpSupportModal() {
         <View style={[S.card, cardStyle, S.listCard]}>
           {faqs.map((faq, i) => (
             <View key={i} style={[i < faqs.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
-              <TouchableOpacity
+              <PressableScale
                 style={S.faqHeader}
                 onPress={() => toggle(i)}
-                activeOpacity={0.7}
               >
                 <Text style={[S.faqQ, { color: colors.foreground, flex: 1 }]}>
                   {faq.q}
@@ -126,7 +124,7 @@ export default function HelpSupportModal() {
                   size={14}
                   color={colors.muted}
                 />
-              </TouchableOpacity>
+              </PressableScale>
               {openIndex === i && (
                 <Text style={[S.faqA, { color: colors.muted }]}>{faq.a}</Text>
               )}

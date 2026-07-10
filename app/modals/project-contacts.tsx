@@ -13,6 +13,7 @@
  *   - projectId: string
  *   - projectName: string
  */
+import { PressableScale } from '@/components/ui/pressable-scale';
 import React, { useState } from "react";
 import {
   Alert,
@@ -23,7 +24,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -172,7 +172,7 @@ export default function ProjectContactsModal() {
             showsVerticalScrollIndicator={false}
           >
             {/* ── Add button ── */}
-            <TouchableOpacity
+            <PressableScale
               onPress={() => setShowForm((v) => !v)}
               style={[
                 S.addToggle,
@@ -181,7 +181,6 @@ export default function ProjectContactsModal() {
                   borderColor: colors.primary,
                 },
               ]}
-              activeOpacity={0.8}
             >
               <MaterialIcons
                 name={showForm ? "close" : "person-add"}
@@ -196,7 +195,7 @@ export default function ProjectContactsModal() {
               >
                 {showForm ? t("common.cancel") : t("projectContacts.add")}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
 
             {/* ── Add form ── */}
             {showForm && (
@@ -245,19 +244,18 @@ export default function ProjectContactsModal() {
                   onSubmitEditing={handleSubmit(onAddContact)}
                 />
 
-                <TouchableOpacity
+                <PressableScale
                   onPress={handleSubmit(onAddContact)}
                   disabled={!isValid}
                   style={[
                     S.saveBtn,
                     { backgroundColor: isValid ? colors.primary : colors.border },
                   ]}
-                  activeOpacity={0.8}
                 >
                   <Text style={[S.saveBtnText, { color: isValid ? "#fff" : colors.muted }]}>
                     {t("projectContacts.save")}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               </View>
             )}
 
@@ -310,39 +308,37 @@ export default function ProjectContactsModal() {
                         </View>
                       </View>
                       {/* Remove */}
-                      <TouchableOpacity
+                      <PressableScale
                         onPress={() => handleRemove(contact)}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
                         <MaterialIcons name="delete-outline" size={20} color={colors.error} />
-                      </TouchableOpacity>
+                      </PressableScale>
                     </View>
 
                     {/* Actions */}
                     <View style={[S.contactActions, { borderTopColor: colors.border }]}>
                       {!!contact.phone && (
-                        <TouchableOpacity
+                        <PressableScale
                           onPress={() => handleCall(contact.phone)}
                           style={[S.actionBtn, { borderColor: colors.border }]}
-                          activeOpacity={0.7}
                         >
                           <MaterialIcons name="phone" size={15} color={colors.success} />
                           <Text style={[S.actionBtnText, { color: colors.success }]}>
                             {t("projectContacts.call")}
                           </Text>
-                        </TouchableOpacity>
+                        </PressableScale>
                       )}
                       {!!contact.email && (
-                        <TouchableOpacity
+                        <PressableScale
                           onPress={() => handleEmail(contact.email)}
                           style={[S.actionBtn, { borderColor: colors.border }]}
-                          activeOpacity={0.7}
                         >
                           <MaterialIcons name="email" size={15} color={colors.primary} />
                           <Text style={[S.actionBtnText, { color: colors.primary }]}>
                             {t("projectContacts.mail")}
                           </Text>
-                        </TouchableOpacity>
+                        </PressableScale>
                       )}
                     </View>
                   </View>

@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -7,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -50,10 +50,9 @@ function ActionItem({
 }: Readonly<ActionRow>) {
   const colors = useColors();
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={onPress}
       style={[S.actionRow, { borderBottomColor: colors.border }]}
-      activeOpacity={0.65}
       disabled={loading}
     >
       <View
@@ -85,7 +84,7 @@ function ActionItem({
       {showChevron && !loading && (
         <MaterialIcons name="chevron-right" size={20} color={colors.muted} />
       )}
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 

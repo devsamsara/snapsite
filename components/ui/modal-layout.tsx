@@ -42,28 +42,24 @@ import React from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   StyleProp,
   ViewStyle,
 } from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { PressableScale } from "./pressable-scale";
+import { HeroBackdrop } from "./hero-backdrop";
 import { useColors } from "@/hooks/use-colors";
-
-// ─── ModalHeader ──────────────────────────────────────────────────────────────
+import { spacing } from "@/constants/spacing";
 
 interface ModalHeaderProps {
-  /** Título principal del modal */
   title: string;
-  /** Subtítulo o descripción opcional */
   subtitle?: string;
-  /** Callback al presionar el botón de cierre (X) */
   onClose?: () => void;
-  /** Ocultar el botón de cierre (útil cuando el footer ya tiene Cancelar) */
   hideClose?: boolean;
-  /** Estilos adicionales para el contenedor del header */
   style?: StyleProp<ViewStyle>;
 }
 
@@ -73,61 +69,57 @@ export function ModalHeader({
   onClose,
   hideClose = false,
   style,
-}: ModalHeaderProps) {
+}: Readonly<ModalHeaderProps>) {
   const colors = useColors();
 
   return (
-    // zIndex + backgroundColor garantizan que el header siempre quede
-    // encima del ScrollView del ModalBody cuando el usuario hace scroll.
-    <View
-      style={[
-        S.header,
-        { backgroundColor: colors.background, borderBottomColor: colors.border },
-        style,
-      ]}
-    >
-      {/* Drag pill — siempre visible, indica que el modal es deslizable */}
+    <View style={[S.header, { backgroundColor: colors.background }, style]}>
+      <HeroBackdrop height={140} />
+      <View style={[S.pill, { backgroundColor: colors.border }]} />
 
-
-      {/* Title row */}
       <View style={S.titleRow}>
         <View style={S.titleBlock}>
-          <Text style={[S.title, { color: colors.foreground }]} numberOfLines={2}>
+          <Text
+            style={[S.title, { color: colors.foreground }]}
+            numberOfLines={2}
+          >
             {title}
           </Text>
           {subtitle ? (
-            <Text style={[S.subtitle, { color: colors.muted }]} numberOfLines={3}>
+            <Text
+              style={[S.subtitle, { color: colors.muted }]}
+              numberOfLines={3}
+            >
               {subtitle}
             </Text>
           ) : null}
         </View>
 
         {!hideClose && onClose ? (
-          <TouchableOpacity
+          <PressableScale
             onPress={onClose}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={[
               S.closeBtn,
               { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
+            pressedScale={0.88}
+            haptic
+            accessibilityRole="button"
+            accessibilityLabel="Close"
           >
             <MaterialIcons name="close" size={18} color={colors.muted} />
-          </TouchableOpacity>
+          </PressableScale>
         ) : null}
       </View>
     </View>
   );
 }
 
-// ─── ModalBody ────────────────────────────────────────────────────────────────
-
 interface ModalBodyProps {
   children: React.ReactNode;
-  /** Si true, envuelve el contenido en un ScrollView (default: false) */
   scrollable?: boolean;
-  /** Estilos adicionales para el contenedor */
   style?: StyleProp<ViewStyle>;
-  /** Padding horizontal (default: 20) */
   paddingH?: number;
 }
 
@@ -136,29 +128,42 @@ export function ModalBody({
   scrollable = false,
   style,
   paddingH = 20,
-}: ModalBodyProps) {
+}: Readonly<ModalBodyProps>) {
   const colors = useColors();
-
   if (scrollable) {
     return (
-      <ScrollView
-        style={[S.body, style]}
-        contentContainerStyle={[S.bodyContent, { paddingHorizontal: paddingH }]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        // bounces:false evita que el rebote superior superponga el contenido
-        // sobre el ModalHeader en iOS
-        bounces={false}
-        overScrollMode="never"
-      >
-        {children}
-      </ScrollView>
+      <View style={S.bodyShadowWrapper}>
+        <ScrollView
+          style={[S.body,  style]}
+          contentContainerStyle={[
+            S.bodyContent,
+            { paddingHorizontal: paddingH },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          overScrollMode="never"
+        >
+          <Animated.View
+            entering={FadeInUp.duration(320).springify().damping(18)}
+          >
+            {children}
+          </Animated.View>
+        </ScrollView>
+      </View>
     );
   }
 
   return (
-    <View style={[S.body, { paddingHorizontal: paddingH }, style]}>
-      {children}
+    <View style={S.bodyShadowWrapper}>
+      <View style={[S.body, { paddingHorizontal: paddingH }, style]}>
+        <Animated.View
+          style={S.flex1}
+          entering={FadeInUp.duration(320).springify().damping(18)}
+        >
+          {children}
+        </Animated.View>
+      </View>
     </View>
   );
 }
@@ -167,11 +172,8 @@ export function ModalBody({
 
 interface ModalFooterProps {
   children: React.ReactNode;
-  /** Estilos adicionales para el contenedor */
   style?: StyleProp<ViewStyle>;
-  /** Padding horizontal (default: 20) */
   paddingH?: number;
-  /** Si true, los botones se colocan en fila horizontal (default: false = columna) */
   row?: boolean;
 }
 
@@ -180,9 +182,9 @@ export function ModalFooter({
   style,
   paddingH = 20,
   row = false,
-}: ModalFooterProps) {
-  const colors  = useColors();
-  const insets  = useSafeAreaInsets();
+}: Readonly<ModalFooterProps>) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
   const bottomPad = Math.max(insets.bottom, 16) + 8;
 
   return (
@@ -194,7 +196,7 @@ export function ModalFooter({
           paddingBottom: bottomPad,
           borderTopColor: colors.border,
           backgroundColor: colors.background,
-          flexDirection: row ? "row" : "column",
+          flexDirection: row ? 'row' : 'column',
           gap: row ? 8 : 10,
         },
         style,
@@ -205,15 +207,12 @@ export function ModalFooter({
   );
 }
 
-// ─── ModalRoot ────────────────────────────────────────────────────────────────
-// Wrapper raíz que aplica el color de fondo del tema y ocupa toda la pantalla.
-
 interface ModalRootProps {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 }
 
-export function ModalRoot({ children, style }: ModalRootProps) {
+export function ModalRoot({ children, style }: Readonly<ModalRootProps>) {
   const colors = useColors();
   return (
     <View style={[S.root, { backgroundColor: colors.background }, style]}>
@@ -234,12 +233,12 @@ const S = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 16,
+    paddingBottom: 20,
     // zIndex asegura que el header quede siempre encima del ScrollView
     zIndex: 10,
-    // Borde inferior sutil para separar visualmente el header del body
-    // (el color se inyecta en runtime con colors.border)
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    // Recorta el HeroBackdrop a los límites del header (que además son los
+    // del propio sheet, con esquinas redondeadas del sistema en iOS)
+    overflow: "hidden",
   },
   pill: {
     width: 36,
@@ -252,7 +251,6 @@ const S = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
-    marginTop: 14
   },
   titleBlock: {
     flex: 1,
@@ -278,11 +276,19 @@ const S = StyleSheet.create({
     marginTop: 2,
   },
 
-  // ModalBody
+  bodyShadowWrapper: {
+    flex: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
   body: {
     flex: 1,
-    // overflow:hidden en el contenedor evita que el ScrollView
-    // pinte fuera de sus límites y tape el header
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: spacing.xl,
     overflow: 'hidden',
   },
   bodyContent: {
@@ -290,9 +296,10 @@ const S = StyleSheet.create({
     flexGrow: 1,
   },
 
-  // ModalFooter
   footer: {
     paddingTop: 14,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
+
+  flex1: { flex: 1 },
 });

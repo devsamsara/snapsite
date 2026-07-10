@@ -8,6 +8,7 @@
  * Validación: Zod + react-hook-form
  * Componentes: AppInput, SearchInput (sistema de diseño)
  */
+import { PressableScale } from '@/components/ui/pressable-scale';
 import React, { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -15,7 +16,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -231,7 +231,7 @@ export default function InviteGlobalModal() {
                   const isSelected = selectedProjectId === p.id;
                   const isLast = idx === filteredProjects.length - 1;
                   return (
-                    <TouchableOpacity
+                    <PressableScale
                       key={p.id}
                       onPress={() => {
                         setSelectedProjectId(p.id);
@@ -286,7 +286,7 @@ export default function InviteGlobalModal() {
                           color={colors.primary}
                         />
                       )}
-                    </TouchableOpacity>
+                    </PressableScale>
                   );
                 })
               )}
@@ -334,7 +334,7 @@ export default function InviteGlobalModal() {
               {ROLE_KEYS.map(roleKey => {
                 const active = selectedRole === roleKey;
                 return (
-                  <TouchableOpacity
+                  <PressableScale
                     key={roleKey}
                     onPress={() => {
                       setSelectedRole(roleKey);
@@ -356,7 +356,7 @@ export default function InviteGlobalModal() {
                     >
                       {t(`roles.${roleKey}`)}
                     </Text>
-                  </TouchableOpacity>
+                  </PressableScale>
                 );
               })}
             </View>

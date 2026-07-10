@@ -45,6 +45,11 @@ export default function RootLayout() {
   // sheetBg opaco: evita ver la pantalla de atrás a través de los bordes
   // redondeados del formSheet en iOS cuando backgroundColor es transparent
   const sheetBg = Colors[colorScheme === 'dark' ? 'dark' : 'light'].surface;
+  // screenBg: color de fondo por defecto de cada pantalla del Stack. Sin esto,
+  // el hueco entre el borde físico (bajo el Dynamic Island / notch) y el primer
+  // contenido pintado cae al negro por defecto de la ventana nativa durante el
+  // montaje/transición de cada screen.
+  const screenBg = Colors[colorScheme === 'dark' ? 'dark' : 'light'].background;
   // Ensure minimum 8px padding for top and bottom on mobile
   const providerInitialMetrics = useMemo(() => {
     const metrics = initialWindowMetrics ?? {
@@ -65,12 +70,16 @@ export default function RootLayout() {
   if (!i18nReady) return null;
 
   const content = (
-    <GestureHandlerRootView style={S.flex1}>
+    <GestureHandlerRootView style={[S.flex1, { backgroundColor: screenBg }]}>
       <AppAlertProvider>
         <ApolloProvider client={apolloClient}>
           <AuthProvider>
             <Stack
-              screenOptions={{ headerShown: false, gestureEnabled: false }}
+              screenOptions={{
+                headerShown: false,
+                gestureEnabled: false,
+                contentStyle: { backgroundColor: screenBg },
+              }}
             >
               <Stack.Screen
                 name="onboarding"
@@ -325,7 +334,11 @@ export default function RootLayout() {
                 }}
               />
             </Stack>
-            <StatusBar style="auto" />
+            {/* translucent + transparent: el contenido edge-to-edge (AppHeader,
+                HeroBackdrop) dibuja bajo la barra de estado en Android sin dejar
+                una franja sólida encima; en iOS la barra ya es translúcida por
+                defecto y solo controla el color del contenido (style). */}
+            <StatusBar translucent backgroundColor="transparent" style="auto" />
           </AuthProvider>
         </ApolloProvider>
         <AppAlertBridge />

@@ -6,13 +6,13 @@
  *
  * Validación: Zod + react-hook-form
  */
+import { PressableScale } from '@/components/ui/pressable-scale';
 import React from "react";
 import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -99,7 +99,7 @@ export default function AnnotationMeasureModal() {
           <Text style={[S.sectionLabel, { color: colors.muted }]}>{t('annotation.measure.presets')}</Text>
           <View style={S.presets}>
             {PRESETS.map((p) => (
-              <TouchableOpacity
+              <PressableScale
                 key={p}
                 onPress={() => setValue("label", p, { shouldValidate: true })}
                 style={[
@@ -115,7 +115,7 @@ export default function AnnotationMeasureModal() {
                 ]}>
                   {p}
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
             ))}
           </View>
         </ModalBody>

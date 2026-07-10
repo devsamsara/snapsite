@@ -5,22 +5,26 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '@/components/screen-container';
+import { GlassView } from '@/components/ui/glass-view';
+import { HeroBackdrop } from '@/components/ui/hero-backdrop';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle, useCardStyleSm } from '@/hooks/use-card-style';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import * as Haptics from 'expo-haptics';
-import * as ImagePicker from 'expo-image-picker';
-import { AppAlert } from '@/components/ui/app-alert';
-import { ProjectDetailSkeleton } from '@/components/project-detail-skeleton';
-import { GalleryPhotoSkeleton } from '@/components/gallery-photo-skeleton';
-import { useMutation, useQuery } from '@apollo/client/react';
+import Animated, {
+  Easing,
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import {
   DeleteNoteDocument,
   FindProjectDocument,
@@ -31,10 +35,17 @@ import {
   TimelineEvent,
   TogglePinNoteDocument,
 } from '@/gql/graphql';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { useRelativeDate } from '@/hooks/use-relative-date';
-import moment from 'moment';
-import { uploadPhoto } from '@/lib/upload-service';
+import { PressableScale } from '@/components/ui/pressable-scale';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { AppAlert } from '@/components/ui/app-alert';
 import { usePhotoPicker } from '@/hooks/use-photo-picker';
+import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
+import { uploadPhoto } from '@/lib/upload-service';
+import moment from 'moment';
+import { GalleryPhotoSkeleton } from '@/components/gallery-photo-skeleton';
 
 const { width: W } = Dimensions.get('window');
 
@@ -73,18 +84,17 @@ function timelineColor(type: TimelineEvent['type'], colors: any) {
   }
 }
 
-export default function ProjectDetailScreen() {
+export default function SettingScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
   const cardElevation = useCardStyle();
   const cardSmElevation = useCardStyleSm();
-  const { id, source } = useLocalSearchParams<{ id: string; source?: string }>();
-  // Volver: pop nativo si hay historial, replace al listado si no lo hay
-  const handleBack = () => {
-    router.dismissAll()
-    router.push('/(tabs)/projects');
-  };
+  const { id, source } = useLocalSearchParams<{
+    id: string;
+    source?: string;
+  }>();
+
   const [removeNote] = useMutation(DeleteNoteDocument);
   const [togglePinNote] = useMutation(TogglePinNoteDocument);
   const { data, loading: queryLoading } = useQuery(FindProjectDocument, {
@@ -104,6 +114,13 @@ export default function ProjectDetailScreen() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const relativeDate = useRelativeDate();
 
+  const isArchived = project?.status === ProjectStatus.Archived;
+  const enterOpacity = useSharedValue(0);
+  const enterScale = useSharedValue(1.06);
+  const insets = useSafeAreaInsets();
+
+  const scrollY = useSharedValue(0);
+
   useEffect(() => {
     const loadProyect = () => {
       if (data) {
@@ -117,7 +134,61 @@ export default function ProjectDetailScreen() {
     loadProyect();
   }, [data, project]);
 
-  const isArchived = project?.status === ProjectStatus.Archived;
+  const heroStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, 130], [1, 0], Extrapolation.CLAMP),
+    transform: [
+      {
+        translateY: interpolate(
+          scrollY.value,
+          [0, 160],
+          [0, -44],
+          Extrapolation.CLAMP
+        ),
+      },
+    ],
+  }));
+
+  const stickyBarStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [70, 120], [0, 1], Extrapolation.CLAMP),
+    transform: [
+      {
+        translateY: interpolate(
+          scrollY.value,
+          [70, 120],
+          [-10, 0],
+          Extrapolation.CLAMP
+        ),
+      },
+    ],
+  }));
+
+  useEffect(() => {
+    enterOpacity.value = withTiming(1, {
+      duration: 400,
+      easing: Easing.out(Easing.quad),
+    });
+    enterScale.value = withSpring(1, {
+      damping: 22,
+      stiffness: 160,
+      mass: 0.8,
+    });
+  }, []);
+
+  const enterStyle = useAnimatedStyle(() => ({
+    flex: 1,
+    opacity: enterOpacity.value,
+    transform: [{ scale: enterScale.value }],
+  }));
+
+  const Sl = ({ label }: { label: string }) => (
+    <Text style={[S.sectionLabel, { color: colors.muted }]}>
+      {label.toUpperCase()}
+    </Text>
+  );
+  const handleBack = () => {
+    router.dismissAll();
+    router.push('/(tabs)/projects');
+  };
 
   const handleArchivedBlock = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -204,28 +275,30 @@ export default function ProjectDetailScreen() {
 
   const handleAddPhoto = () => {
     if (!project) return;
-    if (isArchived) { handleArchivedBlock(); return; }
+    if (isArchived) {
+      handleArchivedBlock();
+      return;
+    }
     Haptics.selectionAsync();
-    AppAlert.alert(
-      t('project.addPhotoTitle'),
-      t('project.addPhotoMessage'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('addPhotosPrompt.takePhoto'),
-          onPress: () => _openCameraForPhoto(),
-        },
-        {
-          text: t('addPhotosPrompt.selectFromGallery'),
-          onPress: () => _openGalleryForPhoto(),
-        },
-      ]
-    );
+    AppAlert.alert(t('project.addPhotoTitle'), t('project.addPhotoMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('addPhotosPrompt.takePhoto'),
+        onPress: () => _openCameraForPhoto(),
+      },
+      {
+        text: t('addPhotosPrompt.selectFromGallery'),
+        onPress: () => _openGalleryForPhoto(),
+      },
+    ]);
   };
 
   const handleChangeThumbnail = useCallback(() => {
     if (!project) return;
-    if (isArchived) { handleArchivedBlock(); return; }
+    if (isArchived) {
+      handleArchivedBlock();
+      return;
+    }
     Haptics.selectionAsync();
 
     AppAlert.alert(t('project.addPhotoTitle'), t('project.addPhotoMessage'), [
@@ -242,7 +315,10 @@ export default function ProjectDetailScreen() {
   }, [project, t, pickAndUploadPhoto]);
 
   const openInviteModal = useCallback(() => {
-    if (isArchived) { handleArchivedBlock(); return; }
+    if (isArchived) {
+      handleArchivedBlock();
+      return;
+    }
     router.push({
       pathname: '/modals/invite-member',
       params: { projectId: project!.id },
@@ -250,7 +326,10 @@ export default function ProjectDetailScreen() {
   }, [project, router]);
 
   const openNoteModal = useCallback(() => {
-    if (isArchived) { handleArchivedBlock(); return; }
+    if (isArchived) {
+      handleArchivedBlock();
+      return;
+    }
     router.push({
       pathname: '/modals/add-note',
       params: { projectId: project!.id },
@@ -277,7 +356,10 @@ export default function ProjectDetailScreen() {
   );
 
   const togglePin = async (noteId: string) => {
-    if (isArchived) { handleArchivedBlock(); return; }
+    if (isArchived) {
+      handleArchivedBlock();
+      return;
+    }
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     await togglePinNote({
@@ -289,7 +371,10 @@ export default function ProjectDetailScreen() {
   };
 
   const deleteNote = (noteId: string) => {
-    if (isArchived) { handleArchivedBlock(); return; }
+    if (isArchived) {
+      handleArchivedBlock();
+      return;
+    }
     AppAlert.alert(
       t('project.deleteNoteTitle'),
       t('project.deleteNoteConfirm'),
@@ -316,6 +401,9 @@ export default function ProjectDetailScreen() {
     filterTag && photos
       ? photos.filter(p => p!.tags!.includes(filterTag))
       : photos;
+  const isActive = project?.members.filter(
+    m => Number.parseInt(m.lastLoginAt as string) >= Date.now()
+  ).length;
 
   const renderGallery = () => (
     <ScrollView
@@ -328,7 +416,7 @@ export default function ProjectDetailScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={S.tagScroll}
       >
-        <TouchableOpacity
+        <PressableScale
           onPress={() => setFilterTag(null)}
           style={[
             S.tag,
@@ -343,9 +431,9 @@ export default function ProjectDetailScreen() {
           >
             {t('project.all')}
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
         {allTags.map(tag => (
-          <TouchableOpacity
+          <PressableScale
             key={tag}
             onPress={() => setFilterTag(filterTag === tag ? null : tag!)}
             style={[
@@ -365,7 +453,7 @@ export default function ProjectDetailScreen() {
             >
               #{tag}
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         ))}
       </ScrollView>
 
@@ -375,7 +463,7 @@ export default function ProjectDetailScreen() {
       >
         <View style={S.grid}>
           {filteredPhotos?.map(photo => (
-            <TouchableOpacity
+            <PressableScale
               key={photo.id}
               onPress={() => openLightbox(photo)}
               style={[S.gridItem, { width: (W - 40) / 2 }]}
@@ -398,24 +486,24 @@ export default function ProjectDetailScreen() {
                 </Text>
               </View>
               {!isArchived && (
-              <TouchableOpacity
-                onPress={() =>
-                  router.push({
-                    pathname: '/image-editor',
-                    params: {
-                      imageUri: photo.url,
-                      projectId: project!.id,
-                      photoId: photo.id,
-                      source: 'project',
-                    },
-                  })
-                }
-                style={S.gridItemEditBtn}
-              >
-                <MaterialIcons name="edit" size={14} color="#FFF" />
-              </TouchableOpacity>
+                <PressableScale
+                  onPress={() =>
+                    router.push({
+                      pathname: '/image-editor',
+                      params: {
+                        imageUri: photo.url,
+                        projectId: project!.id,
+                        photoId: photo.id,
+                        source: 'project',
+                      },
+                    })
+                  }
+                  style={S.gridItemEditBtn}
+                >
+                  <MaterialIcons name="edit" size={14} color="#FFF" />
+                </PressableScale>
               )}
-            </TouchableOpacity>
+            </PressableScale>
           ))}
         </View>
         {filteredPhotos?.length === 0 && (
@@ -443,20 +531,19 @@ export default function ProjectDetailScreen() {
               </Text>
             )}
             {!filterTag && !isArchived && (
-              <TouchableOpacity
+              <PressableScale
                 onPress={handleAddPhoto}
                 style={[S.emptyBtn, { backgroundColor: colors.primary }]}
               >
                 <MaterialIcons name="add-a-photo" size={16} color="#FFF" />
                 <Text style={S.emptyBtnText}>{t('project.addFirstPhoto')}</Text>
-              </TouchableOpacity>
+              </PressableScale>
             )}
           </View>
         )}
       </View>
     </ScrollView>
   );
-
   const renderTimeline = () => (
     <ScrollView
       showsVerticalScrollIndicator={false}
@@ -527,11 +614,6 @@ export default function ProjectDetailScreen() {
       })}
     </ScrollView>
   );
-
-  const isActive = project?.members.filter(
-    m => Number.parseInt(m.lastLoginAt as string) >= Date.now()
-  ).length;
-
   const renderTeam = () => (
     <View style={S.flex1}>
       <ScrollView
@@ -609,7 +691,7 @@ export default function ProjectDetailScreen() {
                 {t('project.active')}: {member.lastLoginAt}
               </Text>
             </View>
-            <TouchableOpacity
+            <PressableScale
               onPress={() =>
                 AppAlert.alert(
                   t('project.messageTitle'),
@@ -619,19 +701,19 @@ export default function ProjectDetailScreen() {
               style={[S.chatBtn, { backgroundColor: colors.primary + '15' }]}
             >
               <MaterialIcons name="chat" size={18} color={colors.primary} />
-            </TouchableOpacity>
+            </PressableScale>
           </View>
         ))}
       </ScrollView>
 
-        {!isArchived && (
-        <TouchableOpacity
+      {!isArchived && (
+        <PressableScale
           onPress={openInviteModal}
           style={[S.fab, { backgroundColor: colors.primary }]}
         >
           <MaterialIcons name="person-add" size={26} color="#FFF" />
-        </TouchableOpacity>
-        )}
+        </PressableScale>
+      )}
     </View>
   );
   const sortedNotes = [...(project?.notes ?? [])].sort(
@@ -662,13 +744,15 @@ export default function ProjectDetailScreen() {
                 {t('project.noNotesHint')}
               </Text>
               {!isArchived && (
-              <TouchableOpacity
-                onPress={() => openNoteModal()}
-                style={[S.emptyBtn, { backgroundColor: colors.primary }]}
-              >
-                <MaterialIcons name="add" size={16} color="#FFF" />
-                <Text style={S.emptyBtnText}>{t('project.addFirstNote')}</Text>
-              </TouchableOpacity>
+                <PressableScale
+                  onPress={() => openNoteModal()}
+                  style={[S.emptyBtn, { backgroundColor: colors.primary }]}
+                >
+                  <MaterialIcons name="add" size={16} color="#FFF" />
+                  <Text style={S.emptyBtnText}>
+                    {t('project.addFirstNote')}
+                  </Text>
+                </PressableScale>
               )}
             </View>
           )}
@@ -722,7 +806,7 @@ export default function ProjectDetailScreen() {
                     {relativeDate(Number.parseInt(note.createdAt))}
                   </Text>
                 </View>
-                <TouchableOpacity
+                <PressableScale
                   onPress={() => togglePin(note.id)}
                   style={S.noteAction}
                 >
@@ -731,8 +815,8 @@ export default function ProjectDetailScreen() {
                     size={18}
                     color={note.pinned ? colors.warning : colors.muted}
                   />
-                </TouchableOpacity>
-                <TouchableOpacity
+                </PressableScale>
+                <PressableScale
                   onPress={() => deleteNote(note.id)}
                   style={S.noteAction}
                 >
@@ -741,7 +825,7 @@ export default function ProjectDetailScreen() {
                     size={18}
                     color={colors.error}
                   />
-                </TouchableOpacity>
+                </PressableScale>
               </View>
               <Text style={[S.noteContent, { color: colors.foreground }]}>
                 {note.content}
@@ -751,88 +835,69 @@ export default function ProjectDetailScreen() {
         </ScrollView>
 
         {!isArchived && (
-        <TouchableOpacity
-          onPress={() => openNoteModal()}
-          style={[S.fab, { backgroundColor: colors.primary }]}
-        >
-          <MaterialIcons name="add" size={28} color="#FFF" />
-        </TouchableOpacity>
+          <PressableScale
+            onPress={() => openNoteModal()}
+            style={[S.fab, { backgroundColor: colors.primary }]}
+          >
+            <MaterialIcons name="add" size={28} color="#FFF" />
+          </PressableScale>
         )}
       </View>
     );
-
-  // ─── Main Render ──────────────────────────────────────────────────────────
-
-  // Mostrar skeleton mientras se cargan los datos del proyecto
-  if (isLoading) {
-    return (
-      <ScreenContainer className="p-0">
-        <ProjectDetailSkeleton />
-      </ScreenContainer>
-    );
-  }
-
   return (
     project && (
-      <ScreenContainer className="p-0">
-        <View style={[S.flex1, { backgroundColor: colors.background }]}>
-          {/* ── Header ── */}
-          <View
+      <ScreenContainer edgeToEdge className="p-0">
+        <Animated.View style={enterStyle} className="bg-background">
+          <HeroBackdrop height={230 + insets.top} />
+          <Animated.View
             style={[
               S.header,
+              heroStyle,
               {
-                backgroundColor: colors.background,
-                borderBottomColor: colors.border,
+                paddingHorizontal: isArchived ? 68 : 64,
+                paddingTop: insets.top + 20,
+                flexDirection: 'row',
               },
             ]}
           >
-            <TouchableOpacity onPress={handleBack} style={S.backBtn}>
+            <PressableScale onPress={handleBack} style={[S.backBtn]}>
               <MaterialIcons
-                name="arrow-back"
+                name="arrow-back-ios-new"
                 size={22}
                 color={colors.foreground}
               />
-            </TouchableOpacity>
-            <View style={S.headerTitleWrapper}>
-              <Text
-                style={[S.headerTitle, { color: colors.foreground }]}
-                numberOfLines={1}
-              >
-                {project.name}
-              </Text>
-              <View style={S.headerLocationRow}>
-                <MaterialIcons
-                  name="location-on"
-                  size={12}
-                  color={colors.muted}
-                />
-                <Text
-                  style={[S.headerLocation, { color: colors.muted }]}
-                  numberOfLines={1}
-                >
-                  {project.location}
+            </PressableScale>
+            <View style={S.headerTop}>
+              <View style={S.flex1}>
+                <Text style={[S.workspaceLabel, { color: colors.muted }]}>
+                  {t('home.projects')}
+                </Text>
+                <Text style={[S.workspaceName, { color: colors.foreground }]}>
+                  {project?.name}
                 </Text>
               </View>
             </View>
             <View style={S.headerActions}>
               {/* Cámara del header → vuelve a abrir el modal de añadir foto */}
               {!isArchived && (
-              <TouchableOpacity
-                onPress={handleAddPhoto}
-                style={[
-                  S.headerActionBtn,
-                  { backgroundColor: colors.primary + '15' },
-                ]}
-              >
-                <MaterialIcons
-                  name="add-a-photo"
-                  size={18}
-                  color={colors.primary}
-                />
-              </TouchableOpacity>
+                <PressableScale
+                  onPress={handleAddPhoto}
+                  style={[
+                    S.headerActionBtn,
+                    { backgroundColor: colors.primary + '15' },
+                  ]}
+                >
+                  <MaterialIcons
+                    name="add-a-photo"
+                    size={18}
+                    color={colors.primary}
+                  />
+                </PressableScale>
               )}
-              <TouchableOpacity
-                onPress={() =>
+              <PressableScale
+                onPress={() => {
+                  if (!project) return;
+
                   router.push({
                     pathname: '/modals/project-settings',
                     params: {
@@ -845,14 +910,14 @@ export default function ProjectDetailScreen() {
                       projectStartDate: project.startDate,
                       projectEndDate: project.endDate ?? '',
                       projectDescription: project.description ?? '',
-                      projectProgress: project?.progress ?? 0
+                      projectProgress: project?.progress ?? 0,
                     },
-                  })
-                }
+                  });
+                }}
                 style={[
                   S.headerActionBtn,
                   {
-                    backgroundColor: colors.surface,
+                    backgroundColor: colors.primary + '15',
                     borderWidth: 1,
                     borderColor: colors.border,
                   },
@@ -863,14 +928,21 @@ export default function ProjectDetailScreen() {
                   size={20}
                   color={colors.foreground}
                 />
-              </TouchableOpacity>
+              </PressableScale>
             </View>
-          </View>
+          </Animated.View>
 
           {/* ── Archived banner ── */}
           {isArchived && (
-            <View style={[S.archivedBanner, { backgroundColor: '#7C5C1E20', borderColor: '#B8860B' }]}>
-              <View style={[S.archivedBannerIcon, { backgroundColor: '#B8860B22' }]}>
+            <View
+              style={[
+                S.archivedBanner,
+                { backgroundColor: '#7C5C1E20', borderColor: '#B8860B' },
+              ]}
+            >
+              <View
+                style={[S.archivedBannerIcon, { backgroundColor: '#B8860B22' }]}
+              >
                 <MaterialIcons name="archive" size={20} color="#B8860B" />
               </View>
               <View style={S.archivedBannerText}>
@@ -883,8 +955,7 @@ export default function ProjectDetailScreen() {
               </View>
             </View>
           )}
-
-          {/* ── Hero card ── */}
+          {/*Hero section */}
           <View style={S.heroWrapper}>
             <View style={[S.heroCard, cardElevation]}>
               {/* Imagen + botón flotante para cambiar el thumbnail */}
@@ -928,17 +999,24 @@ export default function ProjectDetailScreen() {
 
                 {/* Botón flotante — solo visible si el proyecto NO está archivado */}
                 {!isArchived && (
-                <TouchableOpacity
-                  onPress={handleChangeThumbnail}
-                  disabled={isUploadingPhoto}
-                  style={[S.heroPhotoBtn, { backgroundColor: colors.primary }]}
-                >
-                  {isUploadingPhoto ? (
-                    <ActivityIndicator size="small" color="#FFF" />
-                  ) : (
-                    <MaterialIcons name="add-a-photo" size={16} color="#FFF" />
-                  )}
-                </TouchableOpacity>
+                  <PressableScale
+                    onPress={handleChangeThumbnail}
+                    disabled={isUploadingPhoto}
+                    style={[
+                      S.heroPhotoBtn,
+                      { backgroundColor: colors.primary },
+                    ]}
+                  >
+                    {isUploadingPhoto ? (
+                      <ActivityIndicator size="small" color="#FFF" />
+                    ) : (
+                      <MaterialIcons
+                        name="add-a-photo"
+                        size={16}
+                        color="#FFF"
+                      />
+                    )}
+                  </PressableScale>
                 )}
               </View>
 
@@ -998,7 +1076,7 @@ export default function ProjectDetailScreen() {
             </View>
           </View>
 
-          {/* ── Tabs ── */}
+          {/*Tabs section */}
           <View
             style={[
               S.tabBar,
@@ -1011,7 +1089,7 @@ export default function ProjectDetailScreen() {
             {TABS.map(tab => {
               const active = activeTab === tab.id;
               return (
-                <TouchableOpacity
+                <PressableScale
                   key={tab.id}
                   onPress={() => switchTab(tab.id)}
                   style={[
@@ -1038,11 +1116,10 @@ export default function ProjectDetailScreen() {
                   >
                     {t(tab.labelKey)}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               );
             })}
           </View>
-
           {/* ── Tab content ── */}
           <View style={S.flex1}>
             {activeTab === 'gallery' && renderGallery()}
@@ -1050,52 +1127,351 @@ export default function ProjectDetailScreen() {
             {activeTab === 'team' && renderTeam()}
             {activeTab === 'notes' && renderNotes()}
           </View>
-        </View>
+          <Animated.View
+            style={[
+              S.stickyBar,
+              stickyBarStyle,
+              { paddingTop: insets.top + 6 },
+            ]}
+            pointerEvents="none"
+          >
+            <GlassView style={S.stickyGlass} intensity={60}>
+              <Text
+                numberOfLines={1}
+                style={[S.stickyTitle, { color: colors.foreground }]}
+              >
+                aass
+              </Text>
+            </GlassView>
+          </Animated.View>
+        </Animated.View>
       </ScreenContainer>
     )
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-
 const S = StyleSheet.create({
-  // Layout
+  // Layout helpers
   flex1: { flex: 1 },
+  flex1Ml3: { flex: 1, marginLeft: 12 },
 
-  // Header
-  header: {
-    flexDirection: 'row',
+  // Empty state
+  emptyContainer: {
+    flex: 1,
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
   },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+
+  // Header — jerarquía tipográfica marcada: eyebrow uppercase + nombre grande
+  header: {
+    paddingBottom: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitleWrapper: { flex: 1, marginHorizontal: 12 },
-  headerTitle: { fontSize: 17, fontWeight: '700' },
-  headerLocationRow: {
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  workspaceLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  workspaceName: {
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginBottom: 14,
+  },
+  teamRow: { flexDirection: 'row', alignItems: 'center' },
+  avatarsTouchable: { flexDirection: 'row', marginRight: 12 },
+  headerAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerAvatarText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
+  headerAvatarMore: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginLeft: -8,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerAvatarMoreText: { fontSize: 11, fontWeight: '600' },
+  inviteBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 2,
   },
-  headerLocation: { fontSize: 12 },
+  inviteBtnText: { fontSize: 13, fontWeight: '600', color: '#FFFFFF' },
+  settingsBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+
+  // Scroll
+  scrollContent: { paddingBottom: 120 },
+
+  // Sticky glass bar (aparece al colapsar el hero)
+  stickyBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 12,
+    paddingTop: 6,
+  },
+  stickyGlass: {
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  stickyTitle: { fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
+
+  // Sections — breathing room amplio y títulos con más peso
+  section: { marginTop: 28 },
+  sectionTitleWrapper: { paddingHorizontal: 20, marginBottom: 12 },
+  sectionTitle: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3 },
+  sectionHeader: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  seeAllText: { fontSize: 14, fontWeight: '600' },
+  horizontalListContent: { paddingHorizontal: 20, paddingVertical: 14 },
+
+  // Status grid
+  statusGrid: {
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  statusCard: {
+    width: '48%',
+    aspectRatio: 1.5,
+    borderRadius: 18,
+    padding: 16,
+    justifyContent: 'space-between',
+  },
+  statusCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  statusCardLabel: { fontSize: 16, fontWeight: '600' },
+  statusIconBg: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusCardCount: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
+
+  // Project card
+  projectCardWrapper: { marginRight: 16, width: 300 },
+  projectCard: { borderRadius: 18, padding: 16 },
+  projectCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  statusBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999 },
+  statusBadgeText: { fontSize: 12, fontWeight: '600' },
+  progressSection: { marginBottom: 12 },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  metaItem: { flexDirection: 'row', alignItems: 'center' },
+  metaText: { fontSize: 12, marginLeft: 6 },
+  projectCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  avatarRow: { flexDirection: 'row' },
+  memberAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  memberAvatarText: { fontSize: 10, fontWeight: '600', color: '#FFFFFF' },
+
+  // Image card
+  imageCardWrapper: { marginRight: 12 },
+  imageCardInner: { borderRadius: 12, overflow: 'hidden' },
+  imageCardImg: { width: 140, height: 140 },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+
+  // Location card
+  locationCardWrapper: { marginRight: 16, width: 200 },
+  locationCard: { borderRadius: 18, padding: 16 },
+  locationCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  locationIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locationFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
+  locationProjectsText: { fontSize: 12, marginLeft: 4 },
+  profileCard: {
+    borderRadius: 18,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  profileAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+    marginTop: 16,
+    marginBottom: 6,
+    paddingHorizontal: 4,
+  },
+  statsRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
+  statItem: { flex: 1, alignItems: 'center' },
+  statValue: { fontSize: 22, fontWeight: '700' },
+  statLabel: { fontSize: 11, marginTop: 2 },
+
+  // Avatar in account row
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: { fontSize: 16, fontWeight: '700' },
+  profileName: { fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
+  profileEmail: { fontSize: 13, marginTop: 2 },
+  profileRole: { fontSize: 13, marginTop: 2 },
+  card: { borderRadius: 18, overflow: 'hidden', marginBottom: 4 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  rowTextBlock: { flex: 1, marginLeft: 16 },
+  rowLabel: { fontSize: 15, fontWeight: '600' },
+  rowSublabel: { fontSize: 12, marginTop: 1 },
+  cardStyleRow: { paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
+  segmentedControl: { flexDirection: 'row', gap: 8, marginLeft: 36 },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  segmentBtnText: { fontSize: 13, fontWeight: '700' },
+  langPill: { flexDirection: 'row', borderRadius: 12, padding: 3 },
+  langBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 9 },
+  langBtnText: { fontSize: 12, fontWeight: '600' },
+  dangerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  rowRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  footer: { alignItems: 'center', paddingTop: 24, paddingBottom: 8, gap: 4 },
+  footerText: { fontSize: 12 },
+
+  backBtn: {
+    width: 32,
+    height: 32,
+  },
   headerActions: { flexDirection: 'row', gap: 8 },
   headerActionBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
+    marginTop: -18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  // Hero
+  archivedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 2,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 12,
+  },
+  archivedBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  archivedBannerText: { flex: 1 },
+  archivedBannerTitle: { fontSize: 13, fontWeight: '700' },
+  archivedBannerDesc: { fontSize: 12, marginTop: 2, lineHeight: 16 },
   heroWrapper: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
   heroCard: { borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
   heroImgWrapper: { position: 'relative' },
@@ -1143,8 +1519,6 @@ const S = StyleSheet.create({
   datesRow: { flexDirection: 'row', gap: 16, marginTop: 10 },
   dateItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   dateText: { fontSize: 12 },
-
-  // Tabs
   tabBar: { flexDirection: 'row', borderBottomWidth: 1, marginTop: 8 },
   tabItem: {
     flex: 1,
@@ -1154,12 +1528,7 @@ const S = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabLabel: { fontSize: 12, marginTop: 2 },
-
-  // Shared card
-  cardBase: { borderRadius: 16, padding: 14 },
-
-  // Gallery
-  galleryScroll: { paddingBottom: 32 },
+  galleryScroll: { paddingBottom: 32, flex: 1 },
   tagScroll: { paddingHorizontal: 20, paddingVertical: 12, gap: 8 },
   tag: {
     paddingHorizontal: 12,
@@ -1184,9 +1553,6 @@ const S = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
   },
-  addPhotoBtnText: { fontSize: 13, fontWeight: '700' },
-  gridWrapper: { paddingHorizontal: 20 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   gridItem: { borderRadius: 16, overflow: 'hidden' },
   gridItemImg: { width: '100%', height: 150 },
   gridItemOverlay: {
@@ -1242,11 +1608,10 @@ const S = StyleSheet.create({
     borderRadius: 20,
   },
   emptyBtnText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
-
-  // Timeline
+  gridWrapper: { paddingHorizontal: 20 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   timelineScroll: { paddingHorizontal: 20, paddingBottom: 32, paddingTop: 8 },
   timelineRow: { flexDirection: 'row', gap: 12 },
-  timelineIconCol: { alignItems: 'center', width: 36 },
   timelineIconBg: {
     width: 36,
     height: 36,
@@ -1267,22 +1632,11 @@ const S = StyleSheet.create({
     borderRadius: 10,
     marginTop: 10,
   },
-
-  // Team
+  cardBase: { borderRadius: 16, padding: 14 },
+  timelineIconCol: { alignItems: 'center', width: 36 },
   teamScroll: { paddingHorizontal: 20, paddingBottom: 100, paddingTop: 8 },
-  statsRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   statCard: { borderRadius: 16, padding: 14, alignItems: 'center' },
-  statValue: { fontSize: 22, fontWeight: '800', marginTop: 6 },
-  statLabel: { fontSize: 12 },
   memberCard: { marginBottom: 12, flexDirection: 'row', alignItems: 'center' },
-  memberAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
   memberInitials: { fontSize: 16, fontWeight: '800' },
   memberNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   memberName: { fontSize: 15, fontWeight: '700' },
@@ -1296,7 +1650,21 @@ const S = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   // Notes
   notesScroll: { paddingHorizontal: 20, paddingBottom: 100, paddingTop: 8 },
   noteCard: { marginBottom: 12 },
@@ -1325,45 +1693,4 @@ const S = StyleSheet.create({
   noteDate: { fontSize: 11 },
   noteAction: { padding: 6 },
   noteContent: { fontSize: 14, lineHeight: 20 },
-
-  // Archived banner
-  archivedBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 10,
-    marginBottom: 2,
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 12,
-  },
-  archivedBannerIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  archivedBannerText: { flex: 1 },
-  archivedBannerTitle: { fontSize: 13, fontWeight: '700' },
-  archivedBannerDesc: { fontSize: 12, marginTop: 2, lineHeight: 16 },
-
-  // FAB
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-  },
 });

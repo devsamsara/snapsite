@@ -16,6 +16,7 @@
  * Params recibidos:
  *   - projectId: string
  */
+import { PressableScale } from '@/components/ui/pressable-scale';
 
 import React, { useState } from 'react';
 import {
@@ -23,7 +24,6 @@ import {
   Platform,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -178,6 +178,7 @@ export default function InviteMemberModal() {
           onClose={handleCancel}
         />
         <ModalBody>
+          <HeroBackdrop height={500} />
           <AppInput
             label={t('modals.inviteMember.name')}
             name="name"
@@ -202,7 +203,7 @@ export default function InviteMemberModal() {
             {ROLE_KEYS.map(roleKey => {
               const selected = selectedRole === roleKey;
               return (
-                <TouchableOpacity
+                <PressableScale
                   key={roleKey}
                   onPress={() => setSelectedRole(roleKey)}
                   style={[
@@ -214,7 +215,6 @@ export default function InviteMemberModal() {
                       borderColor: selected ? colors.primary : colors.border,
                     },
                   ]}
-                  activeOpacity={0.75}
                 >
                   <Text
                     style={[
@@ -224,7 +224,7 @@ export default function InviteMemberModal() {
                   >
                     {t(`roles.${roleKey}`)}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               );
             })}
           </View>

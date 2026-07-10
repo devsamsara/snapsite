@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
   useSharedValue,
   interpolate,
-  Extrapolate
 } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import { IconSymbol } from './ui/icon-symbol';
 import { GlassView } from './ui/glass-view';
+import { PressableScale } from './ui/pressable-scale';
 import { useColors } from '@/hooks/use-colors';
 import { useRouter } from 'expo-router';
+
+const SPRING = { damping: 16, stiffness: 220, mass: 0.7 };
 
 export function FabOptions() {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,7 +25,12 @@ export function FabOptions() {
 
   const toggleMenu = () => {
     const toValue = isOpen ? 0 : 1;
-    animation.value = withSpring(toValue);
+    animation.value = withSpring(toValue, SPRING);
+    Haptics.impactAsync(
+      isOpen
+        ? Haptics.ImpactFeedbackStyle.Light
+        : Haptics.ImpactFeedbackStyle.Medium,
+    ).catch(() => {});
     setIsOpen(!isOpen);
   };
 
@@ -53,15 +62,23 @@ export function FabOptions() {
   }));
 
   const backdropStyle = useAnimatedStyle(() => ({
-    opacity: withTiming(animation.value * 0.5),
+    opacity: withTiming(animation.value),
     pointerEvents: animation.value > 0 ? 'auto' : 'none',
   }));
 
   return (
       <View style={styles.container} pointerEvents="box-none">
-        <Animated.View
-            style={[StyleSheet.absoluteFill, backdropStyle, { backgroundColor: '#000' }]}
-        >
+        {/* Backdrop inmersivo: blur (iOS) + scrim; cierra el menú al tocar */}
+        <Animated.View style={[StyleSheet.absoluteFill, backdropStyle]}>
+          {Platform.OS === 'ios' ? (
+            <BlurView intensity={26} tint="dark" style={StyleSheet.absoluteFill} />
+          ) : null}
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: 'rgba(0,0,0,0.45)' },
+            ]}
+          />
           <Pressable style={StyleSheet.absoluteFill} onPress={toggleMenu} />
         </Animated.View>
 
@@ -72,12 +89,17 @@ export function FabOptions() {
                 Nuevo Proyecto
               </Text>
             </GlassView>
-            <TouchableOpacity
+            <PressableScale
                 onPress={handleNewProject}
-                style={[styles.optionButton, { backgroundColor: colors.primary }]}
+                pressedScale={0.9}
+                haptic
+                style={[
+                  styles.optionButton,
+                  { backgroundColor: colors.primary, shadowColor: colors.primary },
+                ]}
             >
               <IconSymbol name="plus.rectangle.on.folder.fill" size={24} color="#FFF" />
-            </TouchableOpacity>
+            </PressableScale>
           </Animated.View>
 
           <Animated.View style={[styles.optionContainer, option1Style]}>
@@ -86,23 +108,34 @@ export function FabOptions() {
                 Tomar Foto
               </Text>
             </GlassView>
-            <TouchableOpacity
+            <PressableScale
                 onPress={() => { toggleMenu(); router.push('/camera-capture'); }}
-                style={[styles.optionButton, { backgroundColor: colors.success }]}
+                pressedScale={0.9}
+                haptic
+                style={[
+                  styles.optionButton,
+                  { backgroundColor: colors.success, shadowColor: colors.success },
+                ]}
             >
               <IconSymbol name="camera.fill" size={24} color="#FFF" />
-            </TouchableOpacity>
+            </PressableScale>
           </Animated.View>
 
-          <TouchableOpacity
-              activeOpacity={0.8}
+          <PressableScale
               onPress={toggleMenu}
-              style={[styles.mainFab, { backgroundColor: colors.primary }]}
+              pressedScale={0.9}
+              style={[
+                styles.mainFab,
+                { backgroundColor: colors.primary, shadowColor: colors.primary },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Crear"
+              accessibilityState={{ expanded: isOpen }}
           >
             <Animated.View style={fabStyle}>
               <IconSymbol name="plus" size={32} color="#FFF" />
             </Animated.View>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </View>
   );
@@ -119,16 +152,16 @@ const styles = StyleSheet.create({
     right: 24,
     alignItems: 'center',
   },
+  // Glow del acento en lugar de sombra negra: profundidad con identidad
   mainFab: {
     width: 64,
     height: 64,
     borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
     elevation: 8,
   },
   optionContainer: {
@@ -145,10 +178,9 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
     elevation: 4,
   },
   // Píldora de cristal para la etiqueta: legible sobre el backdrop sin

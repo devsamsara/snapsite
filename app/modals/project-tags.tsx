@@ -14,6 +14,7 @@
  *   - projectName: string
  *   - tags: string  (JSON.stringify de string[])
  */
+import { PressableScale } from '@/components/ui/pressable-scale';
 import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -21,7 +22,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -231,7 +231,7 @@ export default function ProjectTagsModal() {
                   maxLength={24}
                 />
               </View>
-              <TouchableOpacity
+              <PressableScale
                 onPress={handleSubmit(onSubmitAdd)}
                 style={[
                   S.addBtn,
@@ -240,10 +240,9 @@ export default function ProjectTagsModal() {
                     marginBottom: addButtonMarginBottom,
                   },
                 ]}
-                activeOpacity={0.8}
               >
                 <MaterialIcons name="add" size={22} color="#fff" />
-              </TouchableOpacity>
+              </PressableScale>
             </View>
 
             {/* ── Current tags ── */}
@@ -267,12 +266,12 @@ export default function ProjectTagsModal() {
                         ]}
                       >
                         <Text style={[S.chipText, { color }]}>{tag}</Text>
-                        <TouchableOpacity
+                        <PressableScale
                           onPress={() => removeTag(i)}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
                           <MaterialIcons name="close" size={14} color={color} />
-                        </TouchableOpacity>
+                        </PressableScale>
                       </View>
                     );
                   })}
@@ -302,7 +301,7 @@ export default function ProjectTagsModal() {
                 </Text>
                 <View style={S.chipWrap}>
                   {availableSuggestions.slice(0, 8).map(suggestion => (
-                    <TouchableOpacity
+                    <PressableScale
                       key={suggestion}
                       onPress={() => addTag(suggestion)}
                       style={[
@@ -312,7 +311,6 @@ export default function ProjectTagsModal() {
                           borderColor: colors.border,
                         },
                       ]}
-                      activeOpacity={0.7}
                     >
                       <MaterialIcons
                         name="add"
@@ -322,7 +320,7 @@ export default function ProjectTagsModal() {
                       <Text style={[S.suggestionText, { color: colors.muted }]}>
                         {suggestion}
                       </Text>
-                    </TouchableOpacity>
+                    </PressableScale>
                   ))}
                 </View>
               </View>
@@ -331,14 +329,13 @@ export default function ProjectTagsModal() {
         </ModalBody>
 
         <ModalFooter>
-          <TouchableOpacity
+          <PressableScale
             onPress={handleSave}
             disabled={isSaving}
             style={[
               S.saveBtn,
               { backgroundColor: isSaving ? colors.border : colors.primary },
             ]}
-            activeOpacity={0.8}
           >
             <Text
               style={[
@@ -348,7 +345,7 @@ export default function ProjectTagsModal() {
             >
               {isSaving ? t('common.saving') : t('projectTags.save')}
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         </ModalFooter>
       </ModalRoot>
     </KeyboardAvoidingView>

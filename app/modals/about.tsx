@@ -1,9 +1,9 @@
 import React from 'react';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
   Linking,
   Image,
@@ -93,7 +93,7 @@ export default function AboutModal() {
         </Text>
         <View style={[S.card, cardStyle, S.listCard]}>
           {links.map((item, index) => (
-            <TouchableOpacity
+            <PressableScale
               key={item.label}
               style={[
                 S.row,
@@ -101,7 +101,6 @@ export default function AboutModal() {
                 index === links.length - 1 && S.rowLast,
               ]}
               onPress={item.onPress}
-              activeOpacity={0.7}
             >
               <View style={S.rowLeft}>
                 <IconSymbol name={item.icon} size={20} color={colors.primary} />
@@ -110,7 +109,7 @@ export default function AboutModal() {
                 </Text>
               </View>
               <IconSymbol name="chevron.right" size={16} color={colors.muted} />
-            </TouchableOpacity>
+            </PressableScale>
           ))}
         </View>
 

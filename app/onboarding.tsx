@@ -6,11 +6,11 @@
  * - Last slide: scale-up + fade-out exit transition before navigating to tabs
  * - Illustrations have idle float/pulse animations (handled in OnboardingSlide)
  */
+import { PressableScale } from '@/components/ui/pressable-scale';
 import React, { useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   FlatList,
   Dimensions,
   StyleSheet,
@@ -236,7 +236,7 @@ export default function OnboardingScreen() {
 
       {/* ── Skip button ── */}
       <Animated.View style={[styles.skipContainer, { top: insets.top + 12 }, skipStyle]}>
-        <TouchableOpacity
+        <PressableScale
           onPress={handleSkip}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           style={[styles.skipBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
@@ -244,7 +244,7 @@ export default function OnboardingScreen() {
           <Text style={[styles.skipText, { color: colors.muted }]}>
             {t("onboarding.skip")}
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
       </Animated.View>
 
       {/* ── Slides pager ── */}
@@ -288,9 +288,8 @@ export default function OnboardingScreen() {
 
         {/* Primary CTA button — color driven by scrollX */}
         <Animated.View style={[styles.btnWrapper, btnPressStyle]}>
-          <TouchableOpacity
+          <PressableScale
             onPress={handleNext}
-            activeOpacity={1}
           >
             <Animated.View style={[styles.primaryBtn, btnAnimStyle]}>
               <Text style={styles.primaryBtnText}>
@@ -302,7 +301,7 @@ export default function OnboardingScreen() {
                 </View>
               )}
             </Animated.View>
-          </TouchableOpacity>
+          </PressableScale>
         </Animated.View>
 
         {/* Step counter */}

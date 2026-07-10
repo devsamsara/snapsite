@@ -43,9 +43,9 @@ export function useCardStyle() {
       borderWidth: 1,
       borderColor,
       shadowColor,
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: isDark ? 0.35 : 0.09,
-      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 5 },
+      shadowOpacity: isDark ? 0.45 : 0.11,
+      shadowRadius: 12,
     };
   }
 
@@ -54,7 +54,7 @@ export function useCardStyle() {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor,
-    elevation: isDark ? 3 : 5,
+    elevation: isDark ? 4 : 6,
   };
 }
 
@@ -83,9 +83,9 @@ export function useCardStyleSm() {
       borderWidth: 1,
       borderColor: borderColorSm,
       shadowColor: shadowColorSm,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0.30 : 0.07,
-      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: isDark ? 0.38 : 0.09,
+      shadowRadius: 8,
     };
   }
 

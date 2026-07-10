@@ -6,12 +6,12 @@
  * Al seleccionar un proyecto, resuelve el projectPickerStore y vuelve
  * al editor para que continúe el guardado.
  */
+import { PressableScale } from '@/components/ui/pressable-scale';
 import React, { useState } from 'react';
 import {
   FlatList,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
   ActivityIndicator,
 } from 'react-native';
@@ -74,10 +74,9 @@ export default function ProjectPickerModal() {
       .join('');
 
     return (
-      <TouchableOpacity
+      <PressableScale
         style={[S.row, card, { backgroundColor: colors.surface }]}
         onPress={() => handleSelect(item.id, item.name)}
-        activeOpacity={0.7}
       >
         {/* Thumbnail or initials */}
         <View style={[S.thumb, { backgroundColor: colors.primary + '22' }]}>
@@ -109,7 +108,7 @@ export default function ProjectPickerModal() {
           color={colors.muted}
           style={{ marginLeft: 4 }}
         />
-      </TouchableOpacity>
+      </PressableScale>
     );
   };
 

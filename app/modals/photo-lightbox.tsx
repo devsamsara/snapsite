@@ -24,6 +24,7 @@
  *   disponible sin desbordarse
  * - ModalFooter con safe area bottom automática
  */
+import { PressableScale } from '@/components/ui/pressable-scale';
 
 import React, { useState } from 'react';
 import {
@@ -32,7 +33,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -160,13 +160,13 @@ export default function PhotoLightboxModal() {
         style={[S.header, { paddingTop: insets.top }]}
       >
         <View style={S.headerInner}>
-          <TouchableOpacity
+          <PressableScale
             onPress={() => router.back()}
             style={S.closeBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
             <MaterialIcons name="close" size={20} color="#FFF" />
-          </TouchableOpacity>
+          </PressableScale>
 
           <Text style={S.headerTitle} numberOfLines={1}>
             {params.caption}
@@ -174,7 +174,7 @@ export default function PhotoLightboxModal() {
 
           {/* Botón eliminar en la esquina derecha del header — oculto si archivado */}
           {params.photoId && !isArchived ? (
-            <TouchableOpacity
+            <PressableScale
               onPress={handleDelete}
               style={S.deleteBtn}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -189,7 +189,7 @@ export default function PhotoLightboxModal() {
                   color={colors.error}
                 />
               )}
-            </TouchableOpacity>
+            </PressableScale>
           ) : (
             <View style={S.closeBtn} pointerEvents="none" />
           )}

@@ -1,60 +1,44 @@
-/**
- * (tabs)/settings.tsx — Ajustes + Perfil unificados
- * Secciones: PERFIL · EMPRESA · APARIENCIA · NOTIFICACIONES · GENERAL · SESIÓN · ZONA PELIGROSA
- */
-import {
-  Image,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Image, Platform, StyleSheet, Switch, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import i18n, { changeLanguage } from '@/lib/i18n';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '@/components/screen-container';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { GlassView } from '@/components/ui/glass-view';
+import { HeroBackdrop } from '@/components/ui/hero-backdrop';
 import { useColors } from '@/hooks/use-colors';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useThemeContext } from '@/lib/theme-provider';
+import { useCardStyle, useCardStyleSm } from '@/hooks/use-card-style';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import i18n, { changeLanguage } from '@/lib/i18n';
+import Animated, {
+  Easing,
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import {
-  scheduleTestNotification,
-  useNotifications,
-  requestPushPermission,
-  getExpoPushToken,
-  getPermissionStatus,
-  setNotificationsDisabledByUser,
-  isNotificationsDisabledByUser,
-} from '@/hooks/use-notifications';
-import { useCardStyle } from '@/hooks/use-card-style';
-import { useAuth } from '@/lib/auth-context';
-import { AppAlert } from '@/components/ui/app-alert';
-import {
-  DeleteCompanyDocument,
-  DeleteUserDocument,
   GetMyProjectsDocument,
-  IsPushTokenEnabledDocument,
   RegisterPushTokenDocument,
   TogglePushTokenDocument,
   UserRole,
 } from '@/gql/graphql';
-import { apolloClient } from '@/lib/graphql-client';
 import { useMutation, useQuery } from '@apollo/client/react';
+import { useAuth } from '@/lib/auth-context';
+import { useRelativeDate } from '@/hooks/use-relative-date';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useThemeContext } from '@/lib/theme-provider';
+import {
+  getExpoPushToken,
+  requestPushPermission,
+  setNotificationsDisabledByUser,
+  useNotifications,
+} from '@/hooks/use-notifications';
+import { PressableScale } from '@/components/ui/pressable-scale';
+import { AppAlert } from '@/components/ui/app-alert';
 
-function initials(name?: string | null): string {
-  if (!name) return '?';
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map(w => w[0]?.toUpperCase() ?? '')
-    .join('');
-}
-
-/** Hook para evitar doble tap en botones de navegación */
 function useNavLock(delay = 600) {
   const locked = useRef(false);
   const navigate = useCallback(
@@ -71,14 +55,13 @@ function useNavLock(delay = 600) {
   return navigate;
 }
 
-export default function SettingsScreen() {
+export default function SettingScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const colors = useColors();
   const colorScheme = useColorScheme();
   const { setColorScheme, cardStyle, setCardStyle } = useThemeContext();
   const cardElevation = useCardStyle();
-  const { permissionStatus } = useNotifications();
   const { signOut, user, isLoading: authLoading } = useAuth();
   const nav = useNavLock();
 
@@ -96,70 +79,43 @@ export default function SettingsScreen() {
     i18n.language === 'en' ? 'en' : 'es'
   );
 
-  const { data:userProjects, loading } = useQuery(GetMyProjectsDocument, {
+  const { data: userProjects } = useQuery(GetMyProjectsDocument, {
     skip: authLoading,
   });
 
+  const enterOpacity = useSharedValue(0);
+  const enterScale = useSharedValue(1.06);
+  const insets = useSafeAreaInsets();
 
-  // Sincronizar el toggle con el estado real: primero SO, luego backend
-  // Lógica:
-  // 1. Si el SO tiene el permiso REVOCADO → toggle OFF (el backend no importa)
-  // 2. Si el SO tiene el permiso CONCEDIDO → consultar el backend:
-  //    - Si el token existe en el backend y enabled=true  → toggle ON
-  //    - Si el token existe en el backend y enabled=false → toggle OFF
-  //    - Si el token NO existe en el backend (token not found) → toggle OFF
-  //      (el usuario nunca completó el registro del token)
-  useEffect(() => {
-    let cancelled = false;
-    async function syncPushToggle() {
-      const status = await getPermissionStatus();
+  const scrollY = useSharedValue(0);
 
-      if (status !== 'granted') {
-        // El SO no tiene permiso — toggle siempre OFF
-        if (!cancelled) setPushNotifications(false);
-        return;
-      }
+  const heroStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, 130], [1, 0], Extrapolation.CLAMP),
+    transform: [
+      {
+        translateY: interpolate(
+          scrollY.value,
+          [0, 160],
+          [0, -44],
+          Extrapolation.CLAMP
+        ),
+      },
+    ],
+  }));
 
-      // El SO tiene permiso — consultar el backend para saber el estado de negocio
-      try {
-        const pushToken = await getExpoPushToken();
-        if (!pushToken) {
-          if (!cancelled) setPushNotifications(false);
-          return;
-        }
-
-        const { data } = await apolloClient.query({
-          query: IsPushTokenEnabledDocument,
-          variables: { token: pushToken },
-          fetchPolicy: 'network-only',
-        });
-
-        if (!cancelled) {
-          setPushNotifications(data?.isPushTokenEnabled === true);
-        }
-      } catch (err: any) {
-        // Si el token no está registrado en el backend (notFound), toggle OFF
-        // Si hay error de red, mantener el estado anterior para no confundir al usuario
-        const isNotFound =
-          err?.graphQLErrors?.some((e: any) =>
-            e.message?.toLowerCase().includes('not found')
-          ) ||
-          err?.message?.toLowerCase().includes('not found');
-
-        if (!cancelled && isNotFound) {
-          setPushNotifications(false);
-        }
-      }
-    }
-    syncPushToggle();
-    return () => { cancelled = true; };
-  }, [permissionStatus]);
-
-  useEffect(() => {
-    setDarkMode(colorScheme === 'dark');
-  }, [colorScheme]);
-
-  if (loading) return null;
+  const stickyBarStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [70, 120], [0, 1], Extrapolation.CLAMP),
+    transform: [
+      {
+        translateY: interpolate(
+          scrollY.value,
+          [70, 120],
+          [-10, 0],
+          Extrapolation.CLAMP
+        ),
+      },
+    ],
+  }));
 
   const handleLanguageToggle = (lang: 'es' | 'en') => {
     setCurrentLang(lang);
@@ -190,7 +146,9 @@ export default function SettingsScreen() {
       setPushNotifications(true);
 
       try {
-        await registerPushToken({ variables: { token, platform: Platform.OS } });
+        await registerPushToken({
+          variables: { token, platform: Platform.OS },
+        });
         await togglePushToken({ variables: { token, enabled: true } });
       } catch {
         // No bloquear la UX si el backend falla
@@ -203,9 +161,11 @@ export default function SettingsScreen() {
       await setNotificationsDisabledByUser(true);
       setPushNotifications(false);
 
-      // Desactivar el token en el backend (el token sigue registrado, solo cambia enabled)
+      // Desactivar el token en el bakend (el token sigue registrado, solo cambia enabled)
       if (token) {
-        togglePushToken({ variables: { token, enabled: false } }).catch(() => {});
+        togglePushToken({ variables: { token, enabled: false } }).catch(
+          () => {}
+        );
       }
 
       AppAlert.alert(
@@ -227,6 +187,50 @@ export default function SettingsScreen() {
         : t('settings.notifications.emailDisabledMessage'),
       [{ text: t('common.ok') }]
     );
+  };
+
+  useEffect(() => {
+    enterOpacity.value = withTiming(1, {
+      duration: 400,
+      easing: Easing.out(Easing.quad),
+    });
+    enterScale.value = withSpring(1, {
+      damping: 22,
+      stiffness: 160,
+      mass: 0.8,
+    });
+  }, []);
+
+  const enterStyle = useAnimatedStyle(() => ({
+    flex: 1,
+    opacity: enterOpacity.value,
+    transform: [{ scale: enterScale.value }],
+  }));
+
+  const Sl = ({ label }: { label: string }) => (
+    <Text style={[S.sectionLabel, { color: colors.muted }]}>
+      {label.toUpperCase()}
+    </Text>
+  );
+
+  const getUserPhotos = () => {
+    let cont = 0;
+
+    userProjects?.getMyProjects.forEach(project => {
+      cont += project.photos.length;
+    });
+
+    return cont;
+  };
+
+  const getUserMembers = () => {
+    let cont = 0;
+
+    userProjects?.getMyProjects.forEach(project => {
+      cont += project.members.length;
+    });
+
+    return cont;
   };
 
   const handleLogout = () => {
@@ -253,600 +257,531 @@ export default function SettingsScreen() {
     );
   };
 
-  const handleDeleteAccount = () => {
-    AppAlert.alert(
-      t('profile.deleteAccountTitle'),
-      t('profile.deleteAccountMessage'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('profile.deleteAccountButton'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const userId = user?.id;
-              if (!userId) throw new Error('No user id');
-              await apolloClient.mutate({
-                mutation: DeleteUserDocument,
-                variables: { id: userId },
-              });
-              await signOut();
-            } catch {
-              AppAlert.alert(
-                t('common.error'),
-                t('profile.deleteAccountError')
-              );
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleLeaveCompany = () => {
-    AppAlert.alert(
-      t('profile.leaveCompanyTitle'),
-      t('profile.leaveCompanyMessage'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('profile.leaveCompanyButton'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const userId = user?.id;
-              if (!userId) throw new Error('No user id');
-              await apolloClient.mutate({
-                mutation: DeleteUserDocument,
-                variables: { id: userId },
-              });
-              await signOut();
-            } catch {
-              AppAlert.alert(t('common.error'), t('profile.leaveCompanyError'));
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleDeleteCompany = () => {
-    AppAlert.alert(
-      t('profile.deleteCompanyTitle'),
-      t('profile.deleteCompanyMessage'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('profile.deleteCompanyButton'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const companyId = user?.company?.id;
-              if (!companyId) throw new Error('No company id');
-              await apolloClient.mutate({
-                mutation: DeleteCompanyDocument,
-                variables: { id: companyId },
-              });
-              await signOut();
-            } catch {
-              AppAlert.alert(
-                t('common.error'),
-                t('profile.deleteCompanyError')
-              );
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const getUserPhotos = () => {
-    let cont = 0;
-
-    userProjects?.getMyProjects.forEach((project) => {
-      cont += project.photos.length;
-    })
-
-    return cont;
-  }
-
-  const getUserMembers =() => {
-    let cont = 0;
-
-    userProjects?.getMyProjects.forEach((project) => {
-      cont+= project.members.length;
-    })
-
-    return cont;
-  }
-
-  const Sl = ({ label }: { label: string }) => (
-    <Text style={[S.sectionLabel, { color: colors.muted }]}>
-      {label.toUpperCase()}
-    </Text>
-  );
-
   return (
-    <ScreenContainer className="p-0">
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
-        {/* Header — mismo estilo que projects.tsx */}
-        <View style={[S.header, { borderBottomColor: colors.border }]}>
-          <Text style={[S.headerTitle, { color: colors.foreground }]}>
-            {t('settings.title')}
-          </Text>
-        </View>
+    <ScreenContainer edgeToEdge className="p-0">
+      <Animated.View style={enterStyle} className="bg-background">
+        <HeroBackdrop height={230 + insets.top} />
 
-        <ScrollView
+        <Animated.View
+          style={[S.header, heroStyle, { paddingTop: insets.top + 20 }]}
+        >
+          <View style={S.headerTop}>
+            <View style={S.flex1}>
+              <Text style={[S.workspaceLabel, { color: colors.muted }]}>
+                {t('home.workspace')}
+              </Text>
+              <Text style={[S.workspaceName, { color: colors.foreground }]}>
+                {t('settings.title')}
+              </Text>
+            </View>
+          </View>
+        </Animated.View>
+
+        <Animated.ScrollView
+          scrollEventThrottle={16}
           contentContainerStyle={S.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* ── PERFIL ─────────────────────────────────────────────────────── */}
-          <Sl label={t('settings.sections.profile')} />
-          <View style={[S.profileCard, cardElevation]}>
-            {/* Avatar */}
-            <View
-              style={[S.profileAvatar, { backgroundColor: colors.primary }]}
-            >
-              {user?.avatarUrl ? (
-                <View style={{
-                  borderRadius: 48,
-                  borderWidth: 2,
-                  borderColor: colors.primary
-                }}>
-                  <Image src={user.avatarUrl} width={80} height={80} style={{borderRadius: 48}} />
-                </View>
-              ) : (
-                <IconSymbol name="person.fill" size={40} color="#FFFFFF" />
-              )}
-            </View>
-            {/* User Info */}
-            <Text style={[S.profileName, { color: colors.foreground }]}>
-              {userName ?? '—'}
-            </Text>
-            <Text style={[S.profileEmail, { color: colors.muted }]}>
-              {user?.email ?? ''}
-            </Text>
-            <Text style={[S.profileRole, { color: colors.muted }]}>
-              {isOwner ? t('roles.root') : t('roles.admin')}
-            </Text>
-            {/* Stats */}
-            <View style={[S.statsRow, { borderTopColor: colors.border }]}>
-              <View style={S.statItem}>
-                <Text style={[S.statValue, { color: colors.primary }]}>
-                  {userProjects?.getMyProjects.length ?? 0}
-                </Text>
-                <Text style={[S.statLabel, { color: colors.muted }]}>
-                  {t('settings.profile.projects')}
-                </Text>
-              </View>
+          {/* Avar section */}
+          <View style={S.sectionTitleWrapper}>
+            <Sl label={t('settings.sections.profile')} />
+            <View style={[S.profileCard, cardElevation]}>
               <View
-                style={[S.statDivider, { backgroundColor: colors.border }]}
-              />
-              <View style={S.statItem}>
-                <Text style={[S.statValue, { color: colors.primary }]}>
-                  {getUserPhotos()}
-                </Text>
-                <Text style={[S.statLabel, { color: colors.muted }]}>
-                  {t('settings.profile.photos')}
-                </Text>
-              </View>
-              <View
-                style={[S.statDivider, { backgroundColor: colors.border }]}
-              />
-              <View style={S.statItem}>
-                <Text style={[S.statValue, { color: colors.primary }]}>
-                  {getUserMembers()}
-                </Text>
-                <Text style={[S.statLabel, { color: colors.muted }]}>
-                  {t('settings.profile.teamMembers')}
-                </Text>
-              </View>
-            </View>
-          </View>
-          {/* Edit Profile row */}
-          <View style={[S.card, cardElevation]}>
-            <TouchableOpacity
-              onPress={() => nav(() => router.push('/edit-profile'))}
-              style={S.row}
-              activeOpacity={0.7}
-            >
-              <View style={S.rowLeft}>
-                <IconSymbol
-                  name="person.crop.circle"
-                  size={20}
-                  color={colors.primary}
-                />
-                <Text
-                  style={[
-                    S.rowLabel,
-                    { color: colors.foreground, marginLeft: 16 },
-                  ]}
-                >
-                  {t('profile.editProfile')}
-                </Text>
-              </View>
-              <IconSymbol name="chevron.right" size={16} color={colors.muted} />
-            </TouchableOpacity>
-          </View>
-
-          {/* ── EMPRESA ────────────────────────────────────────────────────── */}
-          <Sl label={t('settings.sections.company') ?? 'Empresa'} />
-          <View style={[S.card, cardElevation]}>
-            <View
-              style={[
-                S.row,
-                {
-                  borderBottomWidth: StyleSheet.hairlineWidth,
-                  borderBottomColor: colors.border,
-                },
-              ]}
-            >
-              <View style={S.rowLeft}>
-                <IconSymbol
-                  name="building.2.fill"
-                  size={20}
-                  color={colors.primary}
-                />
-                <View style={S.rowTextBlock}>
-                  <Text style={[S.rowLabel, { color: colors.foreground }]}>
-                    {companyName ?? '—'}
-                  </Text>
-                  <Text style={[S.rowSublabel, { color: colors.muted }]}>
-                    {isOwner ? t('roles.root') : t('roles.admin')}
-                  </Text>
-                </View>
-              </View>
-            </View>
-            <TouchableOpacity
-              onPress={() =>
-                nav(() => router.push('/modals/team-members' as any))
-              }
-              style={S.row}
-              activeOpacity={0.7}
-            >
-              <View style={S.rowLeft}>
-                <IconSymbol
-                  name="person.2.fill"
-                  size={20}
-                  color={colors.primary}
-                />
-                <Text
-                  style={[
-                    S.rowLabel,
-                    { color: colors.foreground, marginLeft: 16 },
-                  ]}
-                >
-                  {t('teamMembers.title')}
-                </Text>
-              </View>
-              <IconSymbol name="chevron.right" size={16} color={colors.muted} />
-            </TouchableOpacity>
-          </View>
-
-          {/* ── APARIENCIA ─────────────────────────────────────────────────── */}
-          <Sl label={t('settings.sections.appearance')} />
-          <View style={[S.card, cardElevation]}>
-            <View
-              style={[
-                S.row,
-                {
-                  borderBottomWidth: StyleSheet.hairlineWidth,
-                  borderBottomColor: colors.border,
-                },
-              ]}
-            >
-              <View style={S.rowLeft}>
-                <IconSymbol name="moon.fill" size={20} color={colors.primary} />
-                <View style={S.rowTextBlock}>
-                  <Text style={[S.rowLabel, { color: colors.foreground }]}>
-                    {t('settings.appearance.darkMode')}
-                  </Text>
-                  <Text style={[S.rowSublabel, { color: colors.muted }]}>
-                    {t('settings.appearance.darkModeDesc')}
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={darkMode}
-                onValueChange={handleDarkModeToggle}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#FFF"
-              />
-            </View>
-            <View style={S.cardStyleRow}>
-              <View style={S.rowLeft}>
-                <IconSymbol
-                  name="rectangle.stack.fill"
-                  size={20}
-                  color={colors.primary}
-                />
-                <Text
-                  style={[
-                    S.rowLabel,
-                    { color: colors.foreground, marginLeft: 16 },
-                  ]}
-                >
-                  {t('settings.appearance.cardStyle')}
-                </Text>
-              </View>
-              <View style={S.segmentedControl}>
-                {(['flat', 'modern'] as const).map(mode => (
-                  <TouchableOpacity
-                    key={mode}
-                    onPress={() => setCardStyle((mode as 'flat') || 'modern')}
-                    style={[
-                      S.segmentBtn,
-                      {
-                        backgroundColor:
-                          cardStyle === mode ? colors.primary : colors.surface,
-                        borderColor:
-                          cardStyle === mode ? colors.primary : colors.border,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        S.segmentBtnText,
-                        { color: cardStyle === mode ? '#FFF' : colors.muted },
-                      ]}
-                    >
-                      {mode === 'flat'
-                        ? t('settings.appearance.flat')
-                        : t('settings.appearance.modern')}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
-
-          {/* ── NOTIFICACIONES ─────────────────────────────────────────────── */}
-          <Sl label={t('settings.sections.notifications')} />
-          <View style={[S.card, cardElevation]}>
-            <View
-              style={[
-                S.row,
-                {
-                  borderBottomWidth: StyleSheet.hairlineWidth,
-                  borderBottomColor: colors.border,
-                },
-              ]}
-            >
-              <View style={S.rowLeft}>
-                <IconSymbol name="bell.fill" size={20} color={colors.primary} />
-                <View style={S.rowTextBlock}>
-                  <Text style={[S.rowLabel, { color: colors.foreground }]}>
-                    {t('settings.notifications.push')}
-                  </Text>
-                  <Text style={[S.rowSublabel, { color: colors.muted }]}>
-                    {t('settings.notifications.pushDesc')}
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={pushNotifications}
-                onValueChange={handlePushNotificationsToggle}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#FFF"
-              />
-            </View>
-            <View style={S.row}>
-              <View style={S.rowLeft}>
-                <IconSymbol
-                  name="envelope.fill"
-                  size={20}
-                  color={colors.primary}
-                />
-                <View style={S.rowTextBlock}>
-                  <Text style={[S.rowLabel, { color: colors.foreground }]}>
-                    {t('settings.notifications.email')}
-                  </Text>
-                  <Text style={[S.rowSublabel, { color: colors.muted }]}>
-                    {t('settings.notifications.emailDesc')}
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={emailNotifications}
-                onValueChange={handleEmailNotificationsToggle}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#FFF"
-              />
-            </View>
-          </View>
-
-          {/* ── CUENTA ─────────────────────────────────────────────────────── */}
-          <Sl label={t('settings.sections.account') ?? 'Cuenta'} />
-          <View style={[S.card, cardElevation]}>
-            <TouchableOpacity
-              onPress={() => nav(() => router.push('/account-details' as any))}
-              style={S.row}
-              activeOpacity={0.7}
-            >
-              <View style={S.rowLeft}>
-                <IconSymbol
-                  name="person.text.rectangle.fill"
-                  size={20}
-                  color={colors.primary}
-                />
-                <View style={S.rowTextBlock}>
-                  <Text style={[S.rowLabel, { color: colors.foreground }]}>
-                    {t('accountDetails.title')}
-                  </Text>
-                  <Text style={[S.rowSublabel, { color: colors.muted }]}>
-                    {t('accountDetails.subtitle')}
-                  </Text>
-                </View>
-              </View>
-              <IconSymbol name="chevron.right" size={16} color={colors.muted} />
-            </TouchableOpacity>
-          </View>
-
-          {/* ── GENERAL ────────────────────────────────────────────────────── */}
-          <Sl label={t('settings.sections.general')} />
-          <View style={[S.card, cardElevation]}>
-            <TouchableOpacity
-              onPress={() =>
-                nav(() => router.push('/modals/help-support' as any))
-              }
-              style={[
-                S.row,
-                {
-                  borderBottomWidth: StyleSheet.hairlineWidth,
-                  borderBottomColor: colors.border,
-                },
-              ]}
-              activeOpacity={0.7}
-            >
-              <View style={S.rowLeft}>
-                <IconSymbol
-                  name="questionmark.circle.fill"
-                  size={20}
-                  color={colors.primary}
-                />
-                <Text
-                  style={[
-                    S.rowLabel,
-                    { color: colors.foreground, marginLeft: 16 },
-                  ]}
-                >
-                  {t('settings.general.helpSupport')}
-                </Text>
-              </View>
-              <IconSymbol name="chevron.right" size={16} color={colors.muted} />
-            </TouchableOpacity>
-            {/* Language */}
-            <View
-              style={[
-                S.row,
-                {
-                  borderBottomWidth: StyleSheet.hairlineWidth,
-                  borderBottomColor: colors.border,
-                },
-              ]}
-            >
-              <View style={S.rowLeft}>
-                <IconSymbol name="globe" size={20} color={colors.primary} />
-                <View style={S.rowTextBlock}>
-                  <Text style={[S.rowLabel, { color: colors.foreground }]}>
-                    {t('settings.language')}
-                  </Text>
-                  <Text style={[S.rowSublabel, { color: colors.muted }]}>
-                    {t('settings.languageDesc')}
-                  </Text>
-                </View>
-              </View>
-              <View
-                style={[S.langPill, { backgroundColor: colors.border + '60' }]}
+                style={[S.profileAvatar, { backgroundColor: colors.primary }]}
               >
-                {(['es', 'en'] as const).map(lang => (
-                  <TouchableOpacity
-                    key={lang}
-                    onPress={() => handleLanguageToggle(lang)}
-                    style={[
-                      S.langBtn,
-                      currentLang === lang && {
-                        backgroundColor: colors.primary,
-                      },
-                    ]}
+                {user?.avatarUrl ? (
+                  <View
+                    style={{
+                      borderRadius: 48,
+                      borderWidth: 2,
+                      borderColor: colors.primary,
+                    }}
                   >
-                    <Text
-                      style={[
-                        S.langBtnText,
-                        { color: currentLang === lang ? '#fff' : colors.muted },
-                      ]}
-                    >
-                      {lang.toUpperCase()}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                    <Image
+                      src={user.avatarUrl}
+                      width={80}
+                      height={80}
+                      style={{ borderRadius: 48 }}
+                    />
+                  </View>
+                ) : (
+                  <IconSymbol name="person.fill" size={40} color="#FFFFFF" />
+                )}
+              </View>
+              {/* User Info */}
+              <Text style={[S.profileName, { color: colors.foreground }]}>
+                {userName ?? '—'}
+              </Text>
+              <Text style={[S.profileEmail, { color: colors.muted }]}>
+                {user?.email ?? ''}
+              </Text>
+              <Text style={[S.profileRole, { color: colors.muted }]}>
+                {isOwner ? t('roles.root') : t('roles.admin')}
+              </Text>
+              {/* Stats */}
+              <View style={[S.statsRow, { borderTopColor: colors.border }]}>
+                <View style={S.statItem}>
+                  <Text style={[S.statValue, { color: colors.primary }]}>
+                    {userProjects?.getMyProjects.length ?? 0}
+                  </Text>
+                  <Text style={[S.statLabel, { color: colors.muted }]}>
+                    {t('settings.profile.projects')}
+                  </Text>
+                </View>
+                <View
+                  style={[S.statDivider, { backgroundColor: colors.border }]}
+                />
+                <View style={S.statItem}>
+                  <Text style={[S.statValue, { color: colors.primary }]}>
+                    {getUserPhotos()}
+                  </Text>
+                  <Text style={[S.statLabel, { color: colors.muted }]}>
+                    {t('settings.profile.photos')}
+                  </Text>
+                </View>
+                <View
+                  style={[S.statDivider, { backgroundColor: colors.border }]}
+                />
+                <View style={S.statItem}>
+                  <Text style={[S.statValue, { color: colors.primary }]}>
+                    {getUserMembers()}
+                  </Text>
+                  <Text style={[S.statLabel, { color: colors.muted }]}>
+                    {t('settings.profile.teamMembers')}
+                  </Text>
+                </View>
               </View>
             </View>
-            <TouchableOpacity
-              onPress={() => nav(() => router.push('/modals/about' as any))}
-              style={S.row}
-              activeOpacity={0.7}
-            >
-              <View style={S.rowLeft}>
-                <IconSymbol
-                  name="info.circle.fill"
-                  size={20}
-                  color={colors.primary}
-                />
-                <Text
-                  style={[
-                    S.rowLabel,
-                    { color: colors.foreground, marginLeft: 16 },
-                  ]}
-                >
-                  {t('settings.general.about')}
-                </Text>
-              </View>
-              <View style={S.rowRight}>
-                <Text style={[S.rowSublabel, { color: colors.muted }]}>v1.0.0</Text>
+            {/* Edit Profile row */}
+            <View style={[S.card, cardElevation]}>
+              <PressableScale
+                onPress={() => nav(() => router.push('/edit-profile'))}
+                style={S.row}
+                pressedScale={0.98}
+                haptic
+              >
+                <View style={S.rowLeft}>
+                  <IconSymbol
+                    name="person.crop.circle"
+                    size={20}
+                    color={colors.primary}
+                  />
+                  <Text
+                    style={[
+                      S.rowLabel,
+                      { color: colors.foreground, marginLeft: 16 },
+                    ]}
+                  >
+                    {t('profile.editProfile')}
+                  </Text>
+                </View>
                 <IconSymbol
                   name="chevron.right"
                   size={16}
                   color={colors.muted}
                 />
-              </View>
-            </TouchableOpacity>
+              </PressableScale>
+            </View>
           </View>
 
-          {/* ── ZONA PELIGROSA (solo Admin) ────────────────────────────────── */}
-          {isOwner && (
-            <>
-              <Sl label={t('settings.sections.sectionDanger') ?? 'Zona peligrosa'} />
-              <View style={[S.card, cardElevation]}>
-                <TouchableOpacity
-                  onPress={handleDeleteCompany}
-                  style={S.row}
-                  activeOpacity={0.7}
-                >
-                  <View style={S.rowLeft}>
-                    <IconSymbol
-                      name="x.circle.fill"
-                      size={20}
-                      color={colors.error}
-                    />
-                    <View style={{ marginLeft: 16, flex: 1 }}>
-                      <Text style={[S.rowLabel, { color: colors.error }]}>
-                        {t('profile.deleteCompanyButton')}
-                      </Text>
-                      <Text
-                        style={[S.rowSublabel, { color: colors.error, marginTop: 2 }]}
-                        numberOfLines={2}
-                      >
-                        {t('profile.deleteCompanyHint')}
-                      </Text>
-                    </View>
+          {/* Company Section */}
+          <View style={S.sectionTitleWrapper}>
+            <Sl label={t('settings.sections.company') ?? 'Empresa'} />
+            <View style={[S.card, cardElevation]}>
+              <View
+                style={[
+                  S.row,
+                  {
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: colors.border,
+                  },
+                ]}
+              >
+                <View style={S.rowLeft}>
+                  <IconSymbol
+                    name="building.2.fill"
+                    size={20}
+                    color={colors.primary}
+                  />
+                  <View style={S.rowTextBlock}>
+                    <Text style={[S.rowLabel, { color: colors.foreground }]}>
+                      {companyName ?? '—'}
+                    </Text>
+                    <Text style={[S.rowSublabel, { color: colors.muted }]}>
+                      {isOwner ? t('roles.root') : t('roles.admin')}
+                    </Text>
                   </View>
-                </TouchableOpacity>
+                </View>
               </View>
-            </>
-          )}
+              <PressableScale
+                onPress={() =>
+                  nav(() => router.push('/modals/team-members' as any))
+                }
+                style={S.row}
+                pressedScale={0.98}
+                haptic
+              >
+                <View style={S.rowLeft}>
+                  <IconSymbol
+                    name="person.2.fill"
+                    size={20}
+                    color={colors.primary}
+                  />
+                  <Text
+                    style={[
+                      S.rowLabel,
+                      { color: colors.foreground, marginLeft: 16 },
+                    ]}
+                  >
+                    {t('teamMembers.title')}
+                  </Text>
+                </View>
+                <IconSymbol
+                  name="chevron.right"
+                  size={16}
+                  color={colors.muted}
+                />
+              </PressableScale>
+            </View>
+          </View>
+
+          {/* Apariencia Section */}
+          <View style={S.sectionTitleWrapper}>
+            <Sl label={t('settings.sections.appearance')} />
+            <View style={[S.card, cardElevation]}>
+              <View
+                style={[
+                  S.row,
+                  {
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: colors.border,
+                  },
+                ]}
+              >
+                <View style={S.rowLeft}>
+                  <IconSymbol
+                    name="moon.fill"
+                    size={20}
+                    color={colors.primary}
+                  />
+                  <View style={S.rowTextBlock}>
+                    <Text style={[S.rowLabel, { color: colors.foreground }]}>
+                      {t('settings.appearance.darkMode')}
+                    </Text>
+                    <Text style={[S.rowSublabel, { color: colors.muted }]}>
+                      {t('settings.appearance.darkModeDesc')}
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={darkMode}
+                  onValueChange={handleDarkModeToggle}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor="#FFF"
+                />
+              </View>
+              <View style={S.cardStyleRow}>
+                <View style={S.rowLeft}>
+                  <IconSymbol
+                    name="rectangle.stack.fill"
+                    size={20}
+                    color={colors.primary}
+                  />
+                  <Text
+                    style={[
+                      S.rowLabel,
+                      { color: colors.foreground, marginLeft: 16 },
+                    ]}
+                  >
+                    {t('settings.appearance.cardStyle')}
+                  </Text>
+                </View>
+                <View style={S.segmentedControl}>
+                  {(['flat', 'modern'] as const).map(mode => (
+                    <PressableScale
+                      key={mode}
+                      onPress={() => setCardStyle((mode as 'flat') || 'modern')}
+                      pressedScale={0.94}
+                      style={[
+                        S.segmentBtn,
+                        {
+                          backgroundColor:
+                            cardStyle === mode
+                              ? colors.primary
+                              : colors.surface,
+                          borderColor:
+                            cardStyle === mode ? colors.primary : colors.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          S.segmentBtnText,
+                          { color: cardStyle === mode ? '#FFF' : colors.muted },
+                        ]}
+                      >
+                        {mode === 'flat'
+                          ? t('settings.appearance.flat')
+                          : t('settings.appearance.modern')}
+                      </Text>
+                    </PressableScale>
+                  ))}
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Apariencia Section */}
+          <View style={S.sectionTitleWrapper}>
+            <Sl label={t('settings.sections.notifications')} />
+            <View style={[S.card, cardElevation]}>
+              <View
+                style={[
+                  S.row,
+                  {
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: colors.border,
+                  },
+                ]}
+              >
+                <View style={S.rowLeft}>
+                  <IconSymbol
+                    name="bell.fill"
+                    size={20}
+                    color={colors.primary}
+                  />
+                  <View style={S.rowTextBlock}>
+                    <Text style={[S.rowLabel, { color: colors.foreground }]}>
+                      {t('settings.notifications.push')}
+                    </Text>
+                    <Text style={[S.rowSublabel, { color: colors.muted }]}>
+                      {t('settings.notifications.pushDesc')}
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={pushNotifications}
+                  onValueChange={handlePushNotificationsToggle}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor="#FFF"
+                />
+              </View>
+              <View style={S.row}>
+                <View style={S.rowLeft}>
+                  <IconSymbol
+                    name="envelope.fill"
+                    size={20}
+                    color={colors.primary}
+                  />
+                  <View style={S.rowTextBlock}>
+                    <Text style={[S.rowLabel, { color: colors.foreground }]}>
+                      {t('settings.notifications.email')}
+                    </Text>
+                    <Text style={[S.rowSublabel, { color: colors.muted }]}>
+                      {t('settings.notifications.emailDesc')}
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={emailNotifications}
+                  onValueChange={handleEmailNotificationsToggle}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor="#FFF"
+                />
+              </View>
+            </View>
+          </View>
+
+          {/* Account Section */}
+          <View style={S.sectionTitleWrapper}>
+            <Sl label={t('settings.sections.account') ?? 'Cuenta'} />
+            <View style={[S.card, cardElevation]}>
+              <PressableScale
+                onPress={() =>
+                  nav(() => router.push('/account-details' as any))
+                }
+                style={S.row}
+                pressedScale={0.98}
+                haptic
+              >
+                <View style={S.rowLeft}>
+                  <IconSymbol
+                    name="person.text.rectangle.fill"
+                    size={20}
+                    color={colors.primary}
+                  />
+                  <View style={S.rowTextBlock}>
+                    <Text style={[S.rowLabel, { color: colors.foreground }]}>
+                      {t('accountDetails.title')}
+                    </Text>
+                    <Text style={[S.rowSublabel, { color: colors.muted }]}>
+                      {t('accountDetails.subtitle')}
+                    </Text>
+                  </View>
+                </View>
+                <IconSymbol
+                  name="chevron.right"
+                  size={16}
+                  color={colors.muted}
+                />
+              </PressableScale>
+            </View>
+          </View>
+
+          {/* General Section */}
+          <View style={S.sectionTitleWrapper}>
+            <Sl label={t('settings.sections.general')} />
+            <View style={[S.card, cardElevation]}>
+              <PressableScale
+                onPress={() =>
+                  nav(() => router.push('/modals/help-support' as any))
+                }
+                style={[
+                  S.row,
+                  {
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: colors.border,
+                  },
+                ]}
+                pressedScale={0.98}
+                haptic
+              >
+                <View style={S.rowLeft}>
+                  <IconSymbol
+                    name="questionmark.circle.fill"
+                    size={20}
+                    color={colors.primary}
+                  />
+                  <Text
+                    style={[
+                      S.rowLabel,
+                      { color: colors.foreground, marginLeft: 16 },
+                    ]}
+                  >
+                    {t('settings.general.helpSupport')}
+                  </Text>
+                </View>
+                <IconSymbol
+                  name="chevron.right"
+                  size={16}
+                  color={colors.muted}
+                />
+              </PressableScale>
+              {/* Language */}
+              <View
+                style={[
+                  S.row,
+                  {
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: colors.border,
+                  },
+                ]}
+              >
+                <View style={S.rowLeft}>
+                  <IconSymbol name="globe" size={20} color={colors.primary} />
+                  <View style={S.rowTextBlock}>
+                    <Text style={[S.rowLabel, { color: colors.foreground }]}>
+                      {t('settings.language')}
+                    </Text>
+                    <Text style={[S.rowSublabel, { color: colors.muted }]}>
+                      {t('settings.languageDesc')}
+                    </Text>
+                  </View>
+                </View>
+                <View
+                  style={[
+                    S.langPill,
+                    { backgroundColor: colors.border + '60' },
+                  ]}
+                >
+                  {(['es', 'en'] as const).map(lang => (
+                    <PressableScale
+                      key={lang}
+                      onPress={() => handleLanguageToggle(lang)}
+                      pressedScale={0.9}
+                      style={[
+                        S.langBtn,
+                        currentLang === lang && {
+                          backgroundColor: colors.primary,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          S.langBtnText,
+                          {
+                            color: currentLang === lang ? '#fff' : colors.muted,
+                          },
+                        ]}
+                      >
+                        {lang.toUpperCase()}
+                      </Text>
+                    </PressableScale>
+                  ))}
+                </View>
+              </View>
+              <PressableScale
+                onPress={() => nav(() => router.push('/modals/about' as any))}
+                style={S.row}
+                pressedScale={0.98}
+                haptic
+              >
+                <View style={S.rowLeft}>
+                  <IconSymbol
+                    name="info.circle.fill"
+                    size={20}
+                    color={colors.primary}
+                  />
+                  <Text
+                    style={[
+                      S.rowLabel,
+                      { color: colors.foreground, marginLeft: 16 },
+                    ]}
+                  >
+                    {t('settings.general.about')}
+                  </Text>
+                </View>
+                <View style={S.rowRight}>
+                  <Text style={[S.rowSublabel, { color: colors.muted }]}>
+                    v1.0.0
+                  </Text>
+                  <IconSymbol
+                    name="chevron.right"
+                    size={16}
+                    color={colors.muted}
+                  />
+                </View>
+              </PressableScale>
+            </View>
+          </View>
 
           {/* ── SESIÓN ─────────────────────────────────────────────────────── */}
-          <Sl label={t('settings.sections.session') ?? 'Sesión'} />
-          <View style={[S.card, cardElevation]}>
-            <TouchableOpacity
-              onPress={handleLogout}
-              style={S.row}
-              activeOpacity={0.7}
-            >
-              <View style={S.rowLeft}>
-                <IconSymbol
-                  name="rectangle.portrait.and.arrow.right"
-                  size={20}
-                  color={colors.error}
-                />
-                <Text
-                  style={[S.rowLabel, { color: colors.error, marginLeft: 16 }]}
-                >
-                  {t('settings.logout')}
-                </Text>
-              </View>
-            </TouchableOpacity>
+          <View style={S.sectionTitleWrapper}>
+            <Sl label={t('settings.sections.session') ?? 'Sesión'} />
+            <View style={[S.card, cardElevation]}>
+              <PressableScale
+                onPress={handleLogout}
+                style={S.row}
+                pressedScale={0.98}
+                haptic
+              >
+                <View style={S.rowLeft}>
+                  <IconSymbol
+                    name="rectangle.portrait.and.arrow.right"
+                    size={20}
+                    color={colors.error}
+                  />
+                  <Text
+                    style={[
+                      S.rowLabel,
+                      { color: colors.error, marginLeft: 16 },
+                    ]}
+                  >
+                    {t('settings.logout')}
+                  </Text>
+                </View>
+              </PressableScale>
+            </View>
           </View>
 
           {/* Footer */}
@@ -858,49 +793,238 @@ export default function SettingsScreen() {
               {t('settings.footer')}
             </Text>
           </View>
-        </ScrollView>
-      </View>
+        </Animated.ScrollView>
+        <Animated.View
+          style={[S.stickyBar, stickyBarStyle, { paddingTop: insets.top + 6 }]}
+          pointerEvents="none"
+        >
+          <GlassView style={S.stickyGlass} intensity={60}>
+            <Text
+              numberOfLines={1}
+              style={[S.stickyTitle, { color: colors.foreground }]}
+            >
+              aass
+            </Text>
+          </GlassView>
+        </Animated.View>
+      </Animated.View>
     </ScreenContainer>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const S = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+  // Layout helpers
+  flex1: { flex: 1 },
+  flex1Ml3: { flex: 1, marginLeft: 12 },
+
+  // Empty state
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 24,
   },
-  headerTitle: { fontSize: 30, fontWeight: '800', letterSpacing: -0.5 },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 120,
-    gap: 4,
+
+  // Header — jerarquía tipográfica marcada: eyebrow uppercase + nombre grande
+  header: { paddingHorizontal: 20, paddingBottom: 16 },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
   },
-  sectionLabel: {
-    fontSize: 11,
+  workspaceLabel: {
+    fontSize: 12,
     fontWeight: '600',
-    letterSpacing: 1,
-    marginTop: 16,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
     marginBottom: 6,
-    paddingHorizontal: 4,
   },
-  card: { borderRadius: 18, overflow: 'hidden', marginBottom: 4 },
-  row: {
+  workspaceName: {
+    fontSize: 28,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginBottom: 14,
+  },
+  teamRow: { flexDirection: 'row', alignItems: 'center' },
+  avatarsTouchable: { flexDirection: 'row', marginRight: 12 },
+  headerAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerAvatarText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
+  headerAvatarMore: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginLeft: -8,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerAvatarMoreText: { fontSize: 11, fontWeight: '600' },
+  inviteBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    gap: 4,
   },
-  rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  rowTextBlock: { flex: 1, marginLeft: 16 },
-  rowLabel: { fontSize: 15, fontWeight: '600' },
-  rowSublabel: { fontSize: 12, marginTop: 1 },
-  rowRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  // Profile card
+  inviteBtnText: { fontSize: 13, fontWeight: '600', color: '#FFFFFF' },
+  settingsBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+
+  // Scroll
+  scrollContent: { paddingBottom: 120 },
+
+  // Sticky glass bar (aparece al colapsar el hero)
+  stickyBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 12,
+    paddingTop: 6,
+  },
+  stickyGlass: {
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  stickyTitle: { fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
+
+  // Sections — breathing room amplio y títulos con más peso
+  section: { marginTop: 28 },
+  sectionTitleWrapper: { paddingHorizontal: 20, marginBottom: 12 },
+  sectionTitle: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3 },
+  sectionHeader: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  seeAllText: { fontSize: 14, fontWeight: '600' },
+  horizontalListContent: { paddingHorizontal: 20, paddingVertical: 14 },
+
+  // Status grid
+  statusGrid: {
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  statusCard: {
+    width: '48%',
+    aspectRatio: 1.5,
+    borderRadius: 18,
+    padding: 16,
+    justifyContent: 'space-between',
+  },
+  statusCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  statusCardLabel: { fontSize: 16, fontWeight: '600' },
+  statusIconBg: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusCardCount: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
+
+  // Project card
+  projectCardWrapper: { marginRight: 16, width: 300 },
+  projectCard: { borderRadius: 18, padding: 16 },
+  projectCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  statusBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999 },
+  statusBadgeText: { fontSize: 12, fontWeight: '600' },
+  progressSection: { marginBottom: 12 },
+  progressLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  progressTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 4 },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  metaItem: { flexDirection: 'row', alignItems: 'center' },
+  metaText: { fontSize: 12, marginLeft: 6 },
+  projectCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  avatarRow: { flexDirection: 'row' },
+  memberAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memberAvatarText: { fontSize: 10, fontWeight: '600', color: '#FFFFFF' },
+
+  // Image card
+  imageCardWrapper: { marginRight: 12 },
+  imageCardInner: { borderRadius: 12, overflow: 'hidden' },
+  imageCardImg: { width: 140, height: 140 },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+
+  // Location card
+  locationCardWrapper: { marginRight: 16, width: 200 },
+  locationCard: { borderRadius: 18, padding: 16 },
+  locationCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  locationIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locationFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
+  locationProjectsText: { fontSize: 12, marginLeft: 4 },
   profileCard: {
     borderRadius: 18,
     padding: 16,
@@ -915,9 +1039,14 @@ const S = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 12,
   },
-  profileName: { fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
-  profileEmail: { fontSize: 13, marginTop: 2 },
-  profileRole: { fontSize: 13, marginTop: 2 },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+    marginTop: 16,
+    marginBottom: 6,
+    paddingHorizontal: 4,
+  },
   statsRow: {
     flexDirection: 'row',
     width: '100%',
@@ -942,6 +1071,21 @@ const S = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: { fontSize: 16, fontWeight: '700' },
+  profileName: { fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
+  profileEmail: { fontSize: 13, marginTop: 2 },
+  profileRole: { fontSize: 13, marginTop: 2 },
+  card: { borderRadius: 18, overflow: 'hidden', marginBottom: 4 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  rowTextBlock: { flex: 1, marginLeft: 16 },
+  rowLabel: { fontSize: 15, fontWeight: '600' },
+  rowSublabel: { fontSize: 12, marginTop: 1 },
   cardStyleRow: { paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
   segmentedControl: { flexDirection: 'row', gap: 8, marginLeft: 36 },
   segmentBtn: {
@@ -964,6 +1108,7 @@ const S = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
   },
+  rowRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   footer: { alignItems: 'center', paddingTop: 24, paddingBottom: 8, gap: 4 },
   footerText: { fontSize: 12 },
 });

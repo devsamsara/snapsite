@@ -17,6 +17,7 @@
  *   - projectEndDate: string    (timestamp ms como string)
  *   - projectProgress: string   (0-100 como string)
  */
+import { PressableScale } from '@/components/ui/pressable-scale';
 import React, { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -26,7 +27,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -385,7 +385,7 @@ export default function EditProjectModal() {
               <Text style={[S.label, { color: colors.foreground }]}>
                 {t('editProject.location')}
               </Text>
-              <TouchableOpacity
+              <PressableScale
                 style={[
                   S.locationBtn,
                   {
@@ -394,7 +394,6 @@ export default function EditProjectModal() {
                   },
                 ]}
                 onPress={openMap}
-                activeOpacity={0.8}
               >
                 <MaterialIcons
                   name="location-on"
@@ -415,12 +414,11 @@ export default function EditProjectModal() {
                   size={20}
                   color={colors.muted}
                 />
-              </TouchableOpacity>
+              </PressableScale>
               {mapsAvailable && MapView && (
-                <TouchableOpacity
+                <PressableScale
                   style={[S.mapPreview, { borderColor: colors.border }]}
                   onPress={openMap}
-                  activeOpacity={0.9}
                 >
                   <MapView
                     style={S.mapPreviewInner}
@@ -453,7 +451,7 @@ export default function EditProjectModal() {
                       {t('editProject.changeLocation')}
                     </Text>
                   </View>
-                </TouchableOpacity>
+                </PressableScale>
               )}
             </View>
 
@@ -466,7 +464,7 @@ export default function EditProjectModal() {
                 {STATUS_OPTIONS.map(opt => {
                   const active = opt.value === status;
                   return (
-                    <TouchableOpacity
+                    <PressableScale
                       key={opt.value}
                       onPress={() => setStatus(opt.value)}
                       style={[
@@ -478,7 +476,6 @@ export default function EditProjectModal() {
                           borderColor: active ? opt.color : colors.border,
                         },
                       ]}
-                      activeOpacity={0.7}
                     >
                       <MaterialIcons
                         name={opt.icon as any}
@@ -495,7 +492,7 @@ export default function EditProjectModal() {
                           `editProject.status${opt.value.charAt(0).toUpperCase() + opt.value.slice(1)}`
                         )}
                       </Text>
-                    </TouchableOpacity>
+                    </PressableScale>
                   );
                 })}
               </View>
@@ -578,23 +575,23 @@ export default function EditProjectModal() {
           <View
             style={[S.mapModalHeader, { borderBottomColor: colors.border }]}
           >
-            <TouchableOpacity
+            <PressableScale
               onPress={() => setMapVisible(false)}
               style={S.mapModalClose}
             >
               <MaterialIcons name="close" size={24} color={colors.foreground} />
-            </TouchableOpacity>
+            </PressableScale>
             <Text style={[S.mapModalTitle, { color: colors.foreground }]}>
               {t('editProject.selectLocation')}
             </Text>
-            <TouchableOpacity
+            <PressableScale
               onPress={confirmLocation}
               style={S.mapModalConfirm}
             >
               <Text style={[S.mapModalConfirmText, { color: colors.primary }]}>
                 {t('editProject.confirm')}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           </View>
 
           <View style={[S.mapInstruction, { backgroundColor: colors.surface }]}>

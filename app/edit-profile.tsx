@@ -1,4 +1,5 @@
 
+import { PressableScale } from '@/components/ui/pressable-scale';
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -7,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -222,7 +222,7 @@ export default function EditProfileScreen() {
           onBack={() => router.back()}
           withSafeArea={false}
           right={
-            <TouchableOpacity
+            <PressableScale
               onPress={handleSubmit(onSave)}
               disabled={!isValid || !isDirty || isSubmitting}
               style={[
@@ -249,7 +249,7 @@ export default function EditProfileScreen() {
                   {t('common.save')}
                 </Text>
               )}
-            </TouchableOpacity>
+            </PressableScale>
           }
         />
 
@@ -271,7 +271,7 @@ export default function EditProfileScreen() {
                 </View>
               )}
               {/* Botón flotante igual que heroPhotoBtn */}
-              <TouchableOpacity
+              <PressableScale
                 onPress={handleChangePhoto}
                 disabled={uploadingPhoto}
                 style={[S.avatarPhotoBtn, { backgroundColor: colors.primary }]}
@@ -281,7 +281,7 @@ export default function EditProfileScreen() {
                 ) : (
                   <MaterialIcons name="add-a-photo" size={16} color="#FFF" />
                 )}
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           </View>
 
@@ -353,9 +353,8 @@ export default function EditProfileScreen() {
           </Text>
           <View style={[S.card, cardStyle, S.optionsCard]}>
             {/* Cambiar contraseña */}
-            <TouchableOpacity
+            <PressableScale
               style={[S.optionRow, { borderBottomColor: colors.border }]}
-              activeOpacity={0.7}
             >
               <View style={S.optionLeft}>
                 <IconSymbol name="lock.fill" size={20} color={colors.primary} />
@@ -364,7 +363,7 @@ export default function EditProfileScreen() {
                 </Text>
               </View>
               <IconSymbol name="chevron.right" size={16} color={colors.muted} />
-            </TouchableOpacity>
+            </PressableScale>
           </View>
 
           <View style={{ height: 48 }} />

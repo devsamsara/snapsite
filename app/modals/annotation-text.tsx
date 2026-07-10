@@ -6,6 +6,7 @@
  *
  * Validación: Zod + react-hook-form
  */
+import { PressableScale } from '@/components/ui/pressable-scale';
 import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -13,7 +14,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -129,7 +129,7 @@ export default function AnnotationTextModal() {
                 contentContainerStyle={S.paletteContent}
               >
                 {PALETTE.map((c) => (
-                  <TouchableOpacity
+                  <PressableScale
                     key={c}
                     onPress={() => setColor(c)}
                     style={[
@@ -147,7 +147,7 @@ export default function AnnotationTextModal() {
             <Text style={[S.label, { color: colors.muted }]}>{t('annotation.text.size')}</Text>
             <View style={S.sizeRow}>
               {FONTSIZES.map((fs) => (
-                <TouchableOpacity
+                <PressableScale
                   key={fs}
                   onPress={() => setFontSize(fs)}
                   style={[
@@ -163,7 +163,7 @@ export default function AnnotationTextModal() {
                   ]}>
                     {fs}
                   </Text>
-                </TouchableOpacity>
+                </PressableScale>
               ))}
             </View>
           </ScrollView>

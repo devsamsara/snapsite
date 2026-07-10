@@ -31,6 +31,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "./screen-header";
 import { useColors } from "@/hooks/use-colors";
@@ -84,7 +85,9 @@ export function FormScreen({
           showsVerticalScrollIndicator={false}
         >
           {hero}
-          {children}
+          <Animated.View entering={FadeInUp.duration(380).springify().damping(18)}>
+            {children}
+          </Animated.View>
         </ScrollView>
 
         {footer ? (

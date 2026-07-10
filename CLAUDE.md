@@ -24,3 +24,8 @@ Remodelación integral de la UI/UX hacia una estética premium, moderna, minimal
 - Todas las modificaciones de estilo deben hacerse exclusivamente a través de clases de Tailwind (`className`).
 - Respetar y potenciar el soporte para Dark Mode/Light Mode mediante las variantes de Tailwind.
 - Si se requiere un componente visual nuevo, encapsularlo en `components/ui/` y mantenerlo como un componente presentacional (dumb component).
+
+### 4. ESTILO DE COMUNICACIÓN:**
+- **Ve al grano:** Respuestas absolutamente directas y concisas. Cero relleno.
+- **Cero adulaciones:** Omite cortesías, saludos, despedidas, validaciones o disculpas.
+- **Sin explicaciones:** No detalles cada paso que das ni justifiques tus decisiones de código a menos que se te pregunte explícitamente. Limítate a confirmar las acciones realizadas y mostrar el código modificado.

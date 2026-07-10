@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Dimensions, Platform, Image } from 'react-native';
+import { View, StyleSheet, Text, Dimensions, Platform, Image } from 'react-native';
 import { AppAlert } from '@/components/ui/app-alert';
 import { useRouter } from "expo-router";
 import { CameraView, CameraType, useCameraPermissions, FlashMode } from 'expo-camera';
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColors } from "@/hooks/use-colors";
+import { PressableScale } from '@/components/ui/pressable-scale';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { BlurView } from 'expo-blur';
@@ -41,12 +42,14 @@ const CameraScreen: React.FC = () => {
         <Text style={[styles.permissionText, { color: colors.muted }]}>
           Necesitamos acceso a tu cámara para capturar fotos del proyecto con la mejor calidad.
         </Text>
-        <TouchableOpacity
+        <PressableScale
           onPress={requestPermission}
           style={[styles.permissionButton, { backgroundColor: colors.primary }]}
+          pressedScale={0.96}
+          haptic
         >
           <Text style={styles.permissionButtonText}>Permitir Acceso</Text>
-        </TouchableOpacity>
+        </PressableScale>
       </View>
     );
   }
@@ -147,17 +150,17 @@ const CameraScreen: React.FC = () => {
             <View style={styles.topControls}>
               <View style={styles.topBlurContainer}>
                 <BlurView intensity={20} tint="dark" style={styles.blurWrapper}>
-                  <TouchableOpacity onPress={toggleFlash} style={styles.iconButton}>
+                  <PressableScale onPress={toggleFlash} style={styles.iconButton} pressedScale={0.85}>
                     <IconSymbol name={renderFlashIcon()} size={22} color={flash !== 'off' ? '#FFD60A' : '#FFF'} />
-                  </TouchableOpacity>
+                  </PressableScale>
                 </BlurView>
               </View>
-              
+
               <View style={styles.topBlurContainer}>
                 <BlurView intensity={20} tint="dark" style={styles.blurWrapper}>
-                  <TouchableOpacity onPress={toggleCameraFacing} style={styles.iconButton}>
+                  <PressableScale onPress={toggleCameraFacing} style={styles.iconButton} pressedScale={0.85}>
                     <IconSymbol name="arrow.triangle.2.circlepath.camera" size={22} color="#FFF" />
-                  </TouchableOpacity>
+                  </PressableScale>
                 </BlurView>
               </View>
             </View>
@@ -176,21 +179,22 @@ const CameraScreen: React.FC = () => {
               <BlurView intensity={40} tint="dark" style={styles.bottomBlur}>
                 <View style={styles.controlsRow}>
                   {/* Gallery Preview */}
-                  <TouchableOpacity 
+                  <PressableScale
                     onPress={openGallery}
                     style={styles.thumbnailButton}
+                    pressedScale={0.9}
                   >
                     {lastPhoto ? (
                       <Image source={{ uri: lastPhoto }} style={styles.thumbnailImage} />
                     ) : (
                       <IconSymbol name="photo.on.rectangle" size={24} color="#FFF" />
                     )}
-                  </TouchableOpacity>
+                  </PressableScale>
 
                   {/* Capture Button */}
-                  <TouchableOpacity onPress={takePicture} style={styles.captureOuter}>
+                  <PressableScale onPress={takePicture} style={styles.captureOuter} pressedScale={0.9}>
                     <View style={styles.captureInner} />
-                  </TouchableOpacity>
+                  </PressableScale>
 
                   {/* Placeholder to maintain spacing */}
                   <View style={styles.spacer} />

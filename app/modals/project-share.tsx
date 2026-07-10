@@ -12,6 +12,7 @@
  *   - projectId: string
  *   - projectName: string
  */
+import { PressableScale } from '@/components/ui/pressable-scale';
 import React, { useState } from "react";
 import {
   Alert,
@@ -22,7 +23,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -146,16 +146,15 @@ export default function ProjectShareModal() {
     color: string;
     onPress: () => void;
   }) => (
-    <TouchableOpacity
+    <PressableScale
       onPress={onPress}
       style={[S.channelBtn, { backgroundColor: color + "14", borderColor: color + "30" }]}
-      activeOpacity={0.7}
     >
       <View style={[S.channelIcon, { backgroundColor: color }]}>
         <MaterialIcons name={icon as any} size={20} color="#fff" />
       </View>
       <Text style={[S.channelLabel, { color: colors.foreground }]}>{label}</Text>
-    </TouchableOpacity>
+    </PressableScale>
   );
 
   return (
@@ -189,7 +188,7 @@ export default function ProjectShareModal() {
               >
                 {projectLink}
               </Text>
-              <TouchableOpacity
+              <PressableScale
                 onPress={handleCopy}
                 style={[
                   S.copyBtn,
@@ -198,7 +197,6 @@ export default function ProjectShareModal() {
                     borderColor:     copied ? colors.success        : colors.primary,
                   },
                 ]}
-                activeOpacity={0.8}
               >
                 <MaterialIcons
                   name={copied ? "check" : "content-copy"}
@@ -208,7 +206,7 @@ export default function ProjectShareModal() {
                 <Text style={[S.copyBtnText, { color: copied ? colors.success : colors.primary }]}>
                   {copied ? t("projectShare.copied") : t("projectShare.copy")}
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
             </View>
             <Text style={[S.linkDesc, { color: colors.muted }]}>
               {t("projectShare.linkDesc")}
@@ -265,17 +263,16 @@ export default function ProjectShareModal() {
                   onSubmitEditing={handleSubmit(onInvite)}
                 />
               </View>
-              <TouchableOpacity
+              <PressableScale
                 onPress={handleSubmit(onInvite)}
                 disabled={!isValid}
                 style={[
                   S.inviteBtn,
                   { backgroundColor: isValid ? colors.primary : colors.border },
                 ]}
-                activeOpacity={0.8}
               >
                 <MaterialIcons name="send" size={20} color={isValid ? "#fff" : colors.muted} />
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           </ScrollView>
         </ModalBody>

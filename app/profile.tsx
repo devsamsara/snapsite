@@ -1,4 +1,5 @@
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { PressableScale } from '@/components/ui/pressable-scale';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { ScreenContainer } from '@/components/screen-container';
@@ -177,11 +178,10 @@ export default function ProfileScreen() {
         {/* Menu Items */}
         <View className="px-5 py-4 gap-3">
           {menuItems.map((item, index) => (
-            <TouchableOpacity
+            <PressableScale
               key={index}
               onPress={() => handlePress(item)}
-              className="flex-row items-center justify-between px-4 py-4 rounded-xl border border-border"
-              style={{ backgroundColor: colors.surface, borderColor: colors.border }}
+              style={[S.menuRow, { backgroundColor: colors.surface, borderColor: colors.border }]}
             >
               <View className="flex-row items-center flex-1">
                 <IconSymbol
@@ -197,7 +197,7 @@ export default function ProfileScreen() {
                 </Text>
               </View>
               <IconSymbol name="chevron.right" size={16} color={colors.muted} />
-            </TouchableOpacity>
+            </PressableScale>
           ))}
 
           {/* ── Danger zone ─────────────────────────────────────────────────── */}
@@ -208,10 +208,9 @@ export default function ProfileScreen() {
           </View>
 
           {/* 1. Delete own account — visible to everyone */}
-          <TouchableOpacity
+          <PressableScale
             onPress={handleDeleteAccount}
-            className="flex-row items-center justify-between px-4 py-4 rounded-xl border"
-            style={{ backgroundColor: colors.error + '10', borderColor: colors.error + '40' }}
+            style={[S.menuRow, { backgroundColor: colors.error + '10', borderColor: colors.error + '40' }]}
           >
             <View className="flex-row items-center flex-1">
               <IconSymbol name="person.fill.xmark" size={20} color={colors.error} />
@@ -225,14 +224,13 @@ export default function ProfileScreen() {
               </View>
             </View>
             <IconSymbol name="chevron.right" size={16} color={colors.error} />
-          </TouchableOpacity>
+          </PressableScale>
 
           {/* 2. Leave company — visible to non-owners */}
           {!isOwner && (
-            <TouchableOpacity
+            <PressableScale
               onPress={handleLeaveCompany}
-              className="flex-row items-center justify-between px-4 py-4 rounded-xl border"
-              style={{ backgroundColor: colors.error + '10', borderColor: colors.error + '40' }}
+              style={[S.menuRow, { backgroundColor: colors.error + '10', borderColor: colors.error + '40' }]}
             >
               <View className="flex-row items-center flex-1">
                 <IconSymbol name="rectangle.portrait.and.arrow.right.fill" size={20} color={colors.error} />
@@ -246,15 +244,14 @@ export default function ProfileScreen() {
                 </View>
               </View>
               <IconSymbol name="chevron.right" size={16} color={colors.error} />
-            </TouchableOpacity>
+            </PressableScale>
           )}
 
           {/* 3. Delete company — visible to owner only */}
           {isOwner && (
-            <TouchableOpacity
+            <PressableScale
               onPress={handleDeleteCompany}
-              className="flex-row items-center justify-between px-4 py-4 rounded-xl border"
-              style={{ backgroundColor: colors.error + '10', borderColor: colors.error + '40' }}
+              style={[S.menuRow, { backgroundColor: colors.error + '10', borderColor: colors.error + '40' }]}
             >
               <View className="flex-row items-center flex-1">
                 <IconSymbol name="building.2.fill" size={20} color={colors.error} />
@@ -268,7 +265,7 @@ export default function ProfileScreen() {
                 </View>
               </View>
               <IconSymbol name="chevron.right" size={16} color={colors.error} />
-            </TouchableOpacity>
+            </PressableScale>
           )}
         </View>
 
@@ -288,4 +285,17 @@ const S = StyleSheet.create({
   menuItemLabel:     { marginLeft: 16 },
   dangerSeparator:   { marginTop: 8, marginBottom: 4, paddingHorizontal: 4 },
   dangerTextWrapper: { marginLeft: 16, flex: 1 },
+  // PressableScale envuelve el Pressable nativo de RN, y el proyecto desactiva
+  // el mapeo de className en Pressable (ver lib/_core/nativewind-pressable.ts)
+  // para evitar que se trague el onPress — por eso estas filas usan estilos
+  // inline en vez de className.
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
 });
