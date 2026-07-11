@@ -34,6 +34,7 @@ import {
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "./screen-header";
+import { HeroBackdrop } from "./hero-backdrop";
 import { useColors } from "@/hooks/use-colors";
 import { spacing } from "@/constants/spacing";
 
@@ -48,6 +49,13 @@ export interface FormScreenProps {
   right?: React.ReactNode;
   /** false para sheets (presentation 'modal'/'formSheet'). Default: true. */
   withSafeArea?: boolean;
+  /**
+   * Mismo velo de gradiente decorativo (HeroBackdrop) que Home/Proyectos/
+   * Ajustes y el resto de modals. Opt-in (default: false) porque FormScreen
+   * también lo usan pantallas push normales (forgot-password, confirm-email,
+   * create-project-details) que no deben cambiar de aspecto sin pedirlo.
+   */
+  showHeroBackdrop?: boolean;
   children: React.ReactNode;
 }
 
@@ -58,6 +66,7 @@ export function FormScreen({
   footer,
   right,
   withSafeArea = true,
+  showHeroBackdrop = false,
   children,
 }: FormScreenProps) {
   const colors = useColors();
@@ -65,6 +74,7 @@ export function FormScreen({
 
   return (
     <View style={[S.root, { backgroundColor: colors.background }]}>
+      {showHeroBackdrop ? <HeroBackdrop height={340} /> : null}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={S.flex}

@@ -4,16 +4,16 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenContainer } from '@/components/screen-container';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { GlassView } from '@/components/ui/glass-view';
 import { HeroBackdrop } from '@/components/ui/hero-backdrop';
 import { useColors } from '@/hooks/use-colors';
-import { useCardStyle, useCardStyleSm } from '@/hooks/use-card-style';
+import { useCardStyle } from '@/hooks/use-card-style';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import i18n, { changeLanguage } from '@/lib/i18n';
 import Animated, {
   Easing,
   Extrapolation,
   interpolate,
+  useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -27,17 +27,16 @@ import {
 } from '@/gql/graphql';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { useAuth } from '@/lib/auth-context';
-import { useRelativeDate } from '@/hooks/use-relative-date';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeContext } from '@/lib/theme-provider';
 import {
   getExpoPushToken,
   requestPushPermission,
   setNotificationsDisabledByUser,
-  useNotifications,
 } from '@/hooks/use-notifications';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { AppAlert } from '@/components/ui/app-alert';
+import { BlurView } from 'expo-blur';
 
 function useNavLock(delay = 600) {
   const locked = useRef(false);
@@ -88,6 +87,9 @@ export default function SettingScreen() {
   const insets = useSafeAreaInsets();
 
   const scrollY = useSharedValue(0);
+  const onScroll = useAnimatedScrollHandler(e => {
+    scrollY.value = e.contentOffset.y;
+  });
 
   const heroStyle = useAnimatedStyle(() => ({
     opacity: interpolate(scrollY.value, [0, 130], [1, 0], Extrapolation.CLAMP),
@@ -103,13 +105,16 @@ export default function SettingScreen() {
     ],
   }));
 
+  // Arranca después de que el hero ya casi desapareció (a partir de 110, no
+  // 70) para que no se vean los dos textos superpuestos a la vez — eso es lo
+  // que se sentía "difuminado".
   const stickyBarStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [70, 120], [0, 1], Extrapolation.CLAMP),
+    opacity: interpolate(scrollY.value, [110, 150], [0, 1], Extrapolation.CLAMP),
     transform: [
       {
         translateY: interpolate(
           scrollY.value,
-          [70, 120],
+          [110, 150],
           [-10, 0],
           Extrapolation.CLAMP
         ),
@@ -262,10 +267,16 @@ export default function SettingScreen() {
       <Animated.View style={enterStyle} className="bg-background">
         <HeroBackdrop height={230 + insets.top} />
 
-        <Animated.View
-          style={[S.header, heroStyle, { paddingTop: insets.top + 20 }]}
+        <BlurView
+          intensity={30}
+          tint={colorScheme}
+          style={[
+            S.header,
+            StyleSheet.absoluteFill,
+            { paddingTop: insets.top + 20, zIndex: 1, height: 150 },
+          ]}
         >
-          <View style={S.headerTop}>
+          <Animated.View style={[S.headerTop, heroStyle]}>
             <View style={S.flex1}>
               <Text style={[S.workspaceLabel, { color: colors.muted }]}>
                 {t('home.workspace')}
@@ -274,10 +285,11 @@ export default function SettingScreen() {
                 {t('settings.title')}
               </Text>
             </View>
-          </View>
-        </Animated.View>
+          </Animated.View>
+        </BlurView>
 
         <Animated.ScrollView
+          // onScroll={onScroll}
           scrollEventThrottle={16}
           contentContainerStyle={S.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -798,14 +810,16 @@ export default function SettingScreen() {
           style={[S.stickyBar, stickyBarStyle, { paddingTop: insets.top + 6 }]}
           pointerEvents="none"
         >
-          <GlassView style={S.stickyGlass} intensity={60}>
+          {/* Fondo sólido (no blur): el texto tiene que leerse nítido, no
+              difuminado contra un cristal esmerilado. */}
+          <View style={[S.stickyGlass, { backgroundColor: colors.background }]}>
             <Text
               numberOfLines={1}
               style={[S.stickyTitle, { color: colors.foreground }]}
             >
-              aass
+              {t('settings.title')}
             </Text>
-          </GlassView>
+          </View>
         </Animated.View>
       </Animated.View>
     </ScreenContainer>
@@ -828,7 +842,10 @@ const S = StyleSheet.create({
   },
 
   // Header — jerarquía tipográfica marcada: eyebrow uppercase + nombre grande
-  header: { paddingHorizontal: 20, paddingBottom: 16 },
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -888,7 +905,7 @@ const S = StyleSheet.create({
   },
 
   // Scroll
-  scrollContent: { paddingBottom: 120 },
+  scrollContent: { paddingBottom: 120, paddingTop: 150 },
 
   // Sticky glass bar (aparece al colapsar el hero)
   stickyBar: {
@@ -903,10 +920,10 @@ const S = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
   },
-  stickyTitle: { fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
+  stickyTitle: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
 
   // Sections — breathing room amplio y títulos con más peso
   section: { marginTop: 28 },

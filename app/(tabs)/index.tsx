@@ -733,7 +733,7 @@ const S = StyleSheet.create({
     marginLeft: 12,
   },
 
-  // Scroll
+  // Scrolltings
   scrollContent: { paddingBottom: 120 },
 
   // Sticky glass bar (aparece al colapsar el hero)

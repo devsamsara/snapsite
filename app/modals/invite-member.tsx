@@ -178,7 +178,6 @@ export default function InviteMemberModal() {
           onClose={handleCancel}
         />
         <ModalBody>
-          <HeroBackdrop height={500} />
           <AppInput
             label={t('modals.inviteMember.name')}
             name="name"

@@ -80,6 +80,7 @@ export default function ChangePasswordModal() {
       title={t('changePassword.title')}
       onBack={() => router.back()}
       withSafeArea={false}
+      showHeroBackdrop
       hero={
         <HeroHeader
           icon="lock.rotation"

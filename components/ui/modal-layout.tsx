@@ -73,8 +73,10 @@ export function ModalHeader({
   const colors = useColors();
 
   return (
-    <View style={[S.header, { backgroundColor: colors.background }, style]}>
-      <HeroBackdrop height={140} />
+    // Sin backgroundColor propio: deja ver el único HeroBackdrop que vive en
+    // ModalRoot, detrás de Header y Body, para que el velo se sienta como un
+    // solo degradado continuo en vez de dos capas independientes.
+    <View style={[S.header, style]}>
       <View style={[S.pill, { backgroundColor: colors.border }]} />
 
       <View style={S.titleRow}>
@@ -129,12 +131,11 @@ export function ModalBody({
   style,
   paddingH = 20,
 }: Readonly<ModalBodyProps>) {
-  const colors = useColors();
   if (scrollable) {
     return (
       <View style={S.bodyShadowWrapper}>
         <ScrollView
-          style={[S.body,  style]}
+          style={[S.body, style]}
           contentContainerStyle={[
             S.bodyContent,
             { paddingHorizontal: paddingH },
@@ -216,6 +217,10 @@ export function ModalRoot({ children, style }: Readonly<ModalRootProps>) {
   const colors = useColors();
   return (
     <View style={[S.root, { backgroundColor: colors.background }, style]}>
+      {/* Único velo de gradiente decorativo del modal (Header y Body no
+          tienen fondo propio y dejan verlo a través) — mismo estilo que
+          Home/Proyectos/Ajustes, en una sola capa continua. */}
+      <HeroBackdrop height={340} />
       {children}
     </View>
   );
@@ -236,9 +241,6 @@ const S = StyleSheet.create({
     paddingBottom: 20,
     // zIndex asegura que el header quede siempre encima del ScrollView
     zIndex: 10,
-    // Recorta el HeroBackdrop a los límites del header (que además son los
-    // del propio sheet, con esquinas redondeadas del sistema en iOS)
-    overflow: "hidden",
   },
   pill: {
     width: 36,

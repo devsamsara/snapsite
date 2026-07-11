@@ -13,9 +13,11 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ScreenHeader } from '@/components/ui/screen-header';
+import { HeroBackdrop } from '@/components/ui/hero-backdrop';
 import { useColors } from '@/hooks/use-colors';
 import { useCardStyle } from '@/hooks/use-card-style';
 import { spacing } from '@/constants/spacing';
+import { ModalBody, ModalHeader, ModalRoot } from '@/components/ui/modal-layout';
 
 const APP_VERSION = '1.0.0';
 const BUILD_NUMBER = '100';
@@ -46,85 +48,84 @@ export default function AboutModal() {
   ];
 
   return (
-    <View style={[S.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <ScreenHeader
-        title={t('about.title')}
-        onBack={() => router.back()}
-        withSafeArea={false}
-      />
+    <ModalRoot >
+    <ModalHeader
+      title={t('about.title')}
+      onClose={router.back}
+    />
+     <ModalBody>
+       <ScrollView
+         contentContainerStyle={[
+           S.content,
+           { paddingBottom: insets.bottom + 32 },
+         ]}
+         showsVerticalScrollIndicator={false}
+       >
+         {/* App logo & version */}
+         <View style={S.logoSection}>
+           <View style={[S.logoContainer, { backgroundColor: colors.primary }]}>
+             {/*<IconSymbol name="camera.fill" size={40} color="#FFFFFF" />*/}
+             <Image
+               resizeMode="contain"
+               source={require('@/assets/images/icon.png')}
+               borderRadius={12}
+               style={{ width: 120, height: 120, borderRadius: 8 }}
+             />
+           </View>
+           <Text style={[S.appName, { color: colors.foreground }]}>
+             Snapsite
+           </Text>
+           <Text style={[S.version, { color: colors.muted }]}>
+             {t('about.version', { version: APP_VERSION, build: BUILD_NUMBER })}
+           </Text>
+         </View>
 
-      <ScrollView
-        contentContainerStyle={[
-          S.content,
-          { paddingBottom: insets.bottom + 32 },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* App logo & version */}
-        <View style={S.logoSection}>
-          <View style={[S.logoContainer, { backgroundColor: colors.primary }]}>
-            {/*<IconSymbol name="camera.fill" size={40} color="#FFFFFF" />*/}
-            <Image
-              resizeMode="contain"
-              source={require('@/assets/images/icon.png')}
-              borderRadius={12}
-              style={{ width: 120, height: 120, borderRadius: 8 }}
-            />
-          </View>
-          <Text style={[S.appName, { color: colors.foreground }]}>
-            Snapsite
-          </Text>
-          <Text style={[S.version, { color: colors.muted }]}>
-            {t('about.version', { version: APP_VERSION, build: BUILD_NUMBER })}
-          </Text>
-        </View>
+         {/* Description */}
+         <View style={[S.card, cardStyle]}>
+           <Text style={[S.description, { color: colors.foreground }]}>
+             {t('about.description')}
+           </Text>
+         </View>
 
-        {/* Description */}
-        <View style={[S.card, cardStyle]}>
-          <Text style={[S.description, { color: colors.foreground }]}>
-            {t('about.description')}
-          </Text>
-        </View>
+         {/* Links */}
+         <Text style={[S.sectionLabel, { color: colors.muted }]}>
+           {t('about.legal')}
+         </Text>
+         <View style={[S.card, cardStyle, S.listCard]}>
+           {links.map((item, index) => (
+             <PressableScale
+               key={item.label}
+               style={[
+                 S.row,
+                 { borderBottomColor: colors.border },
+                 index === links.length - 1 && S.rowLast,
+               ]}
+               onPress={item.onPress}
+             >
+               <View style={S.rowLeft}>
+                 <IconSymbol name={item.icon} size={20} color={colors.primary} />
+                 <Text style={[S.rowLabel, { color: colors.foreground }]}>
+                   {item.label}
+                 </Text>
+               </View>
+               <IconSymbol name="chevron.right" size={16} color={colors.muted} />
+             </PressableScale>
+           ))}
+         </View>
 
-        {/* Links */}
-        <Text style={[S.sectionLabel, { color: colors.muted }]}>
-          {t('about.legal')}
-        </Text>
-        <View style={[S.card, cardStyle, S.listCard]}>
-          {links.map((item, index) => (
-            <PressableScale
-              key={item.label}
-              style={[
-                S.row,
-                { borderBottomColor: colors.border },
-                index === links.length - 1 && S.rowLast,
-              ]}
-              onPress={item.onPress}
-            >
-              <View style={S.rowLeft}>
-                <IconSymbol name={item.icon} size={20} color={colors.primary} />
-                <Text style={[S.rowLabel, { color: colors.foreground }]}>
-                  {item.label}
-                </Text>
-              </View>
-              <IconSymbol name="chevron.right" size={16} color={colors.muted} />
-            </PressableScale>
-          ))}
-        </View>
-
-        {/* Footer */}
-        <Text style={[S.footer, { color: colors.muted }]}>
-          {t('settings.footer')}
-        </Text>
-      </ScrollView>
-    </View>
+         {/* Footer */}
+         <Text style={[S.footer, { color: colors.muted }]}>
+           {t('settings.footer')}
+         </Text>
+       </ScrollView>
+     </ModalBody>
+    </ModalRoot>
   );
 }
 
 const S = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl },
+  content: { paddingTop: spacing.xl },
   logoSection: { alignItems: 'center', marginBottom: 28 },
   logoContainer: {
     width: 88, height: 88, borderRadius: 22,
