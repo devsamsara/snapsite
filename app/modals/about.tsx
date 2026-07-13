@@ -48,77 +48,87 @@ export default function AboutModal() {
   ];
 
   return (
-    <ModalRoot >
-    <ModalHeader
-      title={t('about.title')}
-      onClose={router.back}
-    />
-     <ModalBody>
-       <ScrollView
-         contentContainerStyle={[
-           S.content,
-           { paddingBottom: insets.bottom + 32 },
-         ]}
-         showsVerticalScrollIndicator={false}
-       >
-         {/* App logo & version */}
-         <View style={S.logoSection}>
-           <View style={[S.logoContainer, { backgroundColor: colors.primary }]}>
-             {/*<IconSymbol name="camera.fill" size={40} color="#FFFFFF" />*/}
-             <Image
-               resizeMode="contain"
-               source={require('@/assets/images/icon.png')}
-               borderRadius={12}
-               style={{ width: 120, height: 120, borderRadius: 8 }}
-             />
-           </View>
-           <Text style={[S.appName, { color: colors.foreground }]}>
-             Snapsite
-           </Text>
-           <Text style={[S.version, { color: colors.muted }]}>
-             {t('about.version', { version: APP_VERSION, build: BUILD_NUMBER })}
-           </Text>
-         </View>
+    <ModalRoot>
+      <ModalHeader title={t('about.title')} onClose={router.back} />
+      <ModalBody>
+        <ScrollView
+          contentContainerStyle={[
+            S.content,
+            { paddingBottom: insets.bottom + 32 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* App logo & version */}
+          <View style={S.logoSection}>
+            <View
+              style={[S.logoContainer, { backgroundColor: colors.primary }]}
+            >
+              {/*<IconSymbol name="camera.fill" size={40} color="#FFFFFF" />*/}
+              <Image
+                resizeMode="contain"
+                source={require('@/assets/images/icon.png')}
+                borderRadius={12}
+                style={{ width: 120, height: 120, borderRadius: 8 }}
+              />
+            </View>
+            <Text style={[S.appName, { color: colors.foreground }]}>
+              KaylonCam
+            </Text>
+            <Text style={[S.version, { color: colors.muted }]}>
+              {t('about.version', {
+                version: APP_VERSION,
+                build: BUILD_NUMBER,
+              })}
+            </Text>
+          </View>
 
-         {/* Description */}
-         <View style={[S.card, cardStyle]}>
-           <Text style={[S.description, { color: colors.foreground }]}>
-             {t('about.description')}
-           </Text>
-         </View>
+          {/* Description */}
+          <View style={[S.card, cardStyle]}>
+            <Text style={[S.description, { color: colors.foreground }]}>
+              {t('about.description')}
+            </Text>
+          </View>
 
-         {/* Links */}
-         <Text style={[S.sectionLabel, { color: colors.muted }]}>
-           {t('about.legal')}
-         </Text>
-         <View style={[S.card, cardStyle, S.listCard]}>
-           {links.map((item, index) => (
-             <PressableScale
-               key={item.label}
-               style={[
-                 S.row,
-                 { borderBottomColor: colors.border },
-                 index === links.length - 1 && S.rowLast,
-               ]}
-               onPress={item.onPress}
-             >
-               <View style={S.rowLeft}>
-                 <IconSymbol name={item.icon} size={20} color={colors.primary} />
-                 <Text style={[S.rowLabel, { color: colors.foreground }]}>
-                   {item.label}
-                 </Text>
-               </View>
-               <IconSymbol name="chevron.right" size={16} color={colors.muted} />
-             </PressableScale>
-           ))}
-         </View>
+          {/* Links */}
+          <Text style={[S.sectionLabel, { color: colors.muted }]}>
+            {t('about.legal')}
+          </Text>
+          <View style={[S.card, cardStyle, S.listCard]}>
+            {links.map((item, index) => (
+              <PressableScale
+                key={item.label}
+                style={[
+                  S.row,
+                  { borderBottomColor: colors.border },
+                  index === links.length - 1 && S.rowLast,
+                ]}
+                onPress={item.onPress}
+              >
+                <View style={S.rowLeft}>
+                  <IconSymbol
+                    name={item.icon}
+                    size={20}
+                    color={colors.primary}
+                  />
+                  <Text style={[S.rowLabel, { color: colors.foreground }]}>
+                    {item.label}
+                  </Text>
+                </View>
+                <IconSymbol
+                  name="chevron.right"
+                  size={16}
+                  color={colors.muted}
+                />
+              </PressableScale>
+            ))}
+          </View>
 
-         {/* Footer */}
-         <Text style={[S.footer, { color: colors.muted }]}>
-           {t('settings.footer')}
-         </Text>
-       </ScrollView>
-     </ModalBody>
+          {/* Footer */}
+          <Text style={[S.footer, { color: colors.muted }]}>
+            {t('settings.footer')}
+          </Text>
+        </ScrollView>
+      </ModalBody>
     </ModalRoot>
   );
 }

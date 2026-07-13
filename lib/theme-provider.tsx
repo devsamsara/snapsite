@@ -7,7 +7,7 @@ import { SchemeColors, type ColorScheme } from "@/constants/theme";
 
 // ─── Card style mode ──────────────────────────────────────────────────────────
 export type CardStyleMode = "flat" | "elevated";
-const CARD_STYLE_KEY = "@snapsite/cardStyle";
+const CARD_STYLE_KEY = "@kayloncam/cardStyle";
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 type ThemeContextValue = {

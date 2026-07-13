@@ -1,8 +1,8 @@
-# Sistema de Navegación con Menú Flotante - Snapsite
+# Sistema de Navegación con Menú Flotante - KaylonCam
 
 ## Resumen
 
-Se ha rediseñado completamente el sistema de navegación de Snapsite, reemplazando el tab bar tradicional por un **menú flotante** en la parte inferior con transiciones tipo **switch/segmented control**, similar a la app Cámara de iOS.
+Se ha rediseñado completamente el sistema de navegación de KaylonCam, reemplazando el tab bar tradicional por un **menú flotante** en la parte inferior con transiciones tipo **switch/segmented control**, similar a la app Cámara de iOS.
 
 ## Características Principales
 

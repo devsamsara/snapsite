@@ -36,9 +36,9 @@ import {
 import { Platform } from 'react-native';
 
 /** Key used to persist whether the user has already seen the onboarding. */
-export const ONBOARDING_DONE_KEY = '@snapsite_onboarding_done';
+export const ONBOARDING_DONE_KEY = '@kayloncam_onboarding_done';
 /** Key used to persist the user object. */
-export const AUTH_USER_KEY = '@snapsite_auth_user';
+export const AUTH_USER_KEY = '@kayloncam_auth_user';
 
 export interface AuthUser {
   id: string;

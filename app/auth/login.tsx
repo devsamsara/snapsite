@@ -89,7 +89,7 @@ export default function LoginScreen() {
         {/* ── Header: logo + título + subtítulo ── */}
         <HeroHeader
           image={require('@/assets/images/icon.png')}
-          title="SnapSite"
+          title="KaylonCam"
           subtitle={t('auth.login.subtitle')}
         />
 
@@ -167,25 +167,25 @@ export default function LoginScreen() {
           />
 
           {/* Divider */}
-          <View style={S.dividerRow}>
+         {/* <View style={S.dividerRow}>
             <View style={[S.dividerLine, { backgroundColor: colors.border }]} />
             <Text style={[S.dividerText, { color: colors.muted }]}>
               {t('auth.login.orContinueWith') || 'o continúa con'}
             </Text>
             <View style={[S.dividerLine, { backgroundColor: colors.border }]} />
-          </View>
+          </View>*/}
 
           {/* Botón Google */}
-          <TouchableOpacity
+          {/*<TouchableOpacity
             style={[S.googleBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
             activeOpacity={0.75}
           >
-            {/* Google "G" SVG inline como texto coloreado */}
+             Google "G" SVG inline como texto coloreado
             <Text style={S.googleLetter}>G</Text>
             <Text style={[S.googleLabel, { color: colors.foreground }]}>
               {t('auth.login.continueWithGoogle') || 'Continuar con Google'}
             </Text>
-          </TouchableOpacity>
+          </TouchableOpacity>*/}
         </Animated.View>
 
         {/* ── Footer ── */}

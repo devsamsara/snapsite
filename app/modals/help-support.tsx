@@ -50,14 +50,14 @@ export default function HelpSupportModal() {
     {
       icon: 'envelope.fill' as const,
       label: t('helpSupport.emailSupport'),
-      sub: 'support@snapsite.app',
+      sub: 'support@kayloncam.app',
       onPress: () => Linking.openURL('mailto:support@snapiste.app'),
     },
     {
       icon: 'globe' as const,
       label: t('helpSupport.helpCenter'),
       sub: 'fieldcam.app/help',
-      onPress: () => Linking.openURL('https://snapsite.app/help'),
+      onPress: () => Linking.openURL('https://kayloncam.app/help'),
     },
     /*{
       icon: 'bubble.left.fill' as const,

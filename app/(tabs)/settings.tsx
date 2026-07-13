@@ -799,7 +799,7 @@ export default function SettingScreen() {
           {/* Footer */}
           <View style={S.footer}>
             <Text style={[S.footerText, { color: colors.muted }]}>
-              SnapSite v1.0.0
+              KaylonCam v1.0.0
             </Text>
             <Text style={[S.footerText, { color: colors.muted }]}>
               {t('settings.footer')}

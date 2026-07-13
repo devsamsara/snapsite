@@ -58,7 +58,7 @@ export default function ProjectShareModal() {
   const { projectId, projectName } =
     useLocalSearchParams<{ projectId: string; projectName: string }>();
 
-  const projectLink = `https://snapsite.app/project/${projectId ?? "demo"}`;
+  const projectLink = `https://kayloncam.app/project/${projectId ?? "demo"}`;
 
   const [copied, setCopied] = useState(false);
   const [inviteSent, setInviteSent] = useState(false);
@@ -116,7 +116,7 @@ export default function ProjectShareModal() {
       await Share.share({
         message: `${projectName}\n${projectLink}`,
         url: projectLink,
-        title: projectName ?? "snapSite",
+        title: projectName ?? 'KaylonCam',
       });
     } catch {
       AppAlert.alert(t("common.error"), t("common.tryAgain"));

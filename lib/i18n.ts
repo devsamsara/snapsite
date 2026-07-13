@@ -1,7 +1,7 @@
 /**
  * lib/i18n.ts
  *
- * i18next configuration for SnapSite.
+ * i18next configuration for KaylonCam.
  * Supports Spanish (es) and English (en).
  * Language is persisted in AsyncStorage and defaults to the device locale.
  */
@@ -20,7 +20,7 @@ export const LANGUAGES = [
 
 export type LangCode = typeof LANGUAGES[number]['code'];
 
-const STORAGE_KEY = '@snapsite_lang';
+const STORAGE_KEY = '@kayloncam_lang';
 
 /** Returns the device locale code ('es' or 'en'), falling back to 'es'. */
 function getDeviceLocale(): LangCode {

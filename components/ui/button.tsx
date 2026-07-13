@@ -1,7 +1,7 @@
 /**
  * components/ui/button.tsx
  *
- * Componente Button adaptado al sistema de temas de snapsite.
+ * Componente Button adaptado al sistema de temas de KaylonCam.
  * Basado en el Button de referencia del usuario, integrado con useColors()
  * en lugar de useTheme() externo.
  *

@@ -2,11 +2,11 @@
 import 'dotenv/config';
 import type { ExpoConfig } from 'expo/config';
 
-const APP_NAME = process.env.APP_NAME ?? 'SnapSite';
-const APP_SLUG = process.env.APP_SLUG ?? 'snapsite-app';
+const APP_NAME = process.env.APP_NAME ?? 'KaylonCam';
+const APP_SLUG = process.env.APP_SLUG ?? 'kayloncam-app';
 const IOS_BUNDLE_ID = process.env.IOS_BUNDLE_ID ?? 'com.snapsite.app';
 const ANDROID_PACKAGE = process.env.ANDROID_PACKAGE ?? 'com.snapsite.app';
-const APP_SCHEME = process.env.APP_SCHEME ?? 'snapsite';
+const APP_SCHEME = process.env.APP_SCHEME ?? 'KaylonCam';
 const EAS_PROJECT_ID =
   process.env.EAS_PROJECT_ID ?? 'c8815663-68f6-4a93-8efb-9f6d40e70767';
 const EAS_OWNER = process.env.EAS_OWNER ?? 'devsamsara';
@@ -37,15 +37,15 @@ const config: ExpoConfig = {
     infoPlist: {
       UIBackgroundModes: ['remote-notification'],
       NSCameraUsageDescription:
-        'SnapSite necesita acceso a tu camara para fotografiar tus proyectos.',
+        'KaylonCam necesita acceso a tu camara para fotografiar tus proyectos.',
       NSMicrophoneUsageDescription:
-        'SnapSite necesita acceso al microfono para grabar videos.',
+        'KaylonCam necesita acceso al microfono para grabar videos.',
       NSPhotoLibraryUsageDescription:
-        'SnapSite necesita acceso a tu galeria para importar fotos.',
+        'KaylonCam necesita acceso a tu galeria para importar fotos.',
       NSPhotoLibraryAddUsageDescription:
-        'SnapSite necesita permiso para guardar fotos en tu galeria.',
+        'KaylonCam necesita permiso para guardar fotos en tu galeria.',
       NSLocationWhenInUseUsageDescription:
-        'SnapSite usa tu ubicacion para asociarla a tus proyectos.',
+        'KaylonCam usa tu ubicacion para asociarla a tus proyectos.',
     },
   },
   android: {

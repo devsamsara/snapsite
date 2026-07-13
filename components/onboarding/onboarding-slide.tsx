@@ -216,29 +216,74 @@ function IllustrationWelcome({ accent, accentSoft, bgColor, borderColor, isActiv
 
   return (
     <View style={styles.illBase}>
-      <View style={[styles.ring, styles.ring3, { borderColor: accent + "14", backgroundColor: accent + "06" }]} />
-      <View style={[styles.ring, styles.ring2, { borderColor: accent + "22", backgroundColor: accent + "0A" }]} />
-      <View style={[styles.ring, styles.ring1, { borderColor: accent + "40", backgroundColor: accent + "12" }]} />
+      <View
+        style={[
+          styles.ring,
+          styles.ring3,
+          { borderColor: accent + '14', backgroundColor: accent + '06' },
+        ]}
+      />
+      <View
+        style={[
+          styles.ring,
+          styles.ring2,
+          { borderColor: accent + '22', backgroundColor: accent + '0A' },
+        ]}
+      />
+      <View
+        style={[
+          styles.ring,
+          styles.ring1,
+          { borderColor: accent + '40', backgroundColor: accent + '12' },
+        ]}
+      />
 
-      <Animated.View style={[styles.centerCard, { backgroundColor: bgColor, borderColor, shadowColor: accent }, cardStyle]}>
+      <Animated.View
+        style={[
+          styles.centerCard,
+          { backgroundColor: bgColor, borderColor, shadowColor: accent },
+          cardStyle,
+        ]}
+      >
         <View style={[styles.appIconOuter, { backgroundColor: accent }]}>
           <View style={styles.appIconInner}>
-            <View style={[styles.lens, { borderColor: "#fff" }]} />
-            <View style={[styles.lensInner, { backgroundColor: "#fff" }]} />
+            <View style={[styles.lens, { borderColor: '#fff' }]} />
+            <View style={[styles.lensInner, { backgroundColor: '#fff' }]} />
           </View>
         </View>
-        <Text style={[styles.centerCardLabel, { color: accent }]}>SnapSite</Text>
+        <Text style={[styles.centerCardLabel, { color: accent }]}>
+          KaylonCam
+        </Text>
       </Animated.View>
 
-      <Animated.View style={[styles.badge, styles.badgeTL, { backgroundColor: bgColor, borderColor, shadowColor: accent }, badgeTLStyle]}>
-        <View style={[styles.badgeDot, { backgroundColor: "#10B981" }]} />
-        <Text style={[styles.badgeText, { color: "#10B981" }]}>Activo</Text>
+      <Animated.View
+        style={[
+          styles.badge,
+          styles.badgeTL,
+          { backgroundColor: bgColor, borderColor, shadowColor: accent },
+          badgeTLStyle,
+        ]}
+      >
+        <View style={[styles.badgeDot, { backgroundColor: '#10B981' }]} />
+        <Text style={[styles.badgeText, { color: '#10B981' }]}>Activo</Text>
       </Animated.View>
 
-      <Animated.View style={[styles.badge, styles.badgeBR, { backgroundColor: bgColor, borderColor, shadowColor: accent }, badgeBRStyle]}>
+      <Animated.View
+        style={[
+          styles.badge,
+          styles.badgeBR,
+          { backgroundColor: bgColor, borderColor, shadowColor: accent },
+          badgeBRStyle,
+        ]}
+      >
         <Text style={[styles.badgeText, { color: accentSoft }]}>67%</Text>
         <View style={[styles.miniBar, { backgroundColor: borderColor }]}>
-          <View style={[styles.miniBarFill, { backgroundColor: accent, width: "67%" }]} />
+          <View
+            style={[
+              styles.miniBarFill,
+              { backgroundColor: accent, width: '67%' },
+            ]}
+          />
         </View>
       </Animated.View>
     </View>

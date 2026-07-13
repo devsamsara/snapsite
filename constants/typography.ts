@@ -1,7 +1,7 @@
 /**
  * constants/typography.ts
  *
- * Escala tipográfica — Apple HIG text styles adaptados a SnapSite.
+ * Escala tipográfica — Apple HIG text styles adaptados a KaylonCam.
  * Complementa a constants/spacing.ts: mismo criterio, un solo lugar de verdad.
  *
  * Uso:

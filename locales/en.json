@@ -19,8 +19,8 @@
     "noResults": "No results",
     "error": "Error",
     "success": "Success",
-    "version": "SnapSite v1.0.0",
-    "copyright": "© 2024 Snapsite. All rights reserved.",
+    "version": "KaylonCam v1.0.0",
+    "copyright": "© 2026 KaylonCam. All rights reserved.",
     "today": "Today",
     "yesterday": "Yesterday",
     "twoDaysAgo": "Two days ago",
@@ -41,7 +41,7 @@
   "auth": {
     "login": {
       "title": "Welcome back",
-      "subtitle": "Sign in to continue with SnapSite",
+      "subtitle": "Sign in to continue with KaylonCam",
       "email": "Email",
       "emailPlaceholder": "you@email.com",
       "password": "Password",
@@ -60,7 +60,7 @@
     "register": {
       "step": "Step {{current}} of {{total}}",
       "step1Title": "Create account",
-      "step1Subtitle": "Join SnapSite and start managing your projects",
+      "step1Subtitle": "Join KaylonCam and start managing your projects",
       "step2Title": "Company details",
       "step2Subtitle": "Complete your company information",
       "isAdmin": "Are you an administrator?",
@@ -542,7 +542,7 @@
     "language": "Language",
     "languageDesc": "Español / English",
     "logout": "Log Out",
-    "footer": "© 2024 Snapsite. All rights reserved.",
+    "footer": "© 2026 KaylonCam. All rights reserved.",
     "logoutConfirmTitle": "Sign out",
     "logoutConfirmMessage": "Are you sure you want to sign out?"
   },
@@ -554,7 +554,7 @@
     "editProfile": "Edit Profile",
     "messages": "Messages",
     "settings": "Settings",
-    "version": "SnapSite v1.0.0",
+    "version": "KaylonCam v1.0.0",
     "logout": "Log out",
     "logoutConfirmTitle": "Log out",
     "logoutConfirmMessage": "Are you sure you want to log out?",
@@ -602,7 +602,7 @@
   },
   "onboarding": {
     "slide1": {
-      "tag": "Welcome to SnapSite",
+      "tag": "Welcome to KaylonCam",
       "title": "Your project,\nunder control.",
       "subtitle": "Manage construction projects with photos, annotations and real-time tracking — all from your phone."
     },
@@ -788,19 +788,19 @@
     "deleteCompanyHint": "Permanently delete the company and all its projects and data."
   },
   "about": {
-    "title": "About SnapSite",
+    "title": "About KaylonCam",
     "version": "Version",
-    "description": "SnapSite is a construction project management platform. Capture, organize and share the visual progress of your projects easily.",
+    "description": "KaylonCam is a construction project management platform. Capture, organize and share the visual progress of your projects easily.",
     "developer": "Developed by",
-    "developerName": "SnapSite Team",
+    "developerName": "KaylonCam Team",
     "website": "Website",
-    "websiteUrl": "https://snapsite.app",
+    "websiteUrl": "https://kayloncam.app",
     "legal": "Legal",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service",
     "licenses": "Open Source Licenses",
     "contact": "Contact",
-    "contactEmail": "support@snapsite.app",
+    "contactEmail": "support@kayloncam.app",
     "close": "Close"
   },
   "helpSupport": {
@@ -818,7 +818,7 @@
     "faq4Question": "Can I export project reports?",
     "faq4Answer": "Yes. Open the project, tap the share icon and select Export Report.",
     "contactEmail": "Send email",
-    "contactEmailAddress": "support@snapsite.app",
+    "contactEmailAddress": "support@kayloncam.app",
     "contactChat": "Live chat",
     "contactChatDesc": "Available Monday–Friday, 9:00–18:00",
     "documentation": "Documentation",

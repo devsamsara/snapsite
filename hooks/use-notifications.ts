@@ -1,7 +1,7 @@
 /**
  * hooks/use-notifications.ts
  *
- * Gestión centralizada de notificaciones push para SnapSite.
+ * Gestión centralizada de notificaciones push para KaylonCam.
  *
  * Responsabilidades:
  *  - Configurar el handler de notificaciones en foreground (una sola vez, a nivel módulo)
@@ -22,13 +22,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // ─── Constantes ──────────────────────────────────────────────────────────────
 
 /** Clave AsyncStorage para persistir si el usuario ya ha decidido sobre las notificaciones. */
-export const NOTIFICATIONS_ASKED_KEY = '@snapsite_notifications_asked';
+export const NOTIFICATIONS_ASKED_KEY = '@kayloncam_notifications_asked';
 
 /**
  * Clave AsyncStorage para persistir si el usuario ha desactivado las notificaciones
  * manualmente desde la app (independientemente del permiso del sistema).
  */
-export const NOTIFICATIONS_DISABLED_KEY = '@snapsite_notifications_disabled';
+export const NOTIFICATIONS_DISABLED_KEY = '@kayloncam_notifications_disabled';
 
 // ─── Handler de foreground (se configura una sola vez a nivel módulo) ─────────
 
@@ -220,7 +220,7 @@ export async function setNotificationsDisabledByUser(disabled: boolean): Promise
 export async function scheduleTestNotification(): Promise<void> {
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: 'SnapSite 📸',
+      title: 'KaylonCam',
       body: 'Las notificaciones están activadas correctamente.',
       data: {},
     },

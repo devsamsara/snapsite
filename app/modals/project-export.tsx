@@ -112,10 +112,10 @@ function buildPdfHtml(projectName: string, location: string, opts: ExportOptions
   <header>
     <div class="badge">INFORME DE PROYECTO</div>
     <h1>${projectName}</h1>
-    <p class="meta">${location ? `📍 ${location} &nbsp;·&nbsp; ` : ""}📅 Generado el ${date}</p>
+    <p class="meta">${location ? `📍 ${location} &nbsp;·&nbsp; ` : ''}📅 Generado el ${date}</p>
   </header>
-  ${sections.join("\n")}
-  <footer>Generado con snapSite &nbsp;·&nbsp; ${date}</footer>
+  ${sections.join('\n')}
+  <footer>Generado con KaylonCam &nbsp;·&nbsp; ${date}</footer>
 </body>
 </html>`;
 }

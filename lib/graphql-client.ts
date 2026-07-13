@@ -47,8 +47,8 @@ if (__DEV__ && !Constants.expoConfig?.extra?.graphqlUrl && !process.env.GRAPHQL_
 
 // ─── SecureStore keys ────────────────────────────────────────────────────────
 
-const AUTH_TOKEN_KEY    = "snapsiteAuthToken";
-const REFRESH_TOKEN_KEY = "snapsiteRefreshToken";
+const AUTH_TOKEN_KEY    = "kayloncamAuthToken";
+const REFRESH_TOKEN_KEY = "kayloncamRefreshToken";
 
 // ─── In-memory token cache ───────────────────────────────────────────────────
 // Declared BEFORE any link so every closure always references the same binding.

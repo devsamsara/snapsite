@@ -10,7 +10,7 @@
  * Uso:
  *   <HeroHeader icon="lock.rotation" title="..." subtitle="..." />
  *   <HeroHeader icon="checkmark.circle.fill" tint={colors.success} ... />
- *   <HeroHeader image={require('.../icon.png')} title="SnapSite" ... />
+ *   <HeroHeader image={require('.../icon.png')} title="KaylonCam" ... />
  */
 
 import React from "react";
